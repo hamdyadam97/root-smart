@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ offer.title }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .header {
+            background-color: #1e40af;
+            color: #ffffff;
+            padding: 24px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 28px;
+            color: #1f2937;
+            line-height: 1.7;
+            font-size: 15px;
+        }
+        .content h2 {
+            color: #1e40af;
+            font-size: 18px;
+            margin-top: 0;
+        }
+        .details {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .details td {
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .details td:first-child {
+            color: #64748b;
+            width: 35%;
+        }
+        .price-box {
+            background-color: #dbeafe;
+            border: 2px solid #1e40af;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            margin: 24px 0;
+        }
+        .price-box .label {
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .price-box .value {
+            color: #1e40af;
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+        .footer {
+            background-color: #f8fafc;
+            padding: 16px 24px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>عرض سعر</h1>
+        </div>
+        <div class="content">
+            <p>مرحباً {{ recipient_name }}،</p>
+            <p>نرفق لكم عرض السعر المقدم من <strong>{{ branch_name }}</strong>.</p>
+
+            <h2>{% if offer.manual_course_name %}دورة انفرادية - {{ offer.manual_course_name }}{% else %}{{ offer.title }}{% endif %}</h2>
+            <p>{{ offer.content|linebreaksbr }}</p>
+
+            <div class="details">
+                <table>
+                    <tr>
+                        <td>الفرع</td>
+                        <td>{{ branch_name }}</td>
+                    </tr>
+                    {% if course_name %}
+                    <tr>
+                        <td>الدورة</td>
+                        <td>{{ course_name }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if course_hours %}
+                    <tr>
+                        <td>عدد الساعات</td>
+                        <td>{{ course_hours }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td>تاريخ العرض</td>
+                        <td>{{ offer.created_at|date:'Y-m-d' }}</td>
+                    </tr>
+                    {% if offer.end_date %}
+                    <tr>
+                        <td>سريان العرض حتى</td>
+                        <td>{{ offer.end_date|date:'Y-m-d' }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+
+            <div class="price-box">
+                <div class="label">قيمة العرض</div>
+                <div class="value">{{ offer.price|floatformat:2 }} {{ currency_name }}</div>
+                {% if offer.price_description %}
+                <div style="color: #475569; font-size: 12px; margin-top: 6px;">{{ offer.price_description }}</div>
+                {% endif %}
+            </div>
+
+            <p>يمكنكم مراجعة العرض المرفق بصيغة PDF. للاستفسارات، لا تترددوا في التواصل معنا.</p>
+        </div>
+        <div class="footer">
+            تم إعداد العرض بواسطة {{ creator_name }} · {{ branch_name }}
+        </div>
+    </div>
+</body>
+</html>

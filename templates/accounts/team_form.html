@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل فريق{% else %}إضافة فريق{% endif %} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل فريق{% else %}<i class="bi bi-plus-lg"></i> إضافة فريق{% endif %}</h2>
+    <a href="{% url 'team-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                {% for field in form %}
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="text-danger small">{{ field.errors|striptags }}</div>
+                    {% endif %}
+                    {% if field.name == 'default_role' or field.name == 'default_branch' %}
+                    <small class="text-muted">
+                        {% if field.name == 'default_role' %}لما تضيف موظب للفريق ده، هياخد الدور ده تلقائياً{% endif %}
+                        {% if field.name == 'default_branch' %}لما تضيف موظف للفريق ده، هيُسجل في الفرع ده تلقائياً{% endif %}
+                    </small>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+                <a href="{% url 'team-list' %}" class="btn btn-outline-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

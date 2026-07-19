@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ team.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-people"></i> {{ team.name }}</h2>
+    <div>
+        <a href="{% url 'team-update' team.slug %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'team-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> معلومات الفريق</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold" style="width:150px">الكود</td><td>{{ team.code }}</td></tr>
+                    <tr><td class="fw-bold">الفرع</td><td>{{ team.branch|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الرابط</td><td><code>{{ team.slug }}</code></td></tr>
+                    <tr><td class="fw-bold">الوصف</td><td>{{ team.description|default:"-"|linebreaksbr }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white"><i class="bi bi-shield-check"></i> الإعدادات الافتراضية</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold" style="width:150px">الدور الافتراضي</td>
+                        <td>
+                            {% if team.default_role %}
+                            <span class="badge bg-info">{{ team.default_role.name }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr><td class="fw-bold">الفرع الافتراضي</td>
+                        <td>
+                            {% if team.default_branch %}
+                            {{ team.default_branch.name }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                <small class="text-muted">
+                    لما تضيف موظف للفريق ده، هياخد الدور والفرع الافتراضي تلقائياً.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-secondary text-white"><i class="bi bi-person-badge"></i> أعضاء الفريق</div>
+    <div class="card-body">
+        {% if team.members.exists %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>الاسم</th>
+                        <th>البريد</th>
+                        <th>الفرع</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in team.members.all %}
+                    <tr>
+                        <td>{{ member.get_full_name }}</td>
+                        <td>{{ member.email }}</td>
+                        <td>{{ member.branch|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">لا يوجد أعضاء في الفريق</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

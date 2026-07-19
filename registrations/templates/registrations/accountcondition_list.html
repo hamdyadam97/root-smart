@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}شروط التسجيلات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-list-check"></i> شروط التسجيلات</h2>
+    <a href="{% url 'accountcondition-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> شرط جديد</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>التسجيل</th>
+                <th>العنوان</th>
+                <th>المحتوى</th>
+                <th>تم الاستيفاء</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for condition in account_conditions %}
+            <tr>
+                <td>{{ condition.account.get_key_rtl }}</td>
+                <td>{{ condition.title }}</td>
+                <td>{{ condition.content|truncatechars:40 }}</td>
+                <td>
+                    {% if condition.fulfilled %}
+                    <span class="badge bg-success">نعم</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">لا</span>
+                    {% endif %}
+                </td>
+                <td class="text-start">
+                    <a href="{% url 'accountcondition-detail' condition.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'accountcondition-update' condition.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'accountcondition-delete' condition.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">لا يوجد شروط</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

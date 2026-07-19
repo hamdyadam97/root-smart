@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ recipient.student }} - {{ recipient.offer.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person"></i> {{ recipient.student }}</h2>
+    <div>
+        <a href="{% url 'offerrecipient-update' recipient.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'offerrecipient-delete' recipient.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'offerrecipient-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> تفاصيل المستلم</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>العرض:</strong> <a href="{% url 'studentoffer-detail' recipient.offer.slug %}">{{ recipient.offer.title }}</a></li>
+                <li class="list-group-item"><strong>الطالب:</strong> {{ recipient.student }}</li>
+                <li class="list-group-item"><strong>قناة الإرسال:</strong> {{ recipient.get_channel_display }}</li>
+                <li class="list-group-item"><strong>الحالة:</strong> {{ recipient.get_status_display }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><i class="bi bi-clock-history"></i> التواريخ</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>تاريخ الإرسال:</strong> {{ recipient.sent_at|date:'Y-m-d H:i' }}</li>
+                <li class="list-group-item"><strong>تاريخ الفتح:</strong> {{ recipient.opened_at|default:'-' }}</li>
+                <li class="list-group-item"><strong>تاريخ التفاعل:</strong> {{ recipient.interacted_at|default:'-' }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

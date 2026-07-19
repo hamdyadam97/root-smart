@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ branch.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-3">
+        {% if branch.logo %}
+        <img src="{{ branch.logo.url }}" alt="{{ branch.name }}" class="rounded-circle border" style="width:60px;height:60px;object-fit:cover;background:#fff;">
+        {% else %}
+        <div class="rounded-circle border d-flex align-items-center justify-content-center bg-light text-secondary" style="width:60px;height:60px;">
+            <i class="bi bi-building fs-3"></i>
+        </div>
+        {% endif %}
+        <h2 class="mb-0"><i class="bi bi-building"></i> {{ branch.name }}</h2>
+    </div>
+    <div>
+        <a href="{% url 'branch-dashboard' branch.slug %}" class="btn btn-success"><i class="bi bi-speedometer2"></i> لوحة التحكم</a>
+        <a href="{% url 'branch-update' branch.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'branch-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> البيانات الأساسية</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold">الكود</td><td>{{ branch.code }}</td></tr>
+                    <tr><td class="fw-bold">الاسم</td><td>{{ branch.name }}</td></tr>
+                    <tr><td class="fw-bold">الاسم الفرعي</td><td>{{ branch.sub_name|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الشركة</td><td>{{ branch.company.name }}</td></tr>
+                    <tr><td class="fw-bold">العنوان</td><td>{{ branch.address|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الرقم البريدي</td><td>{{ branch.postal_code|default:"-" }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-telephone"></i> بيانات التواصل</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold">التليفون 1</td><td>{{ branch.phone1|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">التليفون 2</td><td>{{ branch.phone2|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">المحمول</td><td>{{ branch.mobile|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الفاكس</td><td>{{ branch.fax|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">البريد</td><td>{{ branch.email|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الموقع</td><td>{{ branch.website|default:"-" }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header bg-secondary text-white"><i class="bi bi-file-text"></i> البيانات التجارية</div>
+    <div class="card-body">
+        <table class="table table-borderless mb-0">
+            <tr><td class="fw-bold" style="width:200px">السجل التجاري</td><td>{{ branch.commercial_registration|default:"-" }}</td></tr>
+            <tr><td class="fw-bold">رقم الترخيص</td><td>{{ branch.licence_code|default:"-" }}</td></tr>
+            <tr><td class="fw-bold">الرقم الضريبي</td><td>{{ branch.tax_code|default:"-" }}</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-info text-white"><i class="bi bi-image"></i> الشعار والتوقيع</div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 text-center mb-3">
+                <h6 class="text-secondary">شعار الفرع</h6>
+                {% if branch.logo %}
+                <img src="{{ branch.logo.url }}" alt="شعار {{ branch.name }}" class="img-thumbnail" style="max-height:150px;">
+                {% else %}
+                <div class="text-muted">لا يوجد شعار</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6 text-center mb-3">
+                <h6 class="text-secondary">توقيع الفرع</h6>
+                {% if branch.signature %}
+                <img src="{{ branch.signature.url }}" alt="توقيع {{ branch.name }}" class="img-thumbnail" style="max-height:150px;">
+                {% else %}
+                <div class="text-muted">لا يوجد توقيع</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة الطلاب | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-mortarboard"></i> الطلاب</h2>
+    {% if user|has_perm:'add_student' %}
+    <button type="button" class="btn btn-primary" onclick="openStudentModal()">
+        <i class="bi bi-plus-lg"></i> طالب جديد
+    </button>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="ابحث بالاسم أو الجوال أو الرابط..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <select name="level" class="form-select">
+                    <option value="">جميع المستويات</option>
+                    <option value="مبتدئ" {% if request.GET.level == 'مبتدئ' %}selected{% endif %}>مبتدئ</option>
+                    <option value="متوسط" {% if request.GET.level == 'متوسط' %}selected{% endif %}>متوسط</option>
+                    <option value="متقدم" {% if request.GET.level == 'متقدم' %}selected{% endif %}>متقدم</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="preferred_contact" class="form-select">
+                    <option value="">جميع طرق التواصل</option>
+                    <option value="email" {% if request.GET.preferred_contact == 'email' %}selected{% endif %}>البريد الإلكتروني</option>
+                    <option value="whatsapp" {% if request.GET.preferred_contact == 'whatsapp' %}selected{% endif %}>واتساب</option>
+                    <option value="app" {% if request.GET.preferred_contact == 'app' %}selected{% endif %}>التطبيق الداخلي</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>الجوال</th>
+                <th>المستوى</th>
+                <th>طريقة التواصل</th>
+                <th>الرابط</th>
+                <th class="text-start">الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ student.get_full_name }}</td>
+                <td>{{ student.get_mobile|default:'-' }}</td>
+                <td><span class="badge bg-secondary">{{ student.level }}</span></td>
+                <td>{{ student.get_preferred_contact_display }}</td>
+                <td><code>{{ student.slug }}</code></td>
+                <td class="text-start">
+                    <a href="{% url 'student-detail' student.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    {% has_perm_on_branch user 'change_student' student.branch as can_change_student %}
+                    {% if can_change_student %}
+                    <button type="button" class="btn btn-sm btn-warning" onclick="openStudentModal({{ student.id }}, '{{ student.contact.first_name|escapejs }}', '{{ student.contact.second_name|escapejs }}', '{{ student.contact.third_name|escapejs }}', '{{ student.contact.forth_name|escapejs }}', '{{ student.contact.mobile|escapejs }}', '{{ student.contact.phone|escapejs }}', '{{ student.contact.address|escapejs }}', '{{ student.contact.nationality|escapejs }}', '{{ student.contact.identity_number|escapejs }}', '{{ student.contact.identity_location|escapejs }}', '{{ student.contact.identity_start_date|default:''|escapejs }}', '{{ student.contact.birth_date|default:''|escapejs }}', '{{ student.contact.birth_location|escapejs }}', '{{ student.contact.qualification|escapejs }}', {{ student.branch_id|default:'null' }}, '{{ student.level|escapejs }}', '{{ student.preferred_contact|escapejs }}')">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    {% endif %}
+                    {% has_perm_on_branch user 'delete_student' student.branch as can_delete_student %}
+                    {% if can_delete_student %}
+                    <a href="{% url 'student-delete' student.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">لا يوجد طلاب</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+
+{% include "includes/student_modal.html" %}
+{% endblock %}

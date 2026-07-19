@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة سندات القبض{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cash-stack"></i> سندات القبض</h2>
+    <button type="button" class="btn btn-primary" onclick="openPaymentModal()"><i class="bi bi-plus-lg"></i> سند قبض جديد</button>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالكود..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <select name="type" class="form-select">
+                    <option value="">كل الأنواع</option>
+                    <option value="ايرادات اساسية" {% if request.GET.type == 'ايرادات اساسية' %}selected{% endif %}>إيرادات أساسية</option>
+                    <option value="ايرادات اخرى" {% if request.GET.type == 'ايرادات اخرى' %}selected{% endif %}>إيرادات أخرى</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>الكود</th>
+                <th>التسجيل</th>
+                <th>التاريخ</th>
+                <th>المبلغ</th>
+                <th>النوع</th>
+                <th>طريقة الدفع</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>{{ payment.code }}</td>
+                <td>{{ payment.account.get_key_rtl|default:'-' }}</td>
+                <td>{{ payment.date }}</td>
+                <td>{{ payment.amount_number }}</td>
+                <td>{{ payment.type }}</td>
+                <td>{{ payment.get_payment_method_display }}</td>
+                <td class="text-start">
+                    <a href="{% url 'payment-detail' payment.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    {% has_perm_on_branch user 'change_payment' payment.account.course.master.branch as can_change_payment %}
+                    {% if can_change_payment %}
+                    <button type="button" class="btn btn-sm btn-warning" onclick="openPaymentModal({{ payment.id }}, '{{ payment.account.id }}', '{{ payment.code }}', '{{ payment.date|date:'Y-m-d\\TH:i' }}', '{{ payment.amount_number }}', '{{ payment.amount_string|escapejs }}', '{{ payment.type|escapejs }}', '{{ payment.payment_method|escapejs }}', '{{ payment.payment_method_code|escapejs }}', '{{ payment.note|escapejs }}')"><i class="bi bi-pencil"></i></button>
+                    {% endif %}
+                    {% has_perm_on_branch user 'delete_payment' payment.account.course.master.branch as can_delete_payment %}
+                    {% if can_delete_payment %}
+                    <a href="{% url 'payment-delete' payment.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">لا يوجد سندات قبض</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+
+{% include "includes/payment_modal.html" %}
+{% endblock %}

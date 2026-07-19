@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}سحب {{ withdraw.code }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bank"></i> سحب {{ withdraw.code }}</h2>
+    <div>
+        <a href="{% url 'withdraw-update' withdraw.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'withdraw-delete' withdraw.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'withdraw-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>الكود:</strong> {{ withdraw.code }}</li>
+            <li class="list-group-item"><strong>التاريخ:</strong> {{ withdraw.date }}</li>
+            <li class="list-group-item"><strong>المبلغ:</strong> {{ withdraw.amount }}</li>
+            <li class="list-group-item"><strong>البنك:</strong> {{ withdraw.bank.name|default:'-' }}</li>
+            <li class="list-group-item"><strong>ملاحظات:</strong> {{ withdraw.note|default:'-'|linebreaksbr }}</li>
+            <li class="list-group-item"><strong>آخر تعديل:</strong> {{ withdraw.last_person.get_short_name|default:'-' }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

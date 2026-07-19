@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}قائمة عروض الأسعار{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tag"></i> عروض الأسعار</h2>
+    <a href="{% url 'offer-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> عرض جديد</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالعميل..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-4">
+                <select name="registered" class="form-select">
+                    <option value="">كل الحالات</option>
+                    <option value="true" {% if request.GET.registered == 'true' %}selected{% endif %}>مسجل</option>
+                    <option value="false" {% if request.GET.registered == 'false' %}selected{% endif %}>غير مسجل</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>الكود</th>
+                <th>العميل</th>
+                <th>التخصص</th>
+                <th>السعر</th>
+                <th>الصافي</th>
+                <th>نوع الدفع</th>
+                <th>مسجل</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for offer in offers %}
+            <tr>
+                <td>{{ offer.code }}</td>
+                <td>{{ offer.customer_name }}</td>
+                <td>{{ offer.master.name }}</td>
+                <td>{{ offer.master_price }}</td>
+                <td>{{ offer.get_net }}</td>
+                <td>{{ offer.master_payment_type }}</td>
+                <td>
+                    {% if offer.registered %}
+                    <span class="badge bg-success">نعم</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">لا</span>
+                    {% endif %}
+                </td>
+                <td class="text-start">
+                    <a href="{% url 'offer-detail' offer.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'offer-update' offer.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'offer-delete' offer.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center text-muted">لا يوجد عروض</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

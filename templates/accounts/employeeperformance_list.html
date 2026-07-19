@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}أداء الموظفين | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up"></i> أداء الموظفين</h2>
+    <a href="{% url 'employeeperformance-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إضافة أداء</a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الموظف</th>
+                    <th>الفرع</th>
+                    <th>الفترة</th>
+                    <th>العروض المرسلة</th>
+                    <th>المفتوحة</th>
+                    <th>التفاعلات</th>
+                    <th>الاشتراكات</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for perf in performances %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ perf.person.get_short_name }}</td>
+                    <td>{{ perf.branch.name }}</td>
+                    <td>{{ perf.period_month }}/{{ perf.period_year }}</td>
+                    <td>{{ perf.offers_sent }}</td>
+                    <td>{{ perf.offers_opened }}</td>
+                    <td>{{ perf.offers_interacted }}</td>
+                    <td>{{ perf.subscriptions }}</td>
+                    <td>
+                        <a href="{% url 'employeeperformance-update' perf.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'employeeperformance-delete' perf.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center py-4 text-muted">لا يوجد بيانات أداء</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

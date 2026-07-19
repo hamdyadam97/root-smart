@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ notification.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bell"></i> {{ notification.title }}</h2>
+    <div>
+        <a href="{% url 'appnotification-update' notification.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'appnotification-delete' notification.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'appnotification-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> تفاصيل الإشعار</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>المستخدم:</strong> {{ notification.user.get_short_name|default:notification.user.email }}</li>
+                <li class="list-group-item"><strong>العنوان:</strong> {{ notification.title }}</li>
+                <li class="list-group-item"><strong>نوع الإشعار:</strong> {{ notification.get_notification_type_display }}</li>
+                <li class="list-group-item"><strong>مقروء:</strong> {% if notification.is_read %}نعم{% else %}لا{% endif %}</li>
+                <li class="list-group-item"><strong>رابط الإجراء:</strong> {% if notification.action_url %}<a href="{{ notification.action_url }}" target="_blank">{{ notification.action_url }}</a>{% else %}-{% endif %}</li>
+                <li class="list-group-item"><strong>التاريخ:</strong> {{ notification.created_at|date:'Y-m-d H:i' }}</li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-header bg-light"><i class="bi bi-body-text"></i> المحتوى</div>
+            <div class="card-body">
+                {{ notification.body|linebreaksbr }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

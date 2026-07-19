@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ report.get_report_type_display }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up"></i> {{ report.get_report_type_display }}</h2>
+    <div>
+        <a href="{% url 'reportsnapshot-export-excel' report.slug %}" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a href="{% url 'reportsnapshot-export-pdf' report.slug %}" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        <button type="button" class="btn btn-warning" onclick="openReportModal({{ report.id }}, '{{ report.report_type|escapejs }}', '{{ report.branch.id|default:'' }}', '{{ report.period|escapejs }}', '{{ report.start_date|date:'Y-m-d' }}', '{{ report.end_date|date:'Y-m-d' }}')"><i class="bi bi-pencil"></i> تعديل</button>
+        <a href="{% url 'reportsnapshot-delete' report.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'reportsnapshot-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1">نوع التقرير</div>
+            <div class="fw-bold fs-5">{{ report.get_report_type_display }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1">الفرع</div>
+            <div class="fw-bold fs-5">{{ report.branch|default:'الكل' }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1">الفترة</div>
+            <div class="fw-bold fs-5">{{ report.period|default:'-' }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1">تاريخ الإنشاء</div>
+            <div class="fw-bold fs-5">{{ report.created_at|date:'Y-m-d' }}</div>
+        </div>
+    </div>
+</div>
+
+{% if report.start_date or report.end_date %}
+<div class="alert alert-info mb-4">
+    <i class="bi bi-calendar-range"></i> 
+    الفترة الزمنية: 
+    {% if report.start_date %}من {{ report.start_date|date:'Y-m-d' }}{% endif %}
+    {% if report.end_date %}إلى {{ report.end_date|date:'Y-m-d' }}{% endif %}
+</div>
+{% endif %}
+
+{% if report.data_json %}
+    {% for key, value in report.data_json.items %}
+        {% if value|length > 0 and value.0 %}
+            <!-- List data (table + chart) -->
+            <div class="card mb-4">
+                <div class="card-header bg-light"><i class="bi bi-table"></i> {{ key }}</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    {% for col_key in value.0.keys %}
+                                    <th>{{ col_key }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in value %}
+                                <tr>
+                                    {% for cell in row.values %}
+                                    <td>{{ cell }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if value|length > 1 %}
+                    <canvas id="chart_{{ forloop.counter }}" height="100"></canvas>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Single value (card) -->
+            <div class="col-md-4 mb-3">
+                <div class="card card-stats p-3 text-center">
+                    <div class="text-muted small mb-1">{{ key }}</div>
+                    <div class="fw-bold fs-4 text-primary">{{ value }}</div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% else %}
+<div class="alert alert-warning">لا توجد بيانات في هذا التقرير.</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    const data = {{ report.data_json|safe }};
+    let chartIndex = 0;
+    
+    for (const [key, value] of Object.entries(data)) {
+        if (Array.isArray(value) && value.length > 1) {
+            chartIndex++;
+            const ctx = document.getElementById('chart_' + chartIndex);
+            if (!ctx) continue;
+            
+            const keys = Object.keys(value[0]);
+            const labelKey = keys[0];
+            const dataKeys = keys.slice(1);
+            
+            const labels = value.map(row => row[labelKey]);
+            const datasets = dataKeys.map((dk, i) => ({
+                label: dk,
+                data: value.map(row => row[dk]),
+                backgroundColor: ['rgba(59,130,246,0.6)', 'rgba(16,185,129,0.6)', 'rgba(245,158,11,0.6)', 'rgba(239,68,68,0.6)'][i % 4],
+                borderColor: ['rgba(59,130,246,1)', 'rgba(16,185,129,1)', 'rgba(245,158,11,1)', 'rgba(239,68,68,1)'][i % 4],
+                borderWidth: 1
+            }));
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}فاتورة شراء {{ bill_buy.code }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-receipt"></i> فاتورة شراء {{ bill_buy.code }}</h2>
+    <div>
+        <a href="{% url 'billbuy-update' bill_buy.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'billbuy-delete' bill_buy.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'billbuy-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-receipt"></i> بيانات الفاتورة</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>الكود:</strong> {{ bill_buy.code }}</li>
+                <li class="list-group-item"><strong>التاريخ:</strong> {{ bill_buy.date }}</li>
+                <li class="list-group-item"><strong>المورد:</strong> {{ bill_buy.supplier }}</li>
+                <li class="list-group-item"><strong>النوع:</strong> {{ bill_buy.bill_buy_type.name|default:'-' }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><i class="bi bi-calculator"></i> المالية</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>المبلغ:</strong> {{ bill_buy.amount }}</li>
+                <li class="list-group-item"><strong>الضريبة:</strong> {{ bill_buy.tax }}</li>
+                <li class="list-group-item"><strong>الخصم:</strong> {{ bill_buy.discount }}</li>
+                <li class="list-group-item"><strong>الصافي:</strong> {{ bill_buy.get_net_amount }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>ملاحظات:</strong> {{ bill_buy.note|default:'-'|linebreaksbr }}</li>
+            <li class="list-group-item"><strong>آخر تعديل:</strong> {{ bill_buy.last_person.get_short_name|default:'-' }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

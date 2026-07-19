@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة التسجيلات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-journal-check"></i> التسجيلات</h2>
+    <button type="button" class="btn btn-primary" onclick="openRegistrationModal()"><i class="bi bi-plus-lg"></i> تسجيل جديد</button>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالاسم..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <select name="payment_type" class="form-select">
+                    <option value="">كل طرق الدفع</option>
+                    <option value="نقدي" {% if request.GET.payment_type == 'نقدي' %}selected{% endif %}>نقدي</option>
+                    <option value="تقسيط" {% if request.GET.payment_type == 'تقسيط' %}selected{% endif %}>تقسيط</option>
+                    <option value="آجل" {% if request.GET.payment_type == 'آجل' %}selected{% endif %}>آجل</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="course" class="form-control" placeholder="رقم الدورة..." value="{{ request.GET.course|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>المفتاح</th>
+                <th>الطالب</th>
+                <th>الدورة</th>
+                <th>نوع الدفع</th>
+                <th>السعر</th>
+                <th>المطلوب</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in accounts %}
+            <tr>
+                <td><span class="badge bg-secondary">{{ account.get_key_rtl }}</span></td>
+                <td>{{ account.student.get_full_name }}</td>
+                <td>{{ account.course.master.name }} - {{ account.course.code }}</td>
+                <td>{{ account.course_payment_type }}</td>
+                <td>{{ account.course_price }}</td>
+                <td>{{ account.get_required_price }}</td>
+                <td>{{ account.get_paid_price }}</td>
+                <td>{{ account.get_remain_price }}</td>
+                <td class="text-start">
+                    <a href="{% url 'registration-detail' account.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    {% has_perm_on_branch user 'change_registration' account.course.master.branch as can_change_registration %}
+                    {% if can_change_registration %}
+                    <button type="button" class="btn btn-sm btn-warning" onclick="openRegistrationModal({{ account.id }}, '{{ account.course.id }}', '{{ account.student.id }}', '{{ account.code }}', '{{ account.register_date|date:'Y-m-d\\TH:i' }}', '{{ account.course_payment_type|escapejs }}', '{{ account.course_price }}', '{{ account.course_discount_amount }}', '{{ account.course_profit_amount }}', '{{ account.course_credit_amount }}', '{{ account.note|escapejs }}')"><i class="bi bi-pencil"></i></button>
+                    {% endif %}
+                    {% has_perm_on_branch user 'delete_registration' account.course.master.branch as can_delete_registration %}
+                    {% if can_delete_registration %}
+                    <a href="{% url 'registration-delete' account.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center text-muted">لا يوجد تسجيلات</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+
+{% include "includes/registration_modal.html" %}
+{% endblock %}

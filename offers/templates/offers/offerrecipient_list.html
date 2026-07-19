@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}مستلمو العروض{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-people"></i> مستلمو العروض</h2>
+    <a href="{% url 'offerrecipient-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> مستلم جديد</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control" placeholder="بحث..." value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>العرض</th>
+                <th>الطالب</th>
+                <th>قناة الإرسال</th>
+                <th>الحالة</th>
+                <th>تاريخ الإرسال</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for recipient in recipients %}
+            <tr>
+                <td><a href="{% url 'studentoffer-detail' recipient.offer.slug %}">{{ recipient.offer.title }}</a></td>
+                <td>{{ recipient.student }}</td>
+                <td>{{ recipient.get_channel_display }}</td>
+                <td><span class="badge bg-secondary">{{ recipient.get_status_display }}</span></td>
+                <td>{{ recipient.sent_at|date:'Y-m-d H:i' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'offerrecipient-detail' recipient.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'offerrecipient-update' recipient.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'offerrecipient-delete' recipient.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">لا يوجد مستلمون</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - Smart Offer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            overflow-x: hidden;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 1000px;
+            margin: 20px;
+        }
+
+        .login-card {
+            display: flex;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            min-height: 560px;
+        }
+
+        .login-form-side {
+            flex: 1;
+            background: #0f172a;
+            padding: 48px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-info-side {
+            flex: 1;
+            background: linear-gradient(135deg, rgba(76, 29, 149, 0.95) 0%, rgba(30, 58, 138, 0.95) 100%);
+            padding: 48px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+            position: relative;
+        }
+
+        .login-info-side::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            transform: rotate(45deg);
+        }
+
+        .login-info-side::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            transform: rotate(15deg);
+        }
+
+        .welcome-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .welcome-subtitle {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .form-label-custom {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            font-weight: 600;
+            display: block;
+            text-align: right;
+        }
+
+        .input-group-custom {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .input-group-custom input {
+            width: 100%;
+            padding: 12px 44px 12px 16px;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            background: #1e2937;
+            font-size: 0.95rem;
+            color: #f8fafc;
+            transition: all 0.2s;
+            text-align: right;
+        }
+
+        .input-group-custom input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: #1e2937;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+        }
+
+        .input-icon-right {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        .input-icon-left {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8b5cf6;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .password-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+        }
+
+        .password-options a {
+            color: #8b5cf6;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .password-options a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
+        }
+
+        .security-note {
+            text-align: center;
+            margin-top: 24px;
+            color: #64748b;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .graduation-icon {
+            font-size: 4.5rem;
+            margin-bottom: 20px;
+            opacity: 0.95;
+        }
+
+        .system-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .system-desc {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-bottom: 32px;
+            line-height: 1.6;
+            max-width: 280px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: right;
+            width: 100%;
+            max-width: 260px;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+            direction: rtl;
+        }
+
+        .feature-list li i {
+            color: #f6e05e;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        /* Background decorative shapes */
+        .bg-shape {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: -1;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            bottom: -60px;
+            right: -60px;
+        }
+
+        .shape-3 {
+            width: 120px;
+            height: 120px;
+            top: 40%;
+            left: 8%;
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                flex-direction: column;
+            }
+
+            .login-info-side {
+                display: none;
+            }
+
+            .login-form-side {
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-form-side">
+                <div class="welcome-title">
+                    👋 مرحباً بعودتك!
+                </div>
+                <div class="welcome-subtitle">
+                    يرجى تسجيل الدخول للوصول إلى حسابك
+                </div>
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+
+                    <label class="form-label-custom">البريد الإلكتروني أو اسم المستخدم</label>
+                    <div class="input-group-custom">
+                        <input type="email" name="username" placeholder="hamdyadam543@gmail.com" required autofocus>
+                        <span class="input-icon-right"><i class="bi bi-envelope-fill"></i></span>
+                        <span class="input-icon-left"><i class="bi bi-check-circle-fill"></i></span>
+                    </div>
+
+                    <div class="password-options">
+                        <a href="#"><i class="bi bi-link-45deg"></i> نسيت كلمة المرور؟</a>
+                        <span>كلمة المرور</span>
+                    </div>
+                    <div class="input-group-custom">
+                        <input type="password" name="password" id="passwordInput" placeholder="••••••••••" required>
+                        <span class="input-icon-right" style="cursor: pointer;" onclick="togglePassword()">
+                            <i class="bi bi-eye-slash" id="eyeIcon"></i>
+                        </span>
+                        <span class="input-icon-left"><i class="bi bi-lock-fill"></i></span>
+                    </div>
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 0.85rem; border-radius: 10px;">
+                        <i class="bi bi-exclamation-circle-fill ms-1"></i>
+                        بيانات الدخول غير صحيحة.
+                    </div>
+                    {% endif %}
+
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} py-2 px-3 mb-3" style="font-size: 0.85rem; border-radius: 10px;">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <button type="submit" class="btn-login">
+                        <span>دخول للنظام</span>
+                        <i class="bi bi-arrow-left-circle-fill"></i>
+                    </button>
+                </form>
+
+                <div class="security-note">
+                    <span>نظام آمن ومحمي</span>
+                    <i class="bi bi-shield-shaded"></i>
+                </div>
+            </div>
+
+            <div class="login-info-side">
+                <div class="graduation-icon">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </div>
+                <div class="system-title">نظام إدارة العروض</div>
+                <div class="system-desc">
+                    منصة متكاملة لإدارة عروض الأسعار والتسجيلات والمدفوعات للمعاهد التعليمية
+                </div>
+                <ul class="feature-list">
+                    <li>
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>إدارة عروض الأسعار والتسجيلات</span>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>متابعة المدفوعات والأقساط</span>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>تقارير مالية وإحصائية شاملة</span>
+                    </li>
+                    <li>
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>نظام فروع وصلاحيات متكامل</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            }
+        }
+    </script>
+</body>
+</html>

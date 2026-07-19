@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل أداء موظف{% else %}إضافة أداء موظف{% endif %} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل أداء موظف{% else %}<i class="bi bi-plus-lg"></i> إضافة أداء موظف{% endif %}</h2>
+    <a href="{% url 'employeeperformance-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                {% for field in form %}
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="text-danger small">{{ field.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+                <a href="{% url 'employeeperformance-list' %}" class="btn btn-outline-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

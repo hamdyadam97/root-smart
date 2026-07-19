@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ attach.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-paperclip"></i> {{ attach.title }}</h2>
+    <div>
+        <a href="{% url 'attach-update' attach.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'attach-delete' attach.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'attach-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>العنوان:</strong> {{ attach.title }}</li>
+            <li class="list-group-item"><strong>نوع المرفق:</strong> {{ attach.attach_type.name }}</li>
+            <li class="list-group-item"><strong>اسم الملف:</strong> {{ attach.file_name }}</li>
+            <li class="list-group-item"><strong>نوع الملف:</strong> {{ attach.file_type }}</li>
+            <li class="list-group-item"><strong>المستخدم:</strong> {{ attach.person.get_short_name|default:'-' }}</li>
+            <li class="list-group-item"><strong>تاريخ الإنشاء:</strong> {{ attach.created_at }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

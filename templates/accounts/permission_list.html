@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة الصلاحيات | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-key"></i> الصلاحيات</h2>
+    {% if user|has_perm:'add_permission' %}
+    <button type="button" class="btn btn-primary" onclick="openPermissionModal()">
+        <i class="bi bi-plus-lg"></i> إضافة صلاحية
+    </button>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو الكود..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="app" class="form-select">
+                    <option value="">جميع التطبيقات</option>
+                    {% for app in apps %}
+                    <option value="{{ app }}" {% if request.GET.app == app %}selected{% endif %}>{{ app }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>الكود</th>
+                    <th>التطبيق</th>
+                    <th>الموديل</th>
+                    <th>الإجراء</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for perm in permissions %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ perm.name }}</td>
+                    <td><code>{{ perm.codename }}</code></td>
+                    <td>{{ perm.app_label }}</td>
+                    <td>{{ perm.model_name }}</td>
+                    <td>{{ perm.get_action_display }}</td>
+                    <td>
+                        {% if user|has_perm:'change_permission' %}
+                        <button type="button" class="btn btn-sm btn-warning" onclick="openPermissionModal({{ perm.id }}, '{{ perm.name|escapejs }}', '{{ perm.codename|escapejs }}', '{{ perm.app_label|escapejs }}', '{{ perm.model_name|escapejs }}', '{{ perm.action|escapejs }}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        {% endif %}
+                        {% if user|has_perm:'delete_permission' %}
+                        <a href="{% url 'permission-delete' perm.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">لا توجد صلاحيات</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Permission Modal -->
+<div class="modal fade" id="permissionModal" tabindex="-1" aria-labelledby="permissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="permissionModalLabel">إضافة صلاحية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="permissionForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="perm_id" id="permId" value="">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_codename" class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="text" name="codename" id="id_codename" class="form-control" placeholder="مثال: view_student" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_name" class="form-label">الاسم <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="id_name" class="form-control" placeholder="مثال: عرض الطلاب" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_app_label" class="form-label">التطبيق <span class="text-danger">*</span></label>
+                            <input type="text" name="app_label" id="id_app_label" class="form-control" placeholder="مثال: students" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_model_name" class="form-label">الموديل <span class="text-danger">*</span></label>
+                            <input type="text" name="model_name" id="id_model_name" class="form-control" placeholder="مثال: student" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_action" class="form-label">الإجراء <span class="text-danger">*</span></label>
+                            <select name="action" id="id_action" class="form-select" required>
+                                <option value="">اختر الإجراء</option>
+                                <option value="view">عرض</option>
+                                <option value="add">إضافة</option>
+                                <option value="change">تعديل</option>
+                                <option value="delete">حذف</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+                <div id="permissionFormErrors" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="permissionSaveBtn" onclick="savePermission()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const permissionModal = new bootstrap.Modal(document.getElementById('permissionModal'));
+    const permissionForm = document.getElementById('permissionForm');
+    const permissionSaveBtn = document.getElementById('permissionSaveBtn');
+    const permissionFormErrors = document.getElementById('permissionFormErrors');
+
+    function openPermissionModal(id, name, codename, app_label, model_name, action) {
+        permissionFormErrors.classList.add('d-none');
+        permissionFormErrors.innerHTML = '';
+        permissionForm.reset();
+
+        if (id) {
+            document.getElementById('permissionModalLabel').textContent = 'تعديل صلاحية';
+            document.getElementById('permId').value = id;
+            document.getElementById('id_name').value = name || '';
+            document.getElementById('id_codename').value = codename || '';
+            document.getElementById('id_app_label').value = app_label || '';
+            document.getElementById('id_model_name').value = model_name || '';
+            document.getElementById('id_action').value = action || '';
+        } else {
+            document.getElementById('permissionModalLabel').textContent = 'إضافة صلاحية';
+            document.getElementById('permId').value = '';
+        }
+        permissionModal.show();
+    }
+
+    function savePermission() {
+        const id = document.getElementById('permId').value;
+        const formData = new FormData(permissionForm);
+        const csrfToken = formData.get('csrfmiddlewaretoken');
+
+        const url = id ? '{% url "permission-update-ajax" 0 %}'.replace('0', id) : '{% url "permission-create-ajax" %}';
+
+        permissionSaveBtn.disabled = true;
+        permissionSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams(formData)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                permissionModal.hide();
+                window.location.reload();
+            } else {
+                permissionFormErrors.classList.remove('d-none');
+                let html = '';
+                for (const [field, errors] of Object.entries(data.errors)) {
+                    const label = field === '__all__' ? '' : field + ': ';
+                    html += '<div>' + label + errors.join(', ') + '</div>';
+                }
+                permissionFormErrors.innerHTML = html;
+            }
+        })
+        .catch(err => {
+            permissionFormErrors.classList.remove('d-none');
+            permissionFormErrors.textContent = 'حدث خطأ أثناء الحفظ';
+        })
+        .finally(() => {
+            permissionSaveBtn.disabled = false;
+            permissionSaveBtn.textContent = 'حفظ';
+        });
+    }
+</script>
+{% endblock %}

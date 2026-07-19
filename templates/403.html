@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}غير مسموح | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-5">
+                    <i class="bi bi-shield-lock text-danger display-1"></i>
+                    <h2 class="mt-4 mb-3">غير مسموح لك دخول هنا</h2>
+                    <p class="text-muted mb-4">لا تمتلك الصلاحية اللازمة للوصول إلى هذه الصفحة.</p>
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                        <i class="bi bi-house-door"></i> العودة للرئيسية
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

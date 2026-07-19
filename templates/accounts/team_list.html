@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة الفرق | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-people"></i> فرق العمل</h2>
+    {% if user|has_perm:'add_team' %}
+    <button type="button" class="btn btn-primary" onclick="openTeamModal()">
+        <i class="bi bi-plus-lg"></i> إضافة فريق
+    </button>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>الكود</th>
+                    <th>الدور الافتراضي</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for team in teams %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ team.name }}</td>
+                    <td>{{ team.code }}</td>
+                    <td>
+                        {% if team.default_role %}
+                        <span class="badge bg-info">{{ team.default_role.name }}</span>
+                        {% if team.default_branch %}
+                        <small class="text-muted">({{ team.default_branch.name }})</small>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'team-detail' team.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                        {% has_perm_on_branch user 'change_team' team.default_branch as can_change_team %}
+                        {% if can_change_team %}
+                        <button type="button" class="btn btn-sm btn-warning" onclick="openTeamModal({{ team.id }}, '{{ team.name|escapejs }}', '{{ team.code|escapejs }}', '{{ team.description|escapejs }}', {{ team.default_role_id|default:'null' }}, {{ team.default_branch_id|default:'null' }})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        {% endif %}
+                        {% has_perm_on_branch user 'delete_team' team.default_branch as can_delete_team %}
+                        {% if can_delete_team %}
+                        <a href="{% url 'team-delete' team.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">لا يوجد فرق</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Team Modal -->
+<div class="modal fade" id="teamModal" tabindex="-1" aria-labelledby="teamModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="teamModalLabel">إضافة فريق</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="teamForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="team_id" id="teamId" value="">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_name" class="form-label">الاسم <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="id_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_code" class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="text" name="code" id="id_code" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">الوصف</label>
+                        <textarea name="description" id="id_description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_default_role" class="form-label">الدور الافتراضي</label>
+                            <select name="default_role" id="id_default_role" class="form-select">
+                                <option value="">---------</option>
+                                {% for role in roles %}
+                                <option value="{{ role.id }}">{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">لما تضيف موظف للفريق ده، هياخد الدور ده تلقائياً</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_default_branch" class="form-label">الفرع الافتراضي</label>
+                            <select name="default_branch" id="id_default_branch" class="form-select">
+                                <option value="">---------</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">لما تضيف موظف للفريق ده، هيُسجل في الفرع ده تلقائياً</small>
+                        </div>
+                    </div>
+                </form>
+                <div id="teamFormErrors" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="teamSaveBtn" onclick="saveTeam()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const teamModal = new bootstrap.Modal(document.getElementById('teamModal'));
+    const teamForm = document.getElementById('teamForm');
+    const teamSaveBtn = document.getElementById('teamSaveBtn');
+    const teamFormErrors = document.getElementById('teamFormErrors');
+
+    function openTeamModal(id, name, code, description, defaultRoleId, defaultBranchId) {
+        teamFormErrors.classList.add('d-none');
+        teamFormErrors.innerHTML = '';
+        teamForm.reset();
+
+        if (id) {
+            document.getElementById('teamModalLabel').textContent = 'تعديل فريق';
+            document.getElementById('teamId').value = id;
+            document.getElementById('id_name').value = name || '';
+            document.getElementById('id_code').value = code || '';
+            document.getElementById('id_description').value = description || '';
+            document.getElementById('id_default_role').value = defaultRoleId || '';
+            document.getElementById('id_default_branch').value = defaultBranchId || '';
+        } else {
+            document.getElementById('teamModalLabel').textContent = 'إضافة فريق';
+            document.getElementById('teamId').value = '';
+        }
+        teamModal.show();
+    }
+
+    function saveTeam() {
+        const id = document.getElementById('teamId').value;
+        const formData = new FormData(teamForm);
+        const csrfToken = formData.get('csrfmiddlewaretoken');
+
+        const url = id ? '{% url "team-update-ajax" 0 %}'.replace('0', id) : '{% url "team-create-ajax" %}';
+
+        teamSaveBtn.disabled = true;
+        teamSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams(formData)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                teamModal.hide();
+                window.location.reload();
+            } else {
+                teamFormErrors.classList.remove('d-none');
+                let html = '';
+                for (const [field, errors] of Object.entries(data.errors)) {
+                    const label = field === '__all__' ? '' : field + ': ';
+                    html += '<div>' + label + errors.join(', ') + '</div>';
+                }
+                teamFormErrors.innerHTML = html;
+            }
+        })
+        .catch(err => {
+            teamFormErrors.classList.remove('d-none');
+            teamFormErrors.textContent = 'حدث خطأ أثناء الحفظ';
+        })
+        .finally(() => {
+            teamSaveBtn.disabled = false;
+            teamSaveBtn.textContent = 'حفظ';
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة التخصصات | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-journal-bookmark"></i> التخصصات</h2>
+    {% if user|has_perm:'add_master' %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#masterModal">
+        <i class="bi bi-plus-lg"></i> إضافة تخصص
+    </button>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو الكود..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>الكود</th>
+                <th>الاسم</th>
+                <th>الفرع</th>
+                <th>التصنيف</th>
+                <th>المدة</th>
+                <th class="text-start">الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for master in masters %}
+            <tr>
+                <td>{{ master.code }}</td>
+                <td>{{ master.name }}</td>
+                <td>{{ master.branch }}</td>
+                <td>{{ master.master_category|default:'-' }}</td>
+                <td>{{ master.period|default:'-' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'master-detail' master.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    {% has_perm_on_branch user 'change_master' master.branch as can_change_master %}
+                    {% if can_change_master %}
+                    <a href="{% url 'master-update' master.slug %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    {% endif %}
+                    {% has_perm_on_branch user 'delete_master' master.branch as can_delete_master %}
+                    {% if can_delete_master %}
+                    <a href="{% url 'master-delete' master.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">لا توجد تخصصات</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Master Modal -->
+<div class="modal fade" id="masterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-journal-bookmark text-primary me-2"></i> إضافة تخصص جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="masterAlert"></div>
+                <form id="masterForm" class="modal-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">الفرع <span class="text-danger">*</span></label>
+                            <select name="branch" class="form-select" required>
+                                <option value="">اختر الفرع...</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">التصنيف</label>
+                            <select name="master_category" class="form-select">
+                                <option value="">اختر التصنيف...</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="number" name="code" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">اسم التخصص <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">المدة</label>
+                            <input type="text" name="period" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">عدد الساعات</label>
+                            <input type="number" name="hours" class="form-control">
+                        </div>
+                        {% if is_root_user %}
+                        <div class="col-md-6">
+                            <label class="form-label">نوع العرض <span class="text-danger">*</span></label>
+                            <select name="offer_type" class="form-select" required>
+                                <option value="program">بكج / برنامج</option>
+                                <option value="course">انفرادي / دورة</option>
+                            </select>
+                        </div>
+                        {% else %}
+                        <input type="hidden" name="offer_type" value="program">
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveMasterBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="masterSpinner"></span>
+                    <span id="masterBtnText">حفظ التخصص</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const masterModal = document.getElementById('masterModal');
+    const masterForm = document.getElementById('masterForm');
+    const saveBtn = document.getElementById('saveMasterBtn');
+    const spinner = document.getElementById('masterSpinner');
+    const btnText = document.getElementById('masterBtnText');
+    const alertBox = document.getElementById('masterAlert');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ التخصص';
+    }
+
+    masterModal.addEventListener('show.bs.modal', function() {
+        alertBox.innerHTML = '';
+        masterForm.reset();
+    });
+
+    saveBtn.addEventListener('click', function() {
+        if (!masterForm.checkValidity()) {
+            masterForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(masterForm);
+
+        fetch('{% url "master-create-ajax" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: new URLSearchParams(formData)
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                masterForm.reset();
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(masterModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>
+{% endblock %}

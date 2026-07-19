@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tag"></i> {{ category.name }}</h2>
+    <div>
+        <a href="{% url 'mastercategory-update' category.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'mastercategory-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-borderless mb-0">
+            <tr><td class="fw-bold" style="width:150px">الاسم</td><td>{{ category.name }}</td></tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

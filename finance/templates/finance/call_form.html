@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل مكالمة{% else %}مكالمة جديدة{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل مكالمة{% else %}<i class="bi bi-plus-lg"></i> مكالمة جديدة{% endif %}</h2>
+    <a href="{% url 'call-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.offer.id_for_label }}" class="form-label">{{ form.offer.label }}</label>
+                    {{ form.offer }}
+                    {% if form.offer.errors %}<div class="text-danger small">{{ form.offer.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.call_type.id_for_label }}" class="form-label">{{ form.call_type.label }}</label>
+                    {{ form.call_type }}
+                    {% if form.call_type.errors %}<div class="text-danger small">{{ form.call_type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.duration.id_for_label }}" class="form-label">{{ form.duration.label }}</label>
+                    {{ form.duration }}
+                    {% if form.duration.errors %}<div class="text-danger small">{{ form.duration.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}<div class="text-danger small">{{ form.notes.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

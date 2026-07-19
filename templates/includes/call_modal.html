@@ -1,0 +1,139 @@
+<!-- Call Modal -->
+<div class="modal fade" id="callModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="callModalTitle"><i class="bi bi-telephone text-primary me-2"></i> مكالمة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="callAlert"></div>
+                <form id="callForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="call_id" id="callId">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">العرض <span class="text-danger">*</span></label>
+                            <select name="offer" id="c_offer" class="form-select" required>
+                                <option value="">اختر العرض...</option>
+                                {% for offer in offers %}
+                                <option value="{{ offer.id }}">{{ offer.code }} - {{ offer.customer_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نوع المكالمة <span class="text-danger">*</span></label>
+                            <select name="call_type" id="c_call_type" class="form-select" required>
+                                <option value="OUTGOING">صادرة</option>
+                                <option value="INCOMING">واردة</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المدة (ثانية)</label>
+                            <input type="number" name="duration" id="c_duration" class="form-control">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="notes" id="c_notes" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveCallBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="callSpinner"></span>
+                    <span id="callBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const callModal = document.getElementById('callModal');
+    const callForm = document.getElementById('callForm');
+    const callId = document.getElementById('callId');
+    const saveBtn = document.getElementById('saveCallBtn');
+    const spinner = document.getElementById('callSpinner');
+    const btnText = document.getElementById('callBtnText');
+    const alertBox = document.getElementById('callAlert');
+    const modalTitle = document.getElementById('callModalTitle');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openCallModal = function(id, offerId, callType, duration, notes) {
+        alertBox.innerHTML = '';
+        callForm.reset();
+
+        if (id) {
+            callId.value = id;
+            document.getElementById('c_offer').value = offerId || '';
+            document.getElementById('c_call_type').value = callType || 'OUTGOING';
+            document.getElementById('c_duration').value = duration || '';
+            document.getElementById('c_notes').value = notes || '';
+            modalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل مكالمة';
+        } else {
+            callId.value = '';
+            modalTitle.innerHTML = '<i class="bi bi-telephone text-primary me-2"></i> مكالمة جديدة';
+        }
+        new bootstrap.Modal(callModal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!callForm.checkValidity()) {
+            callForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(callForm);
+        const body = new URLSearchParams(formData);
+
+        const isEdit = callId.value !== '';
+        const url = isEdit
+            ? '/calls/ajax/' + callId.value + '/update/'
+            : '{% url "call-create-ajax" %}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(callModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>

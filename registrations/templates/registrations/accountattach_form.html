@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل ربط{% else %}ربط جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل ربط{% else %}<i class="bi bi-plus-lg"></i> ربط جديد{% endif %}</h2>
+    <a href="{% url 'accountattach-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.account.id_for_label }}" class="form-label">{{ form.account.label }}</label>
+                    {{ form.account }}
+                    {% if form.account.errors %}<div class="text-danger small">{{ form.account.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.attach.id_for_label }}" class="form-label">{{ form.attach.label }}</label>
+                    {{ form.attach }}
+                    {% if form.attach.errors %}<div class="text-danger small">{{ form.attach.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

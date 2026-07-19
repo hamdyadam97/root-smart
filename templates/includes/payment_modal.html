@@ -1,0 +1,170 @@
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="paymentModalTitle"><i class="bi bi-cash-stack text-primary me-2"></i> سند قبض جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentAlert"></div>
+                <form id="paymentForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="payment_id" id="paymentId">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التسجيل <span class="text-danger">*</span></label>
+                            <select name="account" id="p_account" class="form-select" required>
+                                <option value="">اختر التسجيل...</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">{{ account.get_key_rtl }} - {{ account.student.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="number" name="code" id="p_code" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التاريخ <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="date" id="p_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المبلغ رقم <span class="text-danger">*</span></label>
+                            <input type="number" name="amount_number" id="p_amount_number" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المبلغ حروف</label>
+                            <input type="text" name="amount_string" id="p_amount_string" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">النوع <span class="text-danger">*</span></label>
+                            <select name="type" id="p_type" class="form-select" required>
+                                <option value="ايرادات اساسية">إيرادات أساسية</option>
+                                <option value="ايرادات اخرى">إيرادات أخرى</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">طريقة الدفع <span class="text-danger">*</span></label>
+                            <select name="payment_method" id="p_payment_method" class="form-select" required>
+                                <option value="CASH">نقدي</option>
+                                <option value="BANK">تحويل بنكي</option>
+                                <option value="CHEQUE">شيك</option>
+                                <option value="CARD">بطاقة ائتمان</option>
+                                <option value="ONLINE">دفع إلكتروني</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">كود الدفع</label>
+                            <input type="text" name="payment_method_code" id="p_payment_method_code" class="form-control">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="note" id="p_note" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="savePaymentBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="paymentSpinner"></span>
+                    <span id="paymentBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const paymentModal = document.getElementById('paymentModal');
+    const paymentForm = document.getElementById('paymentForm');
+    const paymentId = document.getElementById('paymentId');
+    const saveBtn = document.getElementById('savePaymentBtn');
+    const spinner = document.getElementById('paymentSpinner');
+    const btnText = document.getElementById('paymentBtnText');
+    const alertBox = document.getElementById('paymentAlert');
+    const modalTitle = document.getElementById('paymentModalTitle');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openPaymentModal = function(id, accountId, code, date, amountNumber, amountString, type, paymentMethod, paymentMethodCode, note) {
+        alertBox.innerHTML = '';
+        paymentForm.reset();
+
+        if (id) {
+            paymentId.value = id;
+            document.getElementById('p_account').value = accountId || '';
+            document.getElementById('p_code').value = code || '';
+            document.getElementById('p_date').value = date || '';
+            document.getElementById('p_amount_number').value = amountNumber || '';
+            document.getElementById('p_amount_string').value = amountString || '';
+            document.getElementById('p_type').value = type || 'ايرادات اساسية';
+            document.getElementById('p_payment_method').value = paymentMethod || 'CASH';
+            document.getElementById('p_payment_method_code').value = paymentMethodCode || '';
+            document.getElementById('p_note').value = note || '';
+            modalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل سند قبض';
+        } else {
+            paymentId.value = '';
+            modalTitle.innerHTML = '<i class="bi bi-cash-stack text-primary me-2"></i> سند قبض جديد';
+        }
+        new bootstrap.Modal(paymentModal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!paymentForm.checkValidity()) {
+            paymentForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(paymentForm);
+        const body = new URLSearchParams(formData);
+
+        const isEdit = paymentId.value !== '';
+        const url = isEdit
+            ? '/payments/ajax/' + paymentId.value + '/update/'
+            : '{% url "payment-create-ajax" %}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(paymentModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>

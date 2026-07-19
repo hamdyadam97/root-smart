@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}قائمة الإيداعات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bank"></i> الإيداعات</h2>
+    <a href="{% url 'deposit-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إيداع جديد</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>الكود</th>
+                <th>التاريخ</th>
+                <th>المبلغ</th>
+                <th>البنك</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for deposit in deposits %}
+            <tr>
+                <td>{{ deposit.code }}</td>
+                <td>{{ deposit.date }}</td>
+                <td>{{ deposit.amount }}</td>
+                <td>{{ deposit.bank.name|default:'-' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'deposit-detail' deposit.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'deposit-update' deposit.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'deposit-delete' deposit.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">لا يوجد إيداعات</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

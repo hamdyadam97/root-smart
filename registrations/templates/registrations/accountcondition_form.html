@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل شرط{% else %}شرط جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل شرط{% else %}<i class="bi bi-plus-lg"></i> شرط جديد{% endif %}</h2>
+    <a href="{% url 'accountcondition-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.account.id_for_label }}" class="form-label">{{ form.account.label }}</label>
+                    {{ form.account }}
+                    {% if form.account.errors %}<div class="text-danger small">{{ form.account.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="{{ form.content.id_for_label }}" class="form-label">{{ form.content.label }}</label>
+                    {{ form.content }}
+                    {% if form.content.errors %}<div class="text-danger small">{{ form.content.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <div class="form-check">
+                        {{ form.fulfilled }}
+                        <label for="{{ form.fulfilled.id_for_label }}" class="form-check-label">{{ form.fulfilled.label }}</label>
+                    </div>
+                    {% if form.fulfilled.errors %}<div class="text-danger small">{{ form.fulfilled.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

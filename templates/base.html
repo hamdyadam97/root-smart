@@ -1,0 +1,1079 @@
+{% load permission_tags %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Offer{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #0b1120;
+            --bg-card: #151e32;
+            --bg-sidebar: #111827;
+            --bg-input: #1f2937;
+            --bg-hover: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+        }
+
+        :root[data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-sidebar: #ffffff;
+            --bg-input: #ffffff;
+            --bg-hover: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent-purple: #7c3aed;
+            --accent-blue: #2563eb;
+            --success: #059669;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --info: #0284c7;
+        }
+
+        * {
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Navbar */
+        .navbar-custom {
+            background: linear-gradient(135deg, #4c1d95 0%, #1e3a8a 100%);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .navbar-custom .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #fff !important;
+        }
+
+        .navbar-custom .nav-link {
+            color: rgba(255,255,255,0.85) !important;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-radius: 8px;
+            padding: 6px 14px !important;
+            margin: 0 2px;
+        }
+
+        .navbar-custom .nav-link:hover,
+        .navbar-custom .nav-link.active {
+            color: #fff !important;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .navbar-custom .dropdown-menu {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .navbar-custom .dropdown-item {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .navbar-custom .dropdown-item:hover {
+            background: var(--bg-hover);
+            color: var(--accent-blue);
+        }
+
+        .navbar-custom .dropdown-divider {
+            border-color: var(--border-color);
+        }
+
+        /* Sidebar */
+        .sidebar-custom {
+            background: var(--bg-sidebar);
+            border-left: 1px solid var(--border-color);
+            min-height: calc(100vh - 56px);
+            padding: 16px 12px;
+            position: sticky;
+            top: 56px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
+        }
+
+        .sidebar-custom .nav-link {
+            color: var(--text-secondary);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 4px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .sidebar-custom .nav-link i {
+            font-size: 1.1rem;
+        }
+
+        .sidebar-custom .nav-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .sidebar-custom .nav-link.active {
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            color: var(--text-primary);
+        }
+
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 700;
+            padding: 16px 20px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-stats {
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .card-stats:hover {
+            transform: translateY(-4px);
+        }
+
+        /* Tables */
+        .table {
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            vertical-align: middle;
+        }
+
+        .table {
+            --bs-table-color: var(--text-primary);
+            --bs-table-border-color: var(--border-color);
+        }
+
+        .table > thead > tr > th {
+            --bs-table-bg: var(--bg-hover);
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            padding: 14px;
+        }
+
+        .table > tbody > tr {
+            --bs-table-bg: var(--bg-card);
+        }
+
+        .table > tbody > tr > td {
+            padding: 14px;
+            border-color: var(--border-color);
+        }
+
+        .table > tbody > tr:hover {
+            --bs-table-bg: var(--bg-hover);
+        }
+
+        .table-responsive {
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 8px 18px;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+            filter: brightness(1.1);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+            filter: brightness(1.1);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+            filter: brightness(1.1);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* Forms */
+        .form-control, .form-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: var(--bg-input);
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .form-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .form-check-input {
+            background: var(--bg-input);
+            border-color: var(--border-color);
+        }
+
+        .form-check-input:checked {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        /* Alerts */
+        .alert {
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .alert-info {
+            background: rgba(14, 165, 233, 0.15);
+            color: #38bdf8;
+        }
+
+        .alert .btn-close {
+            filter: invert(1);
+        }
+
+        /* Badges */
+        .badge {
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .bg-success {
+            background: rgba(16, 185, 129, 0.2) !important;
+            color: #34d399 !important;
+        }
+
+        .bg-danger {
+            background: rgba(239, 68, 68, 0.2) !important;
+            color: #f87171 !important;
+        }
+
+        .bg-warning {
+            background: rgba(245, 158, 11, 0.2) !important;
+            color: #fbbf24 !important;
+        }
+
+        .bg-info {
+            background: rgba(14, 165, 233, 0.2) !important;
+            color: #38bdf8 !important;
+        }
+
+        .bg-secondary {
+            background: rgba(148, 163, 184, 0.2) !important;
+            color: #cbd5e1 !important;
+        }
+
+        .bg-primary {
+            background: rgba(59, 130, 246, 0.2) !important;
+            color: #60a5fa !important;
+        }
+
+        /* Pagination */
+        .pagination .page-link {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            margin: 0 3px;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        /* Modals */
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            color: var(--text-primary);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        /* Breadcrumb */
+        .breadcrumb-item a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--text-secondary);
+        }
+
+        .breadcrumb-item + .breadcrumb-item::before {
+            color: var(--text-secondary);
+        }
+
+        /* Text colors */
+        .text-muted {
+            color: var(--text-secondary) !important;
+        }
+
+        .text-primary {
+            color: var(--accent-blue) !important;
+        }
+
+        .text-success {
+            color: var(--success) !important;
+        }
+
+        .text-danger {
+            color: var(--danger) !important;
+        }
+
+        /* Override old Bootstrap classes for dark theme */
+        .table-light th,
+        .table-light td {
+            background: var(--bg-hover) !important;
+            color: var(--text-secondary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+            color: #fff !important;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.25);
+            border: none;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.35);
+            filter: brightness(1.1);
+            color: #fff !important;
+        }
+
+        .btn-outline-primary {
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+
+        .bg-light {
+            background: var(--bg-hover) !important;
+        }
+
+        .text-dark {
+            color: var(--text-primary) !important;
+        }
+
+        /* List group */
+        .list-group-item {
+            background: var(--bg-card);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .list-group-item:hover {
+            background: var(--bg-hover);
+        }
+
+        /* HR */
+        hr {
+            border-color: var(--border-color);
+            opacity: 1;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-body);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* Main content area */
+        main {
+            padding: 24px;
+        }
+
+        /* Page header */
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-header h1, .page-header h2 {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .page-header .text-muted {
+            font-size: 0.95rem;
+        }
+
+        /* WhatsApp Floating Button */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background-color: #25D366;
+            color: #fff !important;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 9999;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            color: #fff !important;
+        }
+
+        /* AI Assistant Floating Button */
+        .assistant-float {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
+            color: #fff !important;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            z-index: 9999;
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .assistant-float:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            color: #fff !important;
+        }
+
+        /* Sidebar Sections */
+        .sidebar-section {
+            margin-bottom: 4px;
+        }
+        .sidebar-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding: 12px 14px 4px;
+            font-weight: 700;
+            opacity: 0.6;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar-section-title i {
+            font-size: 0.8rem;
+        }
+        .sidebar-divider {
+            border-top: 1px solid var(--border-color);
+            margin: 8px 12px;
+            opacity: 0.5;
+        }
+
+        /* FAB Floating Action Button */
+        .fab-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1040;
+            transition: all 0.3s ease;
+        }
+        .fab-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 6px 30px rgba(59, 130, 246, 0.5);
+        }
+        .fab-tooltip {
+            position: fixed;
+            bottom: 36px;
+            left: 90px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            white-space: nowrap;
+            z-index: 1040;
+        }
+        .fab-btn:hover + .fab-tooltip,
+        .fab-tooltip:hover {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Modal Form compact */
+        .modal-form .form-control,
+        .modal-form .form-select {
+            font-size: 0.9rem;
+            padding: 8px 12px;
+        }
+        .modal-form .form-label {
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+        }
+        .modal-form .col-md-6 {
+            margin-bottom: 12px;
+        }
+
+        /* Sidebar Accordion */
+        .sidebar-toggle {
+            cursor: pointer;
+        }
+        .sidebar-toggle .chevron-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.75rem;
+        }
+        .sidebar-toggle[aria-expanded="true"] .chevron-icon {
+            transform: rotate(180deg);
+        }
+        .sidebar-submenu {
+            padding-right: 8px;
+            border-right: 2px solid var(--border-color);
+            margin-right: 14px;
+            margin-top: 2px;
+            margin-bottom: 4px;
+        }
+        .sidebar-submenu .nav-link {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+        .sidebar-submenu .nav-link i {
+            font-size: 0.95rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard' %}"><i class="bi bi-grid-fill"></i> Smart Offer</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">الرئيسية</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'student-list' %}">الطلاب</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'course-list' %}">الدورات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'registration-list' %}">التسجيلات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'payment-list' %}">المدفوعات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'studentoffer-list' %}">عروض الأسعار</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'person-list' %}">الموظفين</a></li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav align-items-center">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item me-2">
+                        <a href="https://wa.me/966569736794" target="_blank" class="btn btn-sm btn-success border-0" title="تواصل عبر واتساب" style="background-color: #25D366; border-color: #25D366; padding: 6px 10px;">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item me-2">
+                        <button id="themeToggle" class="btn btn-sm btn-outline-light border-0" title="تبديل الوضع" style="padding: 6px 10px;">
+                            <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ user.get_full_name|default:user.email }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'person-detail' user.pk %}">الملف الشخصي</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="dropdown-item">تسجيل الخروج</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">تسجيل الدخول</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            {% if user.is_authenticated %}
+            <nav class="col-md-2 d-none d-md-block sidebar-custom">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> لوحة التحكم</a></li>
+
+                    <!-- قسم الإدارة -->
+                    <li class="nav-item">
+                        <a class="nav-link sidebar-toggle d-flex justify-content-between align-items-center" data-bs-toggle="collapse" href="#adminCollapse" role="button" aria-expanded="false" aria-controls="adminCollapse">
+                            <span><i class="bi bi-shield-gear"></i> الإدارة</span>
+                            <i class="bi bi-chevron-down small chevron-icon"></i>
+                        </a>
+                        <div class="collapse {% if '/companies/' in request.path or '/branches/' in request.path or '/banks/' in request.path or '/master-categories/' in request.path or '/persons/' in request.path or '/teams/' in request.path or '/roles/' in request.path or '/employee' in request.path %}show{% endif %}" id="adminCollapse">
+                            <ul class="nav flex-column sidebar-submenu">
+                                {% if user|has_perm:'view_company' %}<li class="nav-item"><a class="nav-link {% if '/companies/' in request.path %}active{% endif %}" href="{% url 'company-list' %}"><i class="bi bi-building"></i> الشركات</a></li>{% endif %}
+                                {% if user|has_perm:'view_branch' %}<li class="nav-item"><a class="nav-link {% if '/branches/' in request.path and '/branches/create/' not in request.path %}active{% endif %}" href="{% url 'branch-list' %}"><i class="bi bi-diagram-3"></i> الفروع</a></li>{% endif %}
+                                {% if user|has_perm:'view_bank' %}<li class="nav-item"><a class="nav-link {% if '/banks/' in request.path %}active{% endif %}" href="{% url 'bank-list' %}"><i class="bi bi-bank"></i> البنوك</a></li>{% endif %}
+                                {% if user|has_perm:'view_mastercategory' %}<li class="nav-item"><a class="nav-link {% if '/master-categories/' in request.path %}active{% endif %}" href="{% url 'mastercategory-list' %}"><i class="bi bi-tags"></i> تصنيفات التخصصات</a></li>{% endif %}
+                                {% if user|has_perm:'view_person' %}<li class="nav-item"><a class="nav-link {% if '/persons/' in request.path %}active{% endif %}" href="{% url 'person-list' %}"><i class="bi bi-person-badge"></i> الموظفين</a></li>{% endif %}
+                                {% if user|has_perm:'view_team' %}<li class="nav-item"><a class="nav-link {% if '/teams/' in request.path %}active{% endif %}" href="{% url 'team-list' %}"><i class="bi bi-people-fill"></i> الفرق</a></li>{% endif %}
+                                {% if user|has_perm:'view_role' %}<li class="nav-item"><a class="nav-link {% if '/roles/' in request.path %}active{% endif %}" href="{% url 'role-list' %}"><i class="bi bi-shield-lock"></i> الأدوار</a></li>{% endif %}
+                                {% if user|has_perm:'view_permission' %}<li class="nav-item"><a class="nav-link {% if '/permissions/' in request.path %}active{% endif %}" href="{% url 'permission-list' %}"><i class="bi bi-key"></i> الصلاحيات</a></li>{% endif %}
+                                {% if user|has_perm:'view_employeerole' %}<li class="nav-item"><a class="nav-link {% if '/employee-roles/' in request.path %}active{% endif %}" href="{% url 'employeerole-list' %}"><i class="bi bi-person-check"></i> أدوار الموظفين</a></li>{% endif %}
+                            </ul>
+                        </div>
+                    </li>
+
+                    {% load prospects_tags %}
+                    {% if user|has_root_prospect_perm %}<li class="nav-item"><a class="nav-link {% if '/prospects/' in request.path %}active{% endif %}" href="{% url 'prospect-list' %}"><i class="bi bi-person-lines-fill"></i> المستفسرون</a></li>{% endif %}
+                    {% if user|has_non_root_student_perm %}<li class="nav-item"><a class="nav-link {% if '/students/' in request.path %}active{% endif %}" href="{% url 'student-list' %}"><i class="bi bi-mortarboard"></i> الطلاب</a></li>{% endif %}
+                    {% if user|has_perm:'view_master' %}<li class="nav-item"><a class="nav-link {% if '/masters/' in request.path %}active{% endif %}" href="{% url 'master-list' %}"><i class="bi bi-journal-bookmark"></i> التخصصات</a></li>{% endif %}
+                    {% if user|has_perm:'view_course' %}<li class="nav-item"><a class="nav-link {% if '/courses/' in request.path %}active{% endif %}" href="{% url 'course-list' %}"><i class="bi bi-book"></i> الدورات</a></li>{% endif %}
+                    {% if user|has_perm:'view_registration' %}<li class="nav-item"><a class="nav-link {% if '/registrations/' in request.path %}active{% endif %}" href="{% url 'registration-list' %}"><i class="bi bi-journal-check"></i> التسجيلات</a></li>{% endif %}
+                    {% if user|has_perm:'view_payment' %}<li class="nav-item"><a class="nav-link {% if '/payments/' in request.path %}active{% endif %}" href="{% url 'payment-list' %}"><i class="bi bi-cash-stack"></i> المدفوعات</a></li>{% endif %}
+                    {% if user|has_perm:'view_studentoffer' %}<li class="nav-item"><a class="nav-link {% if '/student-offers/' in request.path %}active{% endif %}" href="{% url 'studentoffer-list' %}"><i class="bi bi-tag"></i> عروض الأسعار</a></li>{% endif %}
+                    {% if user|has_perm:'view_call' %}<li class="nav-item"><a class="nav-link {% if '/calls/' in request.path %}active{% endif %}" href="{% url 'call-list' %}"><i class="bi bi-telephone"></i> المكالمات</a></li>{% endif %}
+                    {% if user|has_perm:'view_reportsnapshot' %}<li class="nav-item"><a class="nav-link {% if '/reports/' in request.path %}active{% endif %}" href="{% url 'reportsnapshot-list' %}"><i class="bi bi-graph-up"></i> التقارير</a></li>{% endif %}
+                    <li class="nav-item"><a class="nav-link {% if '/project-assistant/' in request.path %}active{% endif %}" href="{% url 'project_assistant:chat_page' %}"><i class="bi bi-robot"></i> مساعد المشروع</a></li>
+                </ul>
+            </nav>
+            <main class="col-md-10 ms-sm-auto">
+            {% else %}
+            <main class="col-12">
+            {% endif %}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- WhatsApp Support Button -->
+    <a href="https://wa.me/966569736794" target="_blank" class="whatsapp-float" title="في حالة حدوث أي مشكلة أو استفسار، اضغط للاتصال معنا">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    {% if user.is_authenticated %}
+    <!-- Floating Action Button -->
+    <button class="fab-btn" data-bs-toggle="modal" data-bs-target="#branchModal" title="إنشاء فرع جديد">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+    <div class="fab-tooltip">إنشاء فرع جديد</div>
+
+    <!-- Branch Modal -->
+    <div class="modal fade" id="branchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-building-add text-primary me-2"></i> إنشاء فرع جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="branchAlert"></div>
+                    <form id="branchForm" class="modal-form">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">الشركة <span class="text-danger">*</span></label>
+                                <select name="company" id="branchCompany" class="form-select" required>
+                                    <option value="">اختر الشركة...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الكود <span class="text-danger">*</span></label>
+                                <input type="number" name="code" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">اسم الفرع <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الاسم الفرعي</label>
+                                <input type="text" name="sub_name" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">العنوان</label>
+                                <textarea name="address" class="form-control" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">التليفون 1</label>
+                                <input type="text" name="phone1" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">التليفون 2</label>
+                                <input type="text" name="phone2" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الرقم البريدي</label>
+                                <input type="text" name="postal_code" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">المحمول</label>
+                                <input type="text" name="mobile" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الفاكس</label>
+                                <input type="text" name="fax" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">البريد الإلكتروني</label>
+                                <input type="email" name="email" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الموقع الإلكتروني</label>
+                                <input type="url" name="website" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">السجل التجاري</label>
+                                <input type="text" name="commercial_registration" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">رقم الترخيص</label>
+                                <input type="text" name="licence_code" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">الرقم الضريبي</label>
+                                <input type="text" name="tax_code" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">الشعار</label>
+                                <input type="file" name="logo" class="form-control" accept="image/*">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" id="saveBranchBtn">
+                        <span class="spinner-border spinner-border-sm d-none" id="branchSpinner"></span>
+                        <span id="branchBtnText">حفظ الفرع</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const branchModal = document.getElementById('branchModal');
+        const branchForm = document.getElementById('branchForm');
+        const companySelect = document.getElementById('branchCompany');
+        const saveBtn = document.getElementById('saveBranchBtn');
+        const spinner = document.getElementById('branchSpinner');
+        const btnText = document.getElementById('branchBtnText');
+        const alertBox = document.getElementById('branchAlert');
+
+        function showAlert(message, type) {
+            alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        }
+
+        function setLoading(loading) {
+            saveBtn.disabled = loading;
+            spinner.classList.toggle('d-none', !loading);
+            btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ الفرع';
+        }
+
+        // Load companies when modal opens
+        branchModal.addEventListener('show.bs.modal', function() {
+            alertBox.innerHTML = '';
+            if (companySelect.options.length <= 1) {
+                fetch('{% url "companies-list-ajax" %}')
+                    .then(r => r.json())
+                    .then(data => {
+                        companySelect.innerHTML = '<option value="">اختر الشركة...</option>';
+                        data.companies.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.id;
+                            opt.textContent = c.name;
+                            companySelect.appendChild(opt);
+                        });
+                    })
+                    .catch(() => showAlert('تعذر تحميل قائمة الشركات', 'danger'));
+            }
+        });
+
+        // Submit form via AJAX
+        saveBtn.addEventListener('click', function() {
+            if (!branchForm.checkValidity()) {
+                branchForm.reportValidity();
+                return;
+            }
+            setLoading(true);
+            const formData = new FormData(branchForm);
+
+            fetch('{% url "branch-create-ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                setLoading(false);
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    branchForm.reset();
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(branchModal).hide();
+                        alertBox.innerHTML = '';
+                        // Refresh if on branch list page
+                        if (window.location.pathname.includes('/branches/')) {
+                            window.location.reload();
+                        }
+                    }, 1200);
+                } else {
+                    let errors = '';
+                    for (const [field, msgs] of Object.entries(data.errors)) {
+                        errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                    }
+                    showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+                }
+            })
+            .catch(() => {
+                setLoading(false);
+                showAlert('حدث خطأ في الاتصال', 'danger');
+            });
+        });
+    })();
+    </script>
+    {% endif %}
+
+    <!-- Theme Toggle Script -->
+    <script>
+    (function() {
+        const html = document.documentElement;
+        const toggleBtn = document.getElementById('themeToggle');
+        const icon = document.getElementById('themeIcon');
+        const stored = localStorage.getItem('theme');
+
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                html.setAttribute('data-theme', 'light');
+                icon.className = 'bi bi-sun-fill';
+                toggleBtn.title = 'الوضع الليلي';
+            } else {
+                html.removeAttribute('data-theme');
+                icon.className = 'bi bi-moon-stars-fill';
+                toggleBtn.title = 'الوضع النهاري';
+            }
+        }
+
+        // Apply stored or system preference
+        if (stored) {
+            applyTheme(stored);
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            applyTheme('light');
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function() {
+                const current = html.getAttribute('data-theme');
+                const next = current === 'light' ? 'dark' : 'light';
+                applyTheme(next);
+                localStorage.setItem('theme', next);
+            });
+        }
+    })();
+    </script>
+
+    <!-- AI Assistant Floating Button -->
+    <a href="{% url 'project_assistant:chat_page' %}" class="assistant-float" title="مساعد المشروع الذكي">
+        <i class="bi bi-robot"></i>
+    </a>
+
+    <a href="https://wa.me/966569736794" target="_blank" class="whatsapp-float" title="تواصل عبر واتساب">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

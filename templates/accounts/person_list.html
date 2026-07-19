@@ -1,0 +1,417 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة الموظفين | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-badge"></i> الموظفين</h2>
+    {% if user|has_perm:'add_person' %}
+    <button type="button" class="btn btn-primary" onclick="openPersonModal()">
+        <i class="bi bi-plus-lg"></i> إضافة موظف
+    </button>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو البريد أو الرابط..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="team" class="form-select">
+                    <option value="">جميع الفرق</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if request.GET.team == team.id|stringformat:"s" %}selected{% endif %}>{{ team.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="branch" class="form-select">
+                    <option value="">جميع الفروع</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if request.GET.branch == branch.id|stringformat:"s" %}selected{% endif %}>{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الاسم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>الرابط</th>
+                    <th>الفرع</th>
+                    <th>الفريق</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for person in persons %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ person.get_full_name }}</td>
+                    <td>{{ person.email }}</td>
+                    <td><code>{{ person.slug }}</code></td>
+                    <td>{{ person.branch|default:"-" }}</td>
+                    <td>{{ person.team|default:"-" }}</td>
+                    <td>
+                        {% if person.is_active %}
+                        <span class="badge bg-success">نشط</span>
+                        {% else %}
+                        <span class="badge bg-secondary">غير نشط</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'person-detail' person.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                        {% has_perm_on_branch user 'change_person' person.branch as can_change_person %}
+                        {% if can_change_person %}
+                        <button type="button" class="btn btn-sm btn-warning" onclick="openPersonModal({{ person.id }}, '{{ person.email|escapejs }}', '{{ person.first_name|escapejs }}', '{{ person.second_name|escapejs }}', '{{ person.third_name|escapejs }}', '{{ person.forth_name|escapejs }}', {{ person.team_id|default:'null' }}, {{ person.branch_id|default:'null' }}, {{ person.is_staff|yesno:'true,false' }}, {{ person.is_active|yesno:'true,false' }})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        {% endif %}
+                        {% if user|has_perm:'add_employeerole' %}
+                        <button type="button" class="btn btn-sm btn-success" onclick="openPersonRoleModal({{ person.id }}, '{{ person.get_short_name|escapejs }}')"><i class="bi bi-key"></i></button>
+                        {% endif %}
+                        {% has_perm_on_branch user 'delete_person' person.branch as can_delete_person %}
+                        {% if can_delete_person %}
+                        <a href="{% url 'person-delete' person.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">لا يوجد موظفين</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Person Modal -->
+<div class="modal fade" id="personModal" tabindex="-1" aria-labelledby="personModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="personModalLabel">إضافة موظف</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="personForm" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="person_id" id="personId" value="">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_email" class="form-label">البريد الإلكتروني <span class="text-danger">*</span></label>
+                            <input type="email" name="email" id="id_email" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_first_name" class="form-label">الاسم الأول <span class="text-danger">*</span></label>
+                            <input type="text" name="first_name" id="id_first_name" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="id_second_name" class="form-label">الاسم الثاني</label>
+                            <input type="text" name="second_name" id="id_second_name" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_third_name" class="form-label">الاسم الثالث</label>
+                            <input type="text" name="third_name" id="id_third_name" class="form-control">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="id_forth_name" class="form-label">الاسم الرابع <span class="text-danger">*</span></label>
+                            <input type="text" name="forth_name" id="id_forth_name" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_team" class="form-label">الفريق</label>
+                            <select name="team" id="id_team" class="form-select">
+                                <option value="">---------</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}">{{ team.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_branch" class="form-label">الفرع</label>
+                            <select name="branch" id="id_branch" class="form-select">
+                                <option value="">---------</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password1" class="form-label">كلمة المرور <span class="text-danger" id="passwordRequired">*</span></label>
+                            <input type="password" name="password1" id="id_password1" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="id_password2" class="form-label">تأكيد كلمة المرور <span class="text-danger" id="password2Required">*</span></label>
+                            <input type="password" name="password2" id="id_password2" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_staff" id="id_is_staff" class="form-check-input">
+                                <label for="id_is_staff" class="form-check-label">موظف</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_active" id="id_is_active" class="form-check-input" checked>
+                                <label for="id_is_active" class="form-check-label">نشط</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div id="personFormErrors" class="alert alert-danger d-none"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="personSaveBtn" onclick="savePerson()">حفظ</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Person Role Modal -->
+<div class="modal fade" id="personRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-key text-success me-2"></i> إضافة دور لـ <span id="roleModalPersonName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="personRoleAlert"></div>
+                <form id="personRoleForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="person" id="roleModalPersonId" value="">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الدور <span class="text-danger">*</span></label>
+                        <select name="role" id="personRoleSelect" class="form-select" required>
+                            <option value="">اختر الدور...</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الفروع <span class="text-danger">*</span></label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="personSelectAllBranches" onchange="togglePersonBranches(this)">
+                            <label class="form-check-label fw-bold text-primary" for="personSelectAllBranches">
+                                <i class="bi bi-check-all"></i> كل الفروع
+                            </label>
+                        </div>
+                        <div class="row">
+                            {% for branch in branches %}
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input person-branch-checkbox" type="checkbox" name="branches" value="{{ branch.id }}" id="pbranch_{{ branch.id }}">
+                                    <label class="form-check-label" for="pbranch_{{ branch.id }}">{{ branch.name }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-success" id="personRoleSaveBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="personRoleSpinner"></span>
+                    <span id="personRoleBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const personModal = new bootstrap.Modal(document.getElementById('personModal'));
+    const personForm = document.getElementById('personForm');
+    const personSaveBtn = document.getElementById('personSaveBtn');
+    const personFormErrors = document.getElementById('personFormErrors');
+
+    function openPersonModal(id, email, firstName, secondName, thirdName, forthName, teamId, branchId, isStaff, isActive) {
+        personFormErrors.classList.add('d-none');
+        personFormErrors.innerHTML = '';
+        personForm.reset();
+
+        if (id) {
+            document.getElementById('personModalLabel').textContent = 'تعديل موظف';
+            document.getElementById('personId').value = id;
+            document.getElementById('id_email').value = email || '';
+            document.getElementById('id_first_name').value = firstName || '';
+            document.getElementById('id_second_name').value = secondName || '';
+            document.getElementById('id_third_name').value = thirdName || '';
+            document.getElementById('id_forth_name').value = forthName || '';
+            document.getElementById('id_team').value = teamId || '';
+            document.getElementById('id_branch').value = branchId || '';
+            document.getElementById('id_is_staff').checked = isStaff || false;
+            document.getElementById('id_is_active').checked = isActive !== false;
+            document.getElementById('id_password1').required = false;
+            document.getElementById('id_password2').required = false;
+            document.getElementById('passwordRequired').classList.add('d-none');
+            document.getElementById('password2Required').classList.add('d-none');
+        } else {
+            document.getElementById('personModalLabel').textContent = 'إضافة موظف';
+            document.getElementById('personId').value = '';
+            document.getElementById('id_is_staff').checked = false;
+            document.getElementById('id_is_active').checked = true;
+            document.getElementById('id_password1').required = true;
+            document.getElementById('id_password2').required = true;
+            document.getElementById('passwordRequired').classList.remove('d-none');
+            document.getElementById('password2Required').classList.remove('d-none');
+        }
+        personModal.show();
+    }
+
+    const personRoleModal = new bootstrap.Modal(document.getElementById('personRoleModal'));
+    const personRoleForm = document.getElementById('personRoleForm');
+    const personRoleSaveBtn = document.getElementById('personRoleSaveBtn');
+    const personRoleSpinner = document.getElementById('personRoleSpinner');
+    const personRoleBtnText = document.getElementById('personRoleBtnText');
+    const personRoleAlert = document.getElementById('personRoleAlert');
+
+    function showPersonRoleAlert(message, type) {
+        personRoleAlert.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setPersonRoleLoading(loading) {
+        personRoleSaveBtn.disabled = loading;
+        personRoleSpinner.classList.toggle('d-none', !loading);
+        personRoleBtnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openPersonRoleModal = function(personId, personName) {
+        personRoleAlert.innerHTML = '';
+        personRoleForm.reset();
+        document.querySelectorAll('.person-branch-checkbox').forEach(cb => cb.checked = false);
+        document.getElementById('roleModalPersonId').value = personId;
+        document.getElementById('roleModalPersonName').textContent = personName || '';
+        personRoleModal.show();
+    };
+
+    window.togglePersonBranches = function(checkbox) {
+        document.querySelectorAll('.person-branch-checkbox').forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+    };
+
+    personRoleSaveBtn.addEventListener('click', function() {
+        const role = document.getElementById('personRoleSelect').value;
+        const branches = document.querySelectorAll('.person-branch-checkbox:checked');
+        const allBranches = document.getElementById('personSelectAllBranches').checked;
+
+        if (!role) {
+            showPersonRoleAlert('اختر الدور', 'warning');
+            return;
+        }
+        if (!allBranches && branches.length === 0) {
+            showPersonRoleAlert('اختر فرعاً واحداً على الأقل', 'warning');
+            return;
+        }
+
+        setPersonRoleLoading(true);
+        const formData = new FormData(personRoleForm);
+        const body = new URLSearchParams(formData);
+
+        fetch('{% url "employeerole-bulk-create" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setPersonRoleLoading(false);
+            if (data.success) {
+                showPersonRoleAlert(data.message, 'success');
+                setTimeout(() => {
+                    personRoleModal.hide();
+                    personRoleAlert.innerHTML = '';
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showPersonRoleAlert(data.message || 'حدث خطأ', 'danger');
+            }
+        })
+        .catch(() => {
+            setPersonRoleLoading(false);
+            showPersonRoleAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+
+    function savePerson() {
+        const id = document.getElementById('personId').value;
+        const formData = new FormData(personForm);
+        const csrfToken = formData.get('csrfmiddlewaretoken');
+
+        const url = id ? '{% url "person-update-ajax" 0 %}'.replace('0', id) : '{% url "person-create-ajax" %}';
+
+        personSaveBtn.disabled = true;
+        personSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحفظ...';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                personModal.hide();
+                window.location.reload();
+            } else {
+                personFormErrors.classList.remove('d-none');
+                let html = '';
+                for (const [field, errors] of Object.entries(data.errors)) {
+                    const label = field === '__all__' ? '' : field + ': ';
+                    html += '<div>' + label + errors.join(', ') + '</div>';
+                }
+                personFormErrors.innerHTML = html;
+            }
+        })
+        .catch(err => {
+            personFormErrors.classList.remove('d-none');
+            personFormErrors.textContent = 'حدث خطأ أثناء الحفظ';
+        })
+        .finally(() => {
+            personSaveBtn.disabled = false;
+            personSaveBtn.textContent = 'حفظ';
+        });
+    }
+</script>
+{% endblock %}

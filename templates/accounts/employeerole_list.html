@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}أدوار الموظفين | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-check"></i> أدوار الموظفين</h2>
+    {% if user|has_perm:'add_employeerole' %}
+    <button type="button" class="btn btn-primary" onclick="openBulkModal()">
+        <i class="bi bi-plus-lg"></i> إضافة دور موظف
+    </button>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الموظف</th>
+                    <th>الدور</th>
+                    <th>الفرع</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for er in employee_roles %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ er.person.get_short_name }}</td>
+                    <td>{{ er.role.name }}</td>
+                    <td>{{ er.branch.name }}</td>
+                    <td>
+                        {% has_perm_on_branch user 'change_employeerole' er.branch as can_change_employeerole %}
+                        {% if can_change_employeerole %}
+                        <a href="{% url 'employeerole-update' er.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                        {% endif %}
+                        {% has_perm_on_branch user 'delete_employeerole' er.branch as can_delete_employeerole %}
+                        {% if can_delete_employeerole %}
+                        <a href="{% url 'employeerole-delete' er.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">لا توجد أدوار موظفين</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Bulk Assign Modal -->
+<div class="modal fade" id="bulkModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-check text-primary me-2"></i> إضافة دور لموظف/فريق</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bulkAlert"></div>
+                <form id="bulkForm">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الهدف <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <select name="person" id="bulkPerson" class="form-select">
+                                    <option value="">اختر موظف...</option>
+                                    {% for p in persons %}
+                                    <option value="{{ p.id }}">{{ p.get_short_name }} ({{ p.email }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <select name="team" id="bulkTeam" class="form-select">
+                                    <option value="">أو اختر فريق...</option>
+                                    {% for team in teams %}
+                                    <option value="{{ team.id }}">{{ team.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <small class="text-muted">اختر موظف واحد أو فريق كامل</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الدور <span class="text-danger">*</span></label>
+                        <select name="role" id="bulkRole" class="form-select" required>
+                            <option value="">اختر الدور...</option>
+                            {% for role in roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">الفروع <span class="text-danger">*</span></label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="selectAllBranches" onchange="toggleAllBranches(this)">
+                            <label class="form-check-label fw-bold text-primary" for="selectAllBranches">
+                                <i class="bi bi-check-all"></i> كل الفروع
+                            </label>
+                        </div>
+                        <div class="row" id="branchesContainer">
+                            {% for branch in branches %}
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input branch-checkbox" type="checkbox" name="branches" value="{{ branch.id }}" id="branch_{{ branch.id }}">
+                                    <label class="form-check-label" for="branch_{{ branch.id }}">{{ branch.name }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="bulkSaveBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="bulkSpinner"></span>
+                    <span id="bulkBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const bulkModal = document.getElementById('bulkModal');
+    const bulkForm = document.getElementById('bulkForm');
+    const bulkSaveBtn = document.getElementById('bulkSaveBtn');
+    const bulkSpinner = document.getElementById('bulkSpinner');
+    const bulkBtnText = document.getElementById('bulkBtnText');
+    const bulkAlert = document.getElementById('bulkAlert');
+    const bulkPerson = document.getElementById('bulkPerson');
+    const bulkTeam = document.getElementById('bulkTeam');
+
+    function showAlert(message, type) {
+        bulkAlert.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        bulkSaveBtn.disabled = loading;
+        bulkSpinner.classList.toggle('d-none', !loading);
+        bulkBtnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openBulkModal = function() {
+        bulkAlert.innerHTML = '';
+        bulkForm.reset();
+        document.querySelectorAll('.branch-checkbox').forEach(cb => cb.checked = false);
+        const modal = new bootstrap.Modal(bulkModal);
+        modal.show();
+    };
+
+    window.toggleAllBranches = function(checkbox) {
+        document.querySelectorAll('.branch-checkbox').forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+    };
+
+    // Clear person when team selected and vice versa
+    bulkPerson.addEventListener('change', function() {
+        if (this.value) bulkTeam.value = '';
+    });
+    bulkTeam.addEventListener('change', function() {
+        if (this.value) bulkPerson.value = '';
+    });
+
+    bulkSaveBtn.addEventListener('click', function() {
+        const role = document.getElementById('bulkRole').value;
+        const person = bulkPerson.value;
+        const team = bulkTeam.value;
+        const allBranches = document.getElementById('selectAllBranches').checked;
+        const branches = document.querySelectorAll('.branch-checkbox:checked');
+
+        if (!role) {
+            showAlert('اختر الدور', 'warning');
+            return;
+        }
+        if (!person && !team) {
+            showAlert('اختر موظف أو فريق', 'warning');
+            return;
+        }
+        if (!allBranches && branches.length === 0) {
+            showAlert('اختر فرعاً واحداً على الأقل', 'warning');
+            return;
+        }
+
+        setLoading(true);
+        const formData = new FormData(bulkForm);
+        const body = new URLSearchParams(formData);
+
+        fetch('{% url "employeerole-bulk-create" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(bulkModal).hide();
+                    bulkAlert.innerHTML = '';
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert(data.message || 'حدث خطأ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>
+{% endblock %}

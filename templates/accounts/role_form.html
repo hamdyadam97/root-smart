@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل دور{% else %}إضافة دور{% endif %} | Smart Offer{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleModelChecks(modelName, checked) {
+    document.querySelectorAll('.perm-' + modelName).forEach(cb => cb.checked = checked);
+}
+function toggleAll(checked) {
+    document.querySelectorAll('.perm-cb').forEach(cb => cb.checked = checked);
+}
+function toggleAction(action, checked) {
+    document.querySelectorAll('.perm-action-' + action).forEach(cb => cb.checked = checked);
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل دور{% else %}<i class="bi bi-plus-lg"></i> إضافة دور{% endif %}</h2>
+    <a href="{% url 'role-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div class="text-danger small">{{ form.name.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <div class="text-danger small">{{ form.description.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="bi bi-shield-check"></i> الصلاحيات</h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-success" onclick="toggleAll(true)"><i class="bi bi-check-all"></i> اختر الكل</button>
+                    <button type="button" class="btn btn-outline-danger" onclick="toggleAll(false)"><i class="bi bi-x-lg"></i> إلغي الكل</button>
+                </div>
+            </div>
+
+            {% if form.permissions.errors %}
+            <div class="text-danger small mb-2">{{ form.permissions.errors|striptags }}</div>
+            {% endif %}
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="min-width:200px">الموديل</th>
+                            <th class="text-center">
+                                عرض<br>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('view', true)"><i class="bi bi-check"></i></button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('view', false)"><i class="bi bi-x"></i></button>
+                            </th>
+                            <th class="text-center">
+                                إضافة<br>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('add', true)"><i class="bi bi-check"></i></button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('add', false)"><i class="bi bi-x"></i></button>
+                            </th>
+                            <th class="text-center">
+                                تعديل<br>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('change', true)"><i class="bi bi-check"></i></button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('change', false)"><i class="bi bi-x"></i></button>
+                            </th>
+                            <th class="text-center">
+                                حذف<br>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('delete', true)"><i class="bi bi-check"></i></button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('delete', false)"><i class="bi bi-x"></i></button>
+                            </th>
+                            <th class="text-center">الكل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app_label, models in grouped_permissions.items %}
+                        <tr class="table-secondary">
+                            <td colspan="6" class="fw-bold">{{ app_label }}</td>
+                        </tr>
+                        {% for model_name, permissions in models.items %}
+                        <tr>
+                            <td class="fw-bold">{{ model_name }}</td>
+                            {% for perm in permissions %}
+                            <td class="text-center">
+                                <input type="checkbox"
+                                       class="form-check-input perm-cb perm-{{ model_name }} perm-action-{{ perm.action }}"
+                                       name="permissions"
+                                       value="{{ perm.id }}"
+                                       id="perm_{{ perm.id }}"
+                                       {% if perm.id in selected_permissions %}checked{% endif %}>
+                            </td>
+                            {% endfor %}
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleModelChecks('{{ model_name }}', true)"><i class="bi bi-check-all"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleModelChecks('{{ model_name }}', false)"><i class="bi bi-x-lg"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+                <a href="{% url 'role-list' %}" class="btn btn-outline-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

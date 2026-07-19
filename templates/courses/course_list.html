@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}قائمة الدورات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-book"></i> الدورات</h2>
+    {% if user|has_perm:'add_course' %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#courseModal">
+        <i class="bi bi-plus-lg"></i> دورة جديدة
+    </button>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالكود أو المحاضر أو الشركة..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-3">
+                <select name="target_level" class="form-select">
+                    <option value="">كل المستويات</option>
+                    <option value="مبتدئ" {% if request.GET.target_level == 'مبتدئ' %}selected{% endif %}>مبتدئ</option>
+                    <option value="متوسط" {% if request.GET.target_level == 'متوسط' %}selected{% endif %}>متوسط</option>
+                    <option value="متقدم" {% if request.GET.target_level == 'متقدم' %}selected{% endif %}>متقدم</option>
+                    <option value="الكل" {% if request.GET.target_level == 'الكل' %}selected{% endif %}>جميع المستويات</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="start_after" class="form-control" value="{{ request.GET.start_after|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle" id="coursesTable">
+        <thead class="table-light">
+            <tr>
+                <th>الكود</th>
+                <th>التخصص</th>
+                <th>اسم الدورة</th>
+                <th>المحاضر</th>
+                <th>الشركة</th>
+                <th>المستوى</th>
+                <th>بداية</th>
+                <th>نهاية</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr data-course-id="{{ course.pk }}">
+                <td>{{ course.code }}</td>
+                <td>{{ course.master.name }}</td>
+                <td>{{ course.name|default:'-' }}</td>
+                <td>{{ course.instructor|default:'-' }}</td>
+                <td>{{ course.company_name|default:'-' }}</td>
+                <td><span class="badge bg-secondary">{{ course.target_level }}</span></td>
+                <td>{{ course.start_date|default:'-' }}</td>
+                <td>{{ course.end_date|default:'-' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'course-detail' course.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    {% has_perm_on_branch user 'change_course' course.master.branch as can_change_course %}
+                    {% if can_change_course %}
+                    <a href="{% url 'course-update' course.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    {% endif %}
+                    {% has_perm_on_branch user 'delete_course' course.master.branch as can_delete_course %}
+                    {% if can_delete_course %}
+                    <a href="{% url 'course-delete' course.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr id="emptyRow">
+                <td colspan="9" class="text-center text-muted">لا توجد دورات</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Course Modal -->
+<div class="modal fade" id="courseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-book text-primary me-2"></i> إضافة دورة جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="courseAlert"></div>
+                <form id="courseForm" class="modal-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التخصص <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <select name="master" id="courseMaster" class="form-select" required>
+                                    <option value="">اختر التخصص...</option>
+                                    {% for master in form_master_queryset|default:'' %}
+                                    <option value="{{ master.id }}">{{ master.code }} - {{ master.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if user|has_perm:'add_master' %}
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#masterModal" title="إضافة تخصص جديد">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الكود <small class="text-muted">(يتم التوليد تلقائيًا)</small></label>
+                            <input type="number" name="code" id="courseCode" class="form-control" placeholder="يتم التوليد تلقائيًا">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم الدورة</label>
+                            <input type="text" name="name" id="courseName" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المحاضر</label>
+                            <input type="text" name="instructor" id="courseInstructor" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم الشركة</label>
+                            <input type="text" name="company_name" id="courseCompanyName" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الحد الأقصى للطلاب</label>
+                            <input type="number" name="max_student_count" id="courseMaxStudents" class="form-control" value="1" min="1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المستوى المستهدف</label>
+                            <select name="target_level" id="courseTargetLevel" class="form-select">
+                                <option value="مبتدئ">مبتدئ</option>
+                                <option value="متوسط">متوسط</option>
+                                <option value="متقدم">متقدم</option>
+                                <option value="الكل" selected>جميع المستويات</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">عدد الساعات</label>
+                            <input type="number" name="hours" id="courseHours" class="form-control" min="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تاريخ البداية</label>
+                            <input type="date" name="start_date" id="courseStartDate" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تاريخ النهاية</label>
+                            <input type="date" name="end_date" id="courseEndDate" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveCourseBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="courseSpinner"></span>
+                    <span id="courseBtnText">حفظ الدورة</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Master Modal (nested) -->
+<div class="modal fade" id="masterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-journal-bookmark text-primary me-2"></i> إضافة تخصص جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="masterAlert"></div>
+                <form id="masterForm" class="modal-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الفرع <span class="text-danger">*</span></label>
+                            <select name="branch" id="masterBranch" class="form-select" required>
+                                <option value="">اختر الفرع...</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التصنيف</label>
+                            <select name="master_category" class="form-select">
+                                <option value="">اختر التصنيف...</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الكود <small class="text-muted">(يتم التوليد تلقائيًا)</small></label>
+                            <input type="number" name="code" id="masterCode" class="form-control" placeholder="يتم التوليد تلقائيًا">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم التخصص <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المدة</label>
+                            <input type="text" name="period" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveMasterBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="masterSpinner"></span>
+                    <span id="masterBtnText">حفظ التخصص</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ======================================
+    // Course modal helpers
+    // ======================================
+    const courseModal = document.getElementById('courseModal');
+    const courseForm = document.getElementById('courseForm');
+    const courseMaster = document.getElementById('courseMaster');
+    const courseCode = document.getElementById('courseCode');
+    const courseCompanyName = document.getElementById('courseCompanyName');
+    const saveCourseBtn = document.getElementById('saveCourseBtn');
+    const courseSpinner = document.getElementById('courseSpinner');
+    const courseBtnText = document.getElementById('courseBtnText');
+    const courseAlertBox = document.getElementById('courseAlert');
+
+    function showCourseAlert(message, type) {
+        courseAlertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setCourseLoading(loading) {
+        saveCourseBtn.disabled = loading;
+        courseSpinner.classList.toggle('d-none', !loading);
+        courseBtnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ الدورة';
+    }
+
+    function fillCourseFromMaster(masterId) {
+        if (!masterId) {
+            courseCompanyName.value = '';
+            return;
+        }
+        fetch('{% url "master-info-ajax" 0 %}'.replace('0', masterId))
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    courseCompanyName.value = data.company_name || '';
+                    courseCode.value = data.next_code || '';
+                }
+            })
+            .catch(() => {});
+    }
+
+    if (courseMaster) {
+        courseMaster.addEventListener('change', function() {
+            fillCourseFromMaster(this.value);
+        });
+    }
+
+    if (courseModal) {
+        courseModal.addEventListener('show.bs.modal', function() {
+            courseAlertBox.innerHTML = '';
+            courseForm.reset();
+        });
+    }
+
+    if (saveCourseBtn) {
+        saveCourseBtn.addEventListener('click', function() {
+            if (!courseForm.checkValidity()) {
+                courseForm.reportValidity();
+                return;
+            }
+            setCourseLoading(true);
+            const formData = new FormData(courseForm);
+
+            fetch('{% url "course-create-ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(r => r.json())
+            .then(data => {
+                setCourseLoading(false);
+                if (data.success) {
+                    showCourseAlert(data.message, 'success');
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(courseModal).hide();
+                        window.location.reload();
+                    }, 1200);
+                } else {
+                    let errors = '';
+                    for (const [field, msgs] of Object.entries(data.errors)) {
+                        errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                    }
+                    showCourseAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+                }
+            })
+            .catch(() => {
+                setCourseLoading(false);
+                showCourseAlert('حدث خطأ في الاتصال', 'danger');
+            });
+        });
+    }
+
+    // ======================================
+    // Master modal helpers (inside course page)
+    // ======================================
+    const masterModal = document.getElementById('masterModal');
+    const masterForm = document.getElementById('masterForm');
+    const saveMasterBtn = document.getElementById('saveMasterBtn');
+    const masterSpinner = document.getElementById('masterSpinner');
+    const masterBtnText = document.getElementById('masterBtnText');
+    const masterAlertBox = document.getElementById('masterAlert');
+    const masterBranch = document.getElementById('masterBranch');
+    const masterCode = document.getElementById('masterCode');
+
+    function fillMasterCode(branchId) {
+        if (!branchId) {
+            masterCode.value = '';
+            return;
+        }
+        fetch('{% url "master-next-code-ajax" 0 %}'.replace('0', branchId))
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    masterCode.value = data.next_code || '';
+                }
+            })
+            .catch(() => {});
+    }
+
+    if (masterBranch) {
+        masterBranch.addEventListener('change', function() {
+            fillMasterCode(this.value);
+        });
+    }
+
+    function showMasterAlert(message, type) {
+        masterAlertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setMasterLoading(loading) {
+        saveMasterBtn.disabled = loading;
+        masterSpinner.classList.toggle('d-none', !loading);
+        masterBtnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ التخصص';
+    }
+
+    if (masterModal) {
+        masterModal.addEventListener('show.bs.modal', function() {
+            masterAlertBox.innerHTML = '';
+            masterForm.reset();
+        });
+    }
+
+    if (saveMasterBtn) {
+        saveMasterBtn.addEventListener('click', function() {
+            if (!masterForm.checkValidity()) {
+                masterForm.reportValidity();
+                return;
+            }
+            setMasterLoading(true);
+            const formData = new FormData(masterForm);
+
+            fetch('{% url "master-create-ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(r => r.json())
+            .then(data => {
+                setMasterLoading(false);
+                if (data.success) {
+                    showMasterAlert(data.message, 'success');
+                    if (courseMaster) {
+                        const option = document.createElement('option');
+                        option.value = data.master.id;
+                        option.textContent = data.master.code + ' - ' + data.master.name;
+                        courseMaster.appendChild(option);
+                        courseMaster.value = data.master.id;
+                        fillCourseFromMaster(data.master.id);
+                    }
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(masterModal).hide();
+                        masterAlertBox.innerHTML = '';
+                    }, 1200);
+                } else {
+                    let errors = '';
+                    for (const [field, msgs] of Object.entries(data.errors)) {
+                        errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                    }
+                    showMasterAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+                }
+            })
+            .catch(() => {
+                setMasterLoading(false);
+                showMasterAlert('حدث خطأ في الاتصال', 'danger');
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

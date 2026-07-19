@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل عرض{% else %}عرض جديد{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+.has-error .form-control,
+.has-error .form-select {
+    border-color: #dc3545;
+}
+.has-error .form-label {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل عرض{% else %}<i class="bi bi-plus-lg"></i> عرض جديد{% endif %}</h2>
+    <a href="{% url 'studentoffer-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-3 {% if field.errors %}has-error{% endif %}">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    document.querySelectorAll('.has-error').forEach(function(group) {
+        const input = group.querySelector('.form-control, .form-select');
+        if (input) input.classList.add('is-invalid');
+    });
+})();
+</script>
+{% endblock %}

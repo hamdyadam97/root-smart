@@ -1,0 +1,215 @@
+<!-- Registration Modal -->
+<div class="modal fade" id="registrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="registrationModalTitle"><i class="bi bi-journal-check text-primary me-2"></i> تسجيل جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="registrationAlert"></div>
+                <form id="registrationForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="account_id" id="accountId">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الدورة <span class="text-danger">*</span></label>
+                            <select name="course" id="r_course" class="form-select" required>
+                                <option value="">اختر الدورة...</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.master.name }} - {{ course.code }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            {% if is_root_company %}
+                            <div id="prospectFieldWrapper">
+                                <label class="form-label">المستفسر <span class="text-danger">*</span></label>
+                                <select name="prospect" id="r_prospect" class="form-select">
+                                    <option value="">اختر المستفسر...</option>
+                                    {% for prospect in prospects %}
+                                    <option value="{{ prospect.id }}">{{ prospect.name }}{% if prospect.mobile %} ({{ prospect.mobile }}){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div id="studentFieldWrapper" style="display:none;">
+                                <label class="form-label">الطالب <span class="text-danger">*</span></label>
+                                <select name="student" id="r_student" class="form-select">
+                                    <option value="">اختر الطالب...</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}">{{ student.get_full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% else %}
+                            <label class="form-label">الطالب <span class="text-danger">*</span></label>
+                            <select name="student" id="r_student" class="form-select" required>
+                                <option value="">اختر الطالب...</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.get_full_name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="number" name="code" id="r_code" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تاريخ التسجيل <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="register_date" id="r_register_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نوع الدفع <span class="text-danger">*</span></label>
+                            <select name="course_payment_type" id="r_course_payment_type" class="form-select" required>
+                                <option value="نقدي">نقدي</option>
+                                <option value="تقسيط">تقسيط</option>
+                                <option value="آجل">آجل</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">سعر الدورة</label>
+                            <input type="number" name="course_price" id="r_course_price" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">قيمة الخصم</label>
+                            <input type="number" name="course_discount_amount" id="r_course_discount_amount" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نسبة الربح</label>
+                            <input type="number" name="course_profit_amount" id="r_course_profit_amount" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">مبلغ الائتمان</label>
+                            <input type="number" name="course_credit_amount" id="r_course_credit_amount" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="note" id="r_note" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveRegistrationBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="registrationSpinner"></span>
+                    <span id="registrationBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const registrationModal = document.getElementById('registrationModal');
+    const registrationForm = document.getElementById('registrationForm');
+    const accountId = document.getElementById('accountId');
+    const saveBtn = document.getElementById('saveRegistrationBtn');
+    const spinner = document.getElementById('registrationSpinner');
+    const btnText = document.getElementById('registrationBtnText');
+    const alertBox = document.getElementById('registrationAlert');
+    const modalTitle = document.getElementById('registrationModalTitle');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openRegistrationModal = function(id, courseId, studentId, code, registerDate, paymentType, coursePrice, discount, profit, credit, note) {
+        alertBox.innerHTML = '';
+        registrationForm.reset();
+
+        const prospectWrapper = document.getElementById('prospectFieldWrapper');
+        const studentWrapper = document.getElementById('studentFieldWrapper');
+        const prospectSelect = document.getElementById('r_prospect');
+        const studentSelect = document.getElementById('r_student');
+
+        if (id) {
+            accountId.value = id;
+            document.getElementById('r_course').value = courseId || '';
+            if (studentSelect) studentSelect.value = studentId || '';
+            document.getElementById('r_code').value = code || '';
+            document.getElementById('r_register_date').value = registerDate || '';
+            document.getElementById('r_course_payment_type').value = paymentType || 'نقدي';
+            document.getElementById('r_course_price').value = coursePrice || '';
+            document.getElementById('r_course_discount_amount').value = discount || '';
+            document.getElementById('r_course_profit_amount').value = profit || '';
+            document.getElementById('r_course_credit_amount').value = credit || '';
+            document.getElementById('r_note').value = note || '';
+            modalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل تسجيل';
+            // في وضع التعديل في الجذور، نعرض الطالب مش المستفسر
+            if (prospectWrapper && studentWrapper) {
+                prospectWrapper.style.display = 'none';
+                if (prospectSelect) prospectSelect.required = false;
+                studentWrapper.style.display = 'block';
+                if (studentSelect) studentSelect.required = true;
+            }
+        } else {
+            accountId.value = '';
+            modalTitle.innerHTML = '<i class="bi bi-journal-check text-primary me-2"></i> تسجيل جديد';
+            // في وضع الإضافة في الجذور، نعرض المستفسر
+            if (prospectWrapper && studentWrapper) {
+                prospectWrapper.style.display = 'block';
+                if (prospectSelect) prospectSelect.required = true;
+                studentWrapper.style.display = 'none';
+                if (studentSelect) studentSelect.required = false;
+            }
+        }
+        new bootstrap.Modal(registrationModal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!registrationForm.checkValidity()) {
+            registrationForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(registrationForm);
+        const body = new URLSearchParams(formData);
+
+        const isEdit = accountId.value !== '';
+        const url = isEdit
+            ? '/registrations/ajax/' + accountId.value + '/update/'
+            : '{% url "registration-create-ajax" %}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(registrationModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>

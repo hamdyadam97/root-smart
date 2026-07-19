@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ person.get_full_name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person"></i> {{ person.get_full_name }}</h2>
+    <div>
+        <a href="{% url 'person-update' person.slug %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'person-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> المعلومات الأساسية</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold">البريد الإلكتروني</td><td>{{ person.email }}</td></tr>
+                    <tr><td class="fw-bold">الاسم الأول</td><td>{{ person.first_name|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الاسم الثاني</td><td>{{ person.second_name|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الاسم الثالث</td><td>{{ person.third_name|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الاسم الرابع</td><td>{{ person.forth_name|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الرابط</td><td><code>{{ person.slug }}</code></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-telephone"></i> بيانات التواصل</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold">المحمول</td><td>{{ person.mobile|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">التليفون</td><td>{{ person.phone|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">العنوان</td><td>{{ person.address|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الفرع</td><td>{{ person.branch|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الفريق</td><td>{{ person.team|default:"-" }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-secondary text-white"><i class="bi bi-shield-check"></i> الصلاحيات</div>
+    <div class="card-body">
+        <div class="d-flex gap-3">
+            {% if person.is_staff %}<span class="badge bg-success">موظف</span>{% endif %}
+            {% if person.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-danger">غير نشط</span>{% endif %}
+            {% if person.is_superuser %}<span class="badge bg-dark">مدير نظام</span>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

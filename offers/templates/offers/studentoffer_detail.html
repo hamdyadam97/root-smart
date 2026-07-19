@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ offer.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tag"></i> {{ offer.title }}</h2>
+    <div>
+        <a href="{% url 'studentoffer-export-pdf' offer.slug %}" class="btn btn-success"><i class="bi bi-file-earmark-pdf"></i> تحميل PDF</a>
+        <a href="https://wa.me/966569736794" target="_blank" class="btn btn-success" style="background-color: #25D366; border-color: #25D366;"><i class="bi bi-whatsapp"></i> واتساب</a>
+        <button type="button" class="btn btn-warning" onclick="openStudentOfferModal({{ offer.id }}, '{{ offer.title|escapejs }}', '{{ offer.content|escapejs }}', '{{ offer.branch.id }}', '{{ offer.course.id|default:'' }}', '{{ offer.price }}', '{{ offer.price_description|escapejs }}', '{{ offer.start_date|date:'Y-m-d' }}', '{{ offer.end_date|date:'Y-m-d' }}', '{{ offer.scheduled_at|date:'Y-m-d\\TH:i' }}', '{{ offer.status|escapejs }}')"><i class="bi bi-pencil"></i> تعديل</button>
+        <a href="{% url 'studentoffer-delete' offer.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'studentoffer-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sidebar: قائمة العروض -->
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list"></i> العروض</span>
+                <a href="{% url 'studentoffer-list' %}" class="btn btn-sm btn-light"><i class="bi bi-arrow-left"></i> الكل</a>
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 75vh; overflow-y: auto;">
+                {% for o in all_offers %}
+                <a href="{% url 'studentoffer-detail' o.slug %}"
+                   class="list-group-item list-group-item-action {% if o.slug == offer.slug %}active{% endif %}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1" style="font-size: 0.95rem;">{{ o.title }}</h6>
+                        <small class="{% if o.slug == offer.slug %}text-white{% else %}text-muted{% endif %}">
+                            {{ o.get_status_display }}
+                        </small>
+                    </div>
+                    <small class="{% if o.slug == offer.slug %}text-white-50{% else %}text-muted{% endif %}">
+                        {{ o.branch.name }}{% if o.course %} | {{ o.course.master.name }}{% endif %}
+                    </small>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> تفاصيل العرض</div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>العنوان:</strong> {{ offer.title }}</li>
+                        <li class="list-group-item"><strong>المحتوى:</strong> {{ offer.content|linebreaksbr }}</li>
+                        <li class="list-group-item"><strong>الفرع:</strong> {{ offer.branch }}</li>
+                        <li class="list-group-item"><strong>الدورة:</strong> {{ offer.course|default:'-' }}</li>
+                        <li class="list-group-item"><strong>السعر:</strong> {{ offer.price }} {{ offer.branch.company.get_currency_display_name }} {% if offer.price_description %}({{ offer.price_description }}){% endif %}</li>
+                        <li class="list-group-item"><strong>تاريخ بداية العرض:</strong> {{ offer.start_date|default:'-' }}</li>
+                        <li class="list-group-item"><strong>تاريخ نهاية العرض:</strong> {{ offer.end_date|default:'-' }}</li>
+                        <li class="list-group-item"><strong>الحالة:</strong> {{ offer.get_status_display }}</li>
+                        <li class="list-group-item"><strong>موعد الإرسال:</strong> {{ offer.scheduled_at|default:'-' }}</li>
+                        <li class="list-group-item"><strong>تاريخ الإرسال الفعلي:</strong> {{ offer.sent_at|default:'-' }}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white"><i class="bi bi-clock-history"></i> بيانات إضافية</div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>تم الإنشاء بواسطة:</strong> {{ offer.created_by.get_full_name|default:offer.created_by.email }}</li>
+                        <li class="list-group-item"><strong>تاريخ الإنشاء:</strong> {{ offer.created_at|date:'Y-m-d H:i' }}</li>
+                        <li class="list-group-item"><strong>آخر تحديث:</strong> {{ offer.updated_at|date:'Y-m-d H:i' }}</li>
+                    </ul>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-people"></i> المستلمون ({{ offer.recipients.count }})</span>
+                        <div>
+                            {% if offer.recipients.count %}
+                            <a href="{% url 'studentoffer-send-all' offer.slug %}" class="btn btn-sm btn-success"><i class="bi bi-send"></i> إرسال للكل</a>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-light" onclick="openAddRecipientModal()"><i class="bi bi-person-plus"></i> إضافة مستلم</button>
+                        </div>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% for recipient in offer.recipients.all|slice:':10' %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                {% if recipient.student %}
+                                    {{ recipient.student }}
+                                {% elif recipient.prospect %}
+                                    <a href="{% url 'prospect-detail' recipient.prospect.slug %}">{{ recipient.prospect.name }}</a>
+                                    {% if recipient.prospect.mobile %}<small class="text-muted">({{ recipient.prospect.mobile }})</small>{% endif %}
+                                {% else %}
+                                    {{ recipient.contact_name|default:"مستلم سريع" }}
+                                    {% if recipient.contact_phone %}<small class="text-muted">({{ recipient.contact_phone }})</small>{% endif %}
+                                {% endif %}
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary">{{ recipient.get_channel_display }} - {{ recipient.get_status_display }}</span>
+                                <a href="{% url 'studentoffer-send-recipient' offer.slug recipient.pk %}" class="btn btn-sm btn-success" title="إرسال العرض"><i class="bi bi-send"></i></a>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted text-center py-3">
+                            لا يوجد مستلمون لهذا العرض.<br>
+                            <button type="button" class="btn btn-sm btn-primary mt-2" onclick="openAddRecipientModal()"><i class="bi bi-person-plus"></i> أضف أول مستلم</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-header bg-dark text-white"><i class="bi bi-sticky"></i> الملاحظات ({{ offer.notes.count }})</div>
+                    <ul class="list-group list-group-flush">
+                        {% for note in offer.notes.all|slice:':10' %}
+                        <li class="list-group-item">
+                            <strong>{{ note.person.get_short_name|default:note.person.email }}:</strong> {{ note.note_text }}
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted">لا توجد ملاحظات</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Recipient Modal -->
+<div class="modal fade" id="addRecipientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus text-primary me-2"></i> إضافة مستلم</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="addRecipientAlert"></div>
+                <form id="addRecipientForm">
+                    {% csrf_token %}
+                    {% if 'جذور' in offer.branch.company.name %}
+                    <ul class="nav nav-tabs mb-3" id="recipientTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="prospect-tab" data-bs-toggle="tab" data-bs-target="#prospect-pane" type="button" role="tab">مستفسر مسجل</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="quick-tab" data-bs-toggle="tab" data-bs-target="#quick-pane" type="button" role="tab">مستفسر جديد</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="recipientTabContent">
+                        <div class="tab-pane fade show active" id="prospect-pane" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label">المستفسر</label>
+                                <select name="prospect" id="ar_prospect" class="form-select">
+                                    <option value="">اختر المستفسر...</option>
+                                    {% for p in all_prospects %}
+                                    <option value="{{ p.id }}">{{ p.name }}{% if p.mobile %} ({{ p.mobile }}){% endif %}</option>
+                                    {% empty %}
+                                    <option value="" disabled>لا يوجد مستفسرون مسجلون</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="quick-pane" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label">الاسم</label>
+                                <input type="text" name="contact_name" id="ar_contact_name" class="form-control" placeholder="اسم المستفسر">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">الجوال</label>
+                                <input type="text" name="contact_phone" id="ar_contact_phone" class="form-control" placeholder="مثال: 966501234567">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">البريد الإلكتروني</label>
+                                <input type="email" name="contact_email" id="ar_contact_email" class="form-control" placeholder="email@example.com">
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <ul class="nav nav-tabs mb-3" id="recipientTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="registered-tab" data-bs-toggle="tab" data-bs-target="#registered-pane" type="button" role="tab">طالب مسجل</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="quick-tab" data-bs-toggle="tab" data-bs-target="#quick-pane" type="button" role="tab">مستلم سريع</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="recipientTabContent">
+                        <div class="tab-pane fade show active" id="registered-pane" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label">الطالب</label>
+                                <select name="student" id="ar_student" class="form-select">
+                                    <option value="">اختر الطالب...</option>
+                                    {% for s in all_students %}
+                                    <option value="{{ s.id }}">{{ s }}{% if s.get_mobile %} ({{ s.get_mobile }}){% endif %}</option>
+                                    {% empty %}
+                                    <option value="" disabled>لا يوجد طلاب مسجلون في النظام</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="quick-pane" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label">الاسم</label>
+                                <input type="text" name="contact_name" id="ar_contact_name" class="form-control" placeholder="اسم المستلم">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">الجوال</label>
+                                <input type="text" name="contact_phone" id="ar_contact_phone" class="form-control" placeholder="مثال: 966501234567">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">البريد الإلكتروني</label>
+                                <input type="email" name="contact_email" id="ar_contact_email" class="form-control" placeholder="email@example.com">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label">قناة الإرسال <span class="text-danger">*</span></label>
+                        <select name="channel" id="ar_channel" class="form-select" required>
+                            <option value="whatsapp">واتساب</option>
+                            <option value="email">البريد الإلكتروني</option>
+                            <option value="app">إشعار التطبيق</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الحالة</label>
+                        <select name="status" id="ar_status" class="form-select">
+                            <option value="مرسل" selected>مرسل</option>
+                            <option value="مقروء">مقروء</option>
+                            <option value="تفاعل">تم التفاعل</option>
+                            <option value="اشترك">تم الاشتراك</option>
+                            <option value="لم_يتفاعل">لم يتفاعل</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveRecipientBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="saveRecipientSpinner"></span>
+                    <span id="saveRecipientBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const modal = document.getElementById('addRecipientModal');
+    const form = document.getElementById('addRecipientForm');
+    const alertBox = document.getElementById('addRecipientAlert');
+    const saveBtn = document.getElementById('saveRecipientBtn');
+    const spinner = document.getElementById('saveRecipientSpinner');
+    const btnText = document.getElementById('saveRecipientBtnText');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openAddRecipientModal = function() {
+        alertBox.innerHTML = '';
+        form.reset();
+        new bootstrap.Modal(modal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(form);
+        const body = new URLSearchParams(formData);
+
+        fetch('{% url "studentoffer-add-recipient-ajax" offer.slug %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(modal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                if (data.errors) {
+                    for (const [field, msgs] of Object.entries(data.errors)) {
+                        errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                    }
+                } else {
+                    errors = data.error || 'حدث خطأ أثناء الحفظ';
+                }
+                showAlert(errors, 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>
+
+{% include "includes/studentoffer_modal.html" %}
+{% endblock %}

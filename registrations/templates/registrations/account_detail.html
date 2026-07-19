@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ account.get_key }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-journal-check"></i> {{ account.get_key }}</h2>
+    <div>
+        <button type="button" class="btn btn-warning" onclick="openRegistrationModal({{ account.id }}, '{{ account.course.id }}', '{{ account.student.id }}', '{{ account.code }}', '{{ account.register_date|date:'Y-m-d\\TH:i' }}', '{{ account.course_payment_type|escapejs }}', '{{ account.course_price }}', '{{ account.course_discount_amount }}', '{{ account.course_profit_amount }}', '{{ account.course_credit_amount }}', '{{ account.note|escapejs }}')"><i class="bi bi-pencil"></i> تعديل</button>
+        <a href="{% url 'registration-delete' account.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'registration-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-person"></i> بيانات الطالب</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>الطالب:</strong> {{ account.student.get_full_name }}</li>
+                <li class="list-group-item"><strong>المحمول:</strong> {{ account.student.contact.mobile|default:'-' }}</li>
+                <li class="list-group-item"><strong>تاريخ التسجيل:</strong> {{ account.register_date }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><i class="bi bi-book"></i> بيانات الدورة</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>الدورة:</strong> {{ account.course.master.name }} - {{ account.course.code }}</li>
+                <li class="list-group-item"><strong>الفرع:</strong> {{ account.course.master.branch.name }}</li>
+                <li class="list-group-item"><strong>نوع الدفع:</strong> {{ account.course_payment_type }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white"><i class="bi bi-cash-stack"></i> المالية</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>سعر الدورة:</strong> {{ account.course_price }}</li>
+                <li class="list-group-item"><strong>الخصم:</strong> {{ account.course_discount_amount }}</li>
+                <li class="list-group-item"><strong>الربح:</strong> {{ account.course_profit_amount }}</li>
+                <li class="list-group-item"><strong>الائتمان:</strong> {{ account.course_credit_amount }}</li>
+                <li class="list-group-item"><strong>المطلوب:</strong> {{ account.get_required_price }}</li>
+                <li class="list-group-item"><strong>المدفوع:</strong> {{ account.get_paid_price }}</li>
+                <li class="list-group-item"><strong>المتبقي:</strong> {{ account.get_remain_price }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white"><i class="bi bi-info-circle"></i> أخرى</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>ملاحظات:</strong> {{ account.note|default:'-'|linebreaksbr }}</li>
+                <li class="list-group-item"><strong>آخر تعديل:</strong> {{ account.last_person.get_short_name|default:'-' }}</li>
+                <li class="list-group-item"><strong>تاريخ التعديل:</strong> {{ account.last_update }}</li>
+                <li class="list-group-item"><strong>تاريخ الإنشاء:</strong> {{ account.created_at }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% include "includes/registration_modal.html" %}
+{% endblock %}

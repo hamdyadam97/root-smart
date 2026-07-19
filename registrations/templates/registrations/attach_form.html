@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل مرفق{% else %}مرفق جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل مرفق{% else %}<i class="bi bi-plus-lg"></i> مرفق جديد{% endif %}</h2>
+    <a href="{% url 'attach-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.attach_type.id_for_label }}" class="form-label">{{ form.attach_type.label }}</label>
+                    {{ form.attach_type }}
+                    {% if form.attach_type.errors %}<div class="text-danger small">{{ form.attach_type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.file_name.id_for_label }}" class="form-label">{{ form.file_name.label }}</label>
+                    {{ form.file_name }}
+                    {% if form.file_name.errors %}<div class="text-danger small">{{ form.file_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.file_type.id_for_label }}" class="form-label">{{ form.file_type.label }}</label>
+                    {{ form.file_type }}
+                    {% if form.file_type.errors %}<div class="text-danger small">{{ form.file_type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="{{ form.file_data.id_for_label }}" class="form-label">{{ form.file_data.label }}</label>
+                    {{ form.file_data }}
+                    {% if form.file_data.errors %}<div class="text-danger small">{{ form.file_data.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,640 @@
+{% extends 'base.html' %}
+{% block title %}لوحة التحكم - Smart Offer{% endblock %}
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 30px rgba(13, 110, 253, 0.25);
+        position: relative;
+        overflow: hidden;
+    }
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+    .dashboard-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -5%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
+    }
+    .stat-card {
+        border: none;
+        border-radius: 1rem;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .stat-card .icon-box {
+        width: 55px;
+        height: 55px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.6rem;
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(4px);
+    }
+    .stat-card .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    .stat-card .stat-label {
+        font-size: 0.85rem;
+        opacity: 0.9;
+    }
+    .bg-gradient-primary { background: linear-gradient(135deg, #0d6efd, #0099ff); }
+    .bg-gradient-success { background: linear-gradient(135deg, #198754, #20c997); }
+    .bg-gradient-info    { background: linear-gradient(135deg, #0dcaf0, #6610f2); }
+    .bg-gradient-warning { background: linear-gradient(135deg, #ffc107, #fd7e14); }
+    .bg-gradient-danger  { background: linear-gradient(135deg, #dc3545, #d63384); }
+    .bg-gradient-secondary { background: linear-gradient(135deg, #6c757d, #495057); }
+    .bg-gradient-dark    { background: linear-gradient(135deg, #343a40, #212529); }
+    
+    .chart-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        background: var(--bg-card);
+    }
+    .chart-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        padding: 1.25rem;
+    }
+    
+    .branch-card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease;
+        background: var(--bg-card);
+    }
+    .branch-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    .branch-card .branch-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+    }
+    .mini-stat {
+        text-align: center;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        background: var(--bg-hover);
+    }
+    .mini-stat .mini-value {
+        font-weight: 700;
+        color: var(--accent-blue);
+        font-size: 1.1rem;
+    }
+    .mini-stat .mini-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    
+    .activity-item {
+        position: relative;
+        padding-right: 1.5rem;
+        padding-bottom: 1.25rem;
+        border-right: 2px solid var(--border-color);
+        margin-right: 0.75rem;
+    }
+    .activity-item:last-child {
+        border-right: 2px solid transparent;
+        padding-bottom: 0;
+    }
+    .activity-item::before {
+        content: '';
+        position: absolute;
+        right: -7px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #0d6efd;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #0d6efd;
+    }
+    .activity-item.success::before { background: #198754; box-shadow: 0 0 0 2px #198754; }
+    .activity-item.warning::before { background: #ffc107; box-shadow: 0 0 0 2px #ffc107; }
+    .activity-item.danger::before  { background: #dc3545; box-shadow: 0 0 0 2px #dc3545; }
+    .activity-item.info::before    { background: #0dcaf0; box-shadow: 0 0 0 2px #0dcaf0; }
+    .activity-item.purple::before  { background: #6610f2; box-shadow: 0 0 0 2px #6610f2; }
+    
+    .activity-time {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+    .activity-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .activity-desc {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    
+    .offer-badge {
+        font-size: 0.7rem;
+        padding: 0.35em 0.65em;
+        border-radius: 50rem;
+    }
+    .progress-thin {
+        height: 6px;
+        border-radius: 3px;
+    }
+    .section-title {
+        font-weight: 700;
+        font-size: 1.15rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .section-title i {
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="dashboard-header">
+    <div class="row align-items-center position-relative" style="z-index:1;">
+        <div class="col-md-8">
+            <h3 class="mb-1 fw-bold">أهلاً، {{ request.user.get_full_name|default:request.user.email }} 👋</h3>
+            <p class="mb-0 opacity-75">
+                {% if selected_branch %}
+                    نظرة عامة على فرع: <strong>{{ selected_branch.name }}</strong>
+                {% else %}
+                    هذه نظرة عامة على أداء مراكزك التدريبية اليوم
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-start mt-3 mt-md-0">
+            <div class="d-flex gap-2 justify-content-md-start justify-content-center flex-wrap">
+                <form method="get" class="d-flex gap-2">
+                    <select name="branch" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 140px;">
+                        <option value="">كل الفروع</option>
+                        {% for b in all_branches %}
+                        <option value="{{ b.id }}" {% if selected_branch.id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+                <a href="{% url 'student-create' %}" class="btn btn-light text-primary fw-bold">
+                    <i class="bi bi-plus-lg"></i> طالب جديد
+                </a>
+                <a href="{% url 'payment-create' %}" class="btn btn-outline-light fw-bold">
+                    <i class="bi bi-cash-stack"></i> قبض
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-primary h-100">
+            <div class="icon-box"><i class="bi bi-people"></i></div>
+            <div class="stat-value">{{ students_count }}</div>
+            <div class="stat-label">الطلاب</div>
+        </div>
+    </div>
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-success h-100">
+            <div class="icon-box"><i class="bi bi-book"></i></div>
+            <div class="stat-value">{{ courses_count }}</div>
+            <div class="stat-label">الدورات</div>
+        </div>
+    </div>
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-info h-100">
+            <div class="icon-box"><i class="bi bi-journal-check"></i></div>
+            <div class="stat-value">{{ registrations_count }}</div>
+            <div class="stat-label">التسجيلات</div>
+        </div>
+    </div>
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-warning h-100">
+            <div class="icon-box"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-value">{{ payments_total|floatformat:0 }}</div>
+            <div class="stat-label">المدفوعات</div>
+        </div>
+    </div>
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-danger h-100">
+            <div class="icon-box"><i class="bi bi-tag"></i></div>
+            <div class="stat-value">{{ offers_count }}</div>
+            <div class="stat-label">عروض الأسعار</div>
+        </div>
+    </div>
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-secondary h-100">
+            <div class="icon-box"><i class="bi bi-building"></i></div>
+            <div class="stat-value">{{ branches_count }}</div>
+            <div class="stat-label">الفروع</div>
+        </div>
+    </div>
+    <div class="col-xl col-lg-3 col-md-4 col-6">
+        <div class="stat-card bg-gradient-dark h-100">
+            <div class="icon-box"><i class="bi bi-send"></i></div>
+            <div class="stat-value">{{ student_offers_count }}</div>
+            <div class="stat-label">عروض الطلاب</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi bi-graph-up text-primary me-2"></i> المدفوعات الشهرية (آخر 6 أشهر)</div>
+            <div class="card-body">
+                <canvas id="paymentsChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart text-success me-2"></i> طرق الدفع</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="paymentMethodsChart" style="max-height:220px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi bi-bar-chart text-info me-2"></i> التسجيلات حسب الفرع</div>
+            <div class="card-body">
+                <canvas id="regsChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart-fill text-warning me-2"></i> أنواع دفع العروض</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="offerStatusChart" style="max-height:220px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Branches Section -->
+<div class="section-title"><i class="bi bi-building"></i> تفاصيل الفروع</div>
+<div class="row g-3 mb-4">
+    {% for bs in branch_stats %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card branch-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="branch-icon me-3 flex-shrink-0">
+                        <i class="bi bi-buildings"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">{{ bs.branch.name }}</h6>
+                        <small class="text-muted">{{ bs.branch.company.name }}</small>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="mini-value">{{ bs.registrations }}</div>
+                            <div class="mini-label">تسجيلات</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="mini-value">{{ bs.courses }}</div>
+                            <div class="mini-label">دورات</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="mini-value">{{ bs.offers }}</div>
+                            <div class="mini-label">عروض</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="text-muted">الإيرادات</small>
+                    <small class="fw-bold text-primary">{{ bs.payments_total|floatformat:0 }}</small>
+                </div>
+                {% if payments_total > 0 %}
+                <div class="progress progress-thin">
+                    <div class="progress-bar bg-primary" role="progressbar"
+                         style="width: {% widthratio bs.payments_total payments_total 100 %}%"></div>
+                </div>
+                {% else %}
+                <div class="progress progress-thin">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-muted text-center py-4">لا يوجد فروع مسجلة</div>
+    {% endfor %}
+</div>
+
+<!-- Recent Activity & Offers Row -->
+<div class="row g-4 mb-4">
+    <!-- Activity Timeline -->
+    <div class="col-lg-5">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi bi-activity text-danger me-2"></i> آخر النشاطات</div>
+            <div class="card-body">
+                <div class="mt-2">
+                    {% for act in recent_activities %}
+                    <div class="activity-item {{ act.css_class }}">
+                        <div class="activity-title">{{ act.title }}</div>
+                        <div class="activity-desc">{{ act.desc }}</div>
+                        <div class="activity-time">{{ act.time|timesince }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="text-muted text-center py-4">لا توجد نشاطات حديثة</div>
+                    {% endfor %}
+                </div>
+
+                {% if recent_activities.paginator.num_pages > 1 %}
+                <nav aria-label="Activity pagination" class="mt-3">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if recent_activities.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?activity_page={{ recent_activities.previous_page_number }}">السابق</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">السابق</span></li>
+                        {% endif %}
+
+                        {% for num in recent_activities.paginator.page_range %}
+                            {% if num == recent_activities.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="?activity_page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if recent_activities.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?activity_page={{ recent_activities.next_page_number }}">التالي</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">التالي</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Student Offers -->
+    <div class="col-lg-7">
+        <div class="card chart-card h-100">
+            <div class="card-header"><i class="bi bi-send-check text-success me-2"></i> آخر عروض الطلاب</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>العنوان</th>
+                                <th>الفرع</th>
+                                <th>الدورة</th>
+                                <th>الحالة</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for so in recent_student_offers %}
+                            <tr>
+                                <td class="fw-semibold">{{ so.title }}</td>
+                                <td><span class="badge bg-secondary">{{ so.branch.name }}</span></td>
+                                <td>{{ so.course.name|default:'-' }}</td>
+                                <td>
+                                    {% if so.status == 'مسودة' %}
+                                        <span class="badge bg-secondary offer-badge">مسودة</span>
+                                    {% elif so.status == 'مجدولة' %}
+                                        <span class="badge bg-info offer-badge">مجدولة</span>
+                                    {% elif so.status == 'مرسلة' %}
+                                        <span class="badge bg-success offer-badge">مرسلة</span>
+                                    {% else %}
+                                        <span class="badge bg-dark offer-badge">منتهية</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ so.created_at|date:"Y-m-d" }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted py-4">لا يوجد عروض</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Price Offers -->
+<div class="section-title"><i class="bi bi-tags"></i> آخر عروض الأسعار</div>
+<div class="row g-3 mb-4">
+    {% for o in recent_offers %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card branch-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="mb-1 fw-bold">{{ o.customer_name }}</h6>
+                        <small class="text-muted">{{ o.master.name }}</small>
+                    </div>
+                    <span class="badge 
+                        {% if o.master_payment_type == 'نقدي' %}bg-success
+                        {% elif o.master_payment_type == 'تقسيط' %}bg-info
+                        {% else %}bg-warning text-dark{% endif %}">
+                        {{ o.master_payment_type }}
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-2">
+                    <span><i class="bi bi-cash"></i> {{ o.master_price|floatformat:0 }}</span>
+                    <span><i class="bi bi-calendar"></i> {{ o.created_at|date:"Y-m-d" }}</span>
+                </div>
+                {% if o.registered %}
+                <div class="mt-2"><span class="badge bg-primary">مسجل</span></div>
+                {% else %}
+                <div class="mt-2"><span class="badge bg-secondary">غير مسجل</span></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-muted text-center py-4">لا يوجد عروض أسعار</div>
+    {% endfor %}
+</div>
+
+<!-- Top Branches -->
+<div class="section-title"><i class="bi bi-trophy"></i> أفضل الفروع (حسب الإيرادات)</div>
+<div class="row g-3 mb-4">
+    {% for tb in top_branches %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card branch-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+                        <i class="bi bi-trophy-fill fs-5"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1 fw-bold">{{ tb.branch.name }}</h6>
+                    <div class="text-muted small">{{ tb.registrations }} تسجيل · {{ tb.courses }} دورة</div>
+                </div>
+                <div class="flex-shrink-0 text-end">
+                    <div class="fw-bold text-primary">{{ tb.payments_total|floatformat:0 }}</div>
+                    <small class="text-muted">إيراد</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-muted text-center py-4">لا توجد بيانات كافية</div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = "'Cairo', 'Segoe UI', sans-serif";
+Chart.defaults.color = '#94a3b8';
+
+// Payments Line Chart
+new Chart(document.getElementById('paymentsChart'), {
+    type: 'line',
+    data: {
+        labels: {{ months_labels|safe }},
+        datasets: [{
+            label: 'المدفوعات',
+            data: {{ months_data|safe }},
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            borderWidth: 3,
+            pointBackgroundColor: '#0d6efd',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#334155' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+// Payment Methods Doughnut
+new Chart(document.getElementById('paymentMethodsChart'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ payment_method_labels|safe }},
+        datasets: [{
+            data: {{ payment_method_data|safe }},
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+    }
+});
+
+// Registrations Bar Chart
+new Chart(document.getElementById('regsChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ regs_by_branch_labels|safe }},
+        datasets: [{
+            label: 'التسجيلات',
+            data: {{ regs_by_branch|safe }},
+            backgroundColor: '#20c997',
+            borderRadius: 6,
+            barThickness: 30
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#334155' } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+
+// Offer Status Pie
+new Chart(document.getElementById('offerStatusChart'), {
+    type: 'pie',
+    data: {
+        labels: {{ offer_status_labels|safe }},
+        datasets: [{
+            data: {{ offer_status_data|safe }},
+            backgroundColor: ['#198754', '#0dcaf0', '#ffc107'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+    }
+});
+</script>
+{% endblock %}

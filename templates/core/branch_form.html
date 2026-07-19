@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل فرع{% else %}إضافة فرع{% endif %} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل فرع{% else %}<i class="bi bi-plus-lg"></i> إضافة فرع{% endif %}</h2>
+    <a href="{% url 'branch-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                {% for field in form %}
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">{{ field.label }}</label>
+
+                    {% if field.name == 'logo' and object and object.logo %}
+                    <div class="mb-2">
+                        <img src="{{ object.logo.url }}" alt="الشعار الحالي" class="img-thumbnail" style="max-height:120px;">
+                    </div>
+                    {% endif %}
+
+                    {% if field.name == 'signature' and object and object.signature %}
+                    <div class="mb-2">
+                        <img src="{{ object.signature.url }}" alt="التوقيع الحالي" class="img-thumbnail" style="max-height:120px;">
+                    </div>
+                    {% endif %}
+
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="text-danger small">{{ field.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+                <a href="{% url 'branch-list' %}" class="btn btn-outline-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

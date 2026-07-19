@@ -1,0 +1,245 @@
+<!-- Student Modal -->
+<div class="modal fade" id="studentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="studentModalTitle"><i class="bi bi-person-plus text-primary me-2"></i> طالب جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="studentAlert"></div>
+                <form id="studentForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="student_id" id="studentId">
+
+                    <ul class="nav nav-tabs mb-3" id="studentTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-pane" type="button" role="tab">الأساسية</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact-pane" type="button" role="tab">التواصل</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab">معلومات إضافية</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab">الإعدادات</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="studentTabContent">
+                        <div class="tab-pane fade show active" id="basic-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الاسم الأول <span class="text-danger">*</span></label>
+                                    <input type="text" name="first_name" id="s_first_name" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الاسم الثاني</label>
+                                    <input type="text" name="second_name" id="s_second_name" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الاسم الثالث</label>
+                                    <input type="text" name="third_name" id="s_third_name" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الاسم الرابع <span class="text-danger">*</span></label>
+                                    <input type="text" name="forth_name" id="s_forth_name" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="contact-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الجوال</label>
+                                    <input type="text" name="mobile" id="s_mobile" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الهاتف</label>
+                                    <input type="text" name="phone" id="s_phone" class="form-control">
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">العنوان</label>
+                                    <textarea name="address" id="s_address" class="form-control" rows="2"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="info-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الجنسية</label>
+                                    <input type="text" name="nationality" id="s_nationality" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">رقم الهوية</label>
+                                    <input type="text" name="identity_number" id="s_identity_number" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">مكان إصدار الهوية</label>
+                                    <input type="text" name="identity_location" id="s_identity_location" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">تاريخ إصدار الهوية</label>
+                                    <input type="date" name="identity_start_date" id="s_identity_start_date" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">تاريخ الميلاد</label>
+                                    <input type="date" name="birth_date" id="s_birth_date" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">مكان الميلاد</label>
+                                    <input type="text" name="birth_location" id="s_birth_location" class="form-control">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">المؤهل</label>
+                                    <input type="text" name="qualification" id="s_qualification" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="settings-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الفرع <span class="text-danger">*</span></label>
+                                    <select name="branch" id="s_branch" class="form-select" required>
+                                        <option value="">اختر الفرع...</option>
+                                        {% for branch in branches %}
+                                        <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">المستوى <span class="text-danger">*</span></label>
+                                    <select name="level" id="s_level" class="form-select" required>
+                                        <option value="مبتدئ">مبتدئ</option>
+                                        <option value="متوسط">متوسط</option>
+                                        <option value="متقدم">متقدم</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">طريقة التواصل المفضلة <span class="text-danger">*</span></label>
+                                    <select name="preferred_contact" id="s_preferred_contact" class="form-select" required>
+                                        <option value="email">البريد الإلكتروني</option>
+                                        <option value="whatsapp">واتساب</option>
+                                        <option value="app">التطبيق الداخلي</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveStudentBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="studentSpinner"></span>
+                    <span id="studentBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const studentModal = document.getElementById('studentModal');
+    const studentForm = document.getElementById('studentForm');
+    const studentId = document.getElementById('studentId');
+    const saveBtn = document.getElementById('saveStudentBtn');
+    const spinner = document.getElementById('studentSpinner');
+    const btnText = document.getElementById('studentBtnText');
+    const alertBox = document.getElementById('studentAlert');
+    const modalTitle = document.getElementById('studentModalTitle');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openStudentModal = function(id, firstName, secondName, thirdName, forthName, mobile, phone, address, nationality, identityNumber, identityLocation, identityStartDate, birthDate, birthLocation, qualification, branchId, level, preferredContact) {
+        alertBox.innerHTML = '';
+        studentForm.reset();
+
+        const basicTab = document.getElementById('basic-tab');
+        new bootstrap.Tab(basicTab).show();
+
+        if (id) {
+            studentId.value = id;
+            document.getElementById('s_first_name').value = firstName || '';
+            document.getElementById('s_second_name').value = secondName || '';
+            document.getElementById('s_third_name').value = thirdName || '';
+            document.getElementById('s_forth_name').value = forthName || '';
+            document.getElementById('s_mobile').value = mobile || '';
+            document.getElementById('s_phone').value = phone || '';
+            document.getElementById('s_address').value = address || '';
+            document.getElementById('s_nationality').value = nationality || '';
+            document.getElementById('s_identity_number').value = identityNumber || '';
+            document.getElementById('s_identity_location').value = identityLocation || '';
+            document.getElementById('s_identity_start_date').value = identityStartDate || '';
+            document.getElementById('s_birth_date').value = birthDate || '';
+            document.getElementById('s_birth_location').value = birthLocation || '';
+            document.getElementById('s_qualification').value = qualification || '';
+            document.getElementById('s_branch').value = branchId || '';
+            document.getElementById('s_level').value = level || 'مبتدئ';
+            document.getElementById('s_preferred_contact').value = preferredContact || 'whatsapp';
+            modalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل طالب';
+        } else {
+            studentId.value = '';
+            document.getElementById('s_branch').value = '';
+            modalTitle.innerHTML = '<i class="bi bi-person-plus text-primary me-2"></i> طالب جديد';
+        }
+        new bootstrap.Modal(studentModal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!studentForm.checkValidity()) {
+            studentForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(studentForm);
+
+        const isEdit = studentId.value !== '';
+        const url = isEdit
+            ? '/students/ajax/' + studentId.value + '/update/'
+            : '{% url "student-create-ajax" %}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(studentModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>

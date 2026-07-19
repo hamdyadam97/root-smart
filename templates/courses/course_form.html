@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}{% if object %}تعديل دورة{% else %}دورة جديدة{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل دورة{% else %}<i class="bi bi-plus-lg"></i> دورة جديدة{% endif %}</h2>
+    <a href="{% url 'course-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.master.id_for_label }}" class="form-label">{{ form.master.label }}</label>
+                    <div class="input-group">
+                        {{ form.master }}
+                        {% if user|has_perm:'add_master' %}
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#masterModal" title="إضافة تخصص جديد">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% if form.master.errors %}<div class="text-danger small">{{ form.master.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.code.id_for_label }}" class="form-label">{{ form.code.label }}</label>
+                    {{ form.code }}
+                    {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.instructor.id_for_label }}" class="form-label">{{ form.instructor.label }}</label>
+                    {{ form.instructor }}
+                    {% if form.instructor.errors %}<div class="text-danger small">{{ form.instructor.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.company_name.id_for_label }}" class="form-label">{{ form.company_name.label }}</label>
+                    {{ form.company_name }}
+                    {% if form.company_name.errors %}<div class="text-danger small">{{ form.company_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.max_student_count.id_for_label }}" class="form-label">{{ form.max_student_count.label }}</label>
+                    {{ form.max_student_count }}
+                    {% if form.max_student_count.errors %}<div class="text-danger small">{{ form.max_student_count.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.target_level.id_for_label }}" class="form-label">{{ form.target_level.label }}</label>
+                    {{ form.target_level }}
+                    {% if form.target_level.errors %}<div class="text-danger small">{{ form.target_level.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.hours.id_for_label }}" class="form-label">{{ form.hours.label }}</label>
+                    {{ form.hours }}
+                    {% if form.hours.errors %}<div class="text-danger small">{{ form.hours.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.start_date.id_for_label }}" class="form-label">{{ form.start_date.label }}</label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}<div class="text-danger small">{{ form.start_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.end_date.id_for_label }}" class="form-label">{{ form.end_date.label }}</label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}<div class="text-danger small">{{ form.end_date.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+
+<!-- Master Modal -->
+<div class="modal fade" id="masterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="bi bi-journal-bookmark text-primary me-2"></i> إضافة تخصص جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="masterAlert"></div>
+                <form id="masterForm" class="modal-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الفرع <span class="text-danger">*</span></label>
+                            <select name="branch" class="form-select" required>
+                                <option value="">اختر الفرع...</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التصنيف</label>
+                            <select name="master_category" class="form-select">
+                                <option value="">اختر التصنيف...</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="number" name="code" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم التخصص <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المدة</label>
+                            <input type="text" name="period" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveMasterBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="masterSpinner"></span>
+                    <span id="masterBtnText">حفظ التخصص</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const masterSelect = document.getElementById('{{ form.master.id_for_label }}');
+    const codeInput = document.getElementById('{{ form.code.id_for_label }}');
+    const companyInput = document.getElementById('{{ form.company_name.id_for_label }}');
+
+    function fillFromMaster(masterId) {
+        if (!masterId) {
+            companyInput.value = '';
+            return;
+        }
+        fetch('{% url "master-info-ajax" 0 %}'.replace('0', masterId))
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (!companyInput.value.trim()) {
+                        companyInput.value = data.company_name || '';
+                    }
+                    // لو الكود فاضي (إنشاء جديد) نملأ تلقائي
+                    if (!codeInput.value.trim() && data.next_code) {
+                        codeInput.value = data.next_code;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
+    if (masterSelect) {
+        masterSelect.addEventListener('change', function() {
+            fillFromMaster(this.value);
+        });
+        // لو فيه قيمة محددة مسبقاً (مثلاً بعد خطأ في الفورم)
+        if (masterSelect.value) {
+            fillFromMaster(masterSelect.value);
+        }
+    }
+
+    // Master modal logic
+    const masterModal = document.getElementById('masterModal');
+    const masterForm = document.getElementById('masterForm');
+    const saveBtn = document.getElementById('saveMasterBtn');
+    const spinner = document.getElementById('masterSpinner');
+    const btnText = document.getElementById('masterBtnText');
+    const alertBox = document.getElementById('masterAlert');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ التخصص';
+    }
+
+    if (masterModal) {
+        masterModal.addEventListener('show.bs.modal', function() {
+            alertBox.innerHTML = '';
+            masterForm.reset();
+        });
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function() {
+            if (!masterForm.checkValidity()) {
+                masterForm.reportValidity();
+                return;
+            }
+            setLoading(true);
+            const formData = new FormData(masterForm);
+
+            fetch('{% url "master-create-ajax" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(r => r.json())
+            .then(data => {
+                setLoading(false);
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    // أضف التخصص الجديد للقائمة واختاره
+                    if (masterSelect) {
+                        const option = document.createElement('option');
+                        option.value = data.master.id;
+                        option.textContent = data.master.code + ' - ' + data.master.name;
+                        masterSelect.appendChild(option);
+                        masterSelect.value = data.master.id;
+                        fillFromMaster(data.master.id);
+                    }
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(masterModal).hide();
+                        alertBox.innerHTML = '';
+                    }, 1200);
+                } else {
+                    let errors = '';
+                    for (const [field, msgs] of Object.entries(data.errors)) {
+                        errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                    }
+                    showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+                }
+            })
+            .catch(() => {
+                setLoading(false);
+                showAlert('حدث خطأ في الاتصال', 'danger');
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

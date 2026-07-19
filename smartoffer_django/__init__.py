@@ -1,0 +1,1 @@
+# Smart Offer Django Project

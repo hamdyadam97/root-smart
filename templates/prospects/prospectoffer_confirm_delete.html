@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}حذف عرض | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-trash"></i> حذف عرض</h2>
+    {% if object.prospect %}
+    <a href="{% url 'prospect-detail' object.prospect.slug %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+    {% else %}
+    <a href="{% url 'prospect-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-body text-center">
+        <p class="fs-5">هل أنت متأكد من حذف العرض <strong>{{ object.title }}</strong>؟</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> نعم، احذف</button>
+            {% if object.prospect %}
+            <a href="{% url 'prospect-detail' object.prospect.slug %}" class="btn btn-outline-secondary">إلغاء</a>
+            {% else %}
+            <a href="{% url 'prospect-list' %}" class="btn btn-outline-secondary">إلغاء</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

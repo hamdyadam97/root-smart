@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ account_condition.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-list-check"></i> {{ account_condition.title }}</h2>
+    <div>
+        <a href="{% url 'accountcondition-update' account_condition.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'accountcondition-delete' account_condition.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'accountcondition-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>التسجيل:</strong> {{ account_condition.account.get_key_rtl }}</li>
+            <li class="list-group-item"><strong>العنوان:</strong> {{ account_condition.title }}</li>
+            <li class="list-group-item"><strong>المحتوى:</strong> {{ account_condition.content|linebreaksbr }}</li>
+            <li class="list-group-item"><strong>تم الاستيفاء:</strong> {% if account_condition.fulfilled %}<span class="badge bg-success">نعم</span>{% else %}<span class="badge bg-warning text-dark">لا</span>{% endif %}</li>
+            <li class="list-group-item"><strong>المستخدم:</strong> {{ account_condition.person.get_short_name|default:'-' }}</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

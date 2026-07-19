@@ -1,0 +1,147 @@
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="reportModalTitle"><i class="bi bi-graph-up text-primary me-2"></i> تقرير جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reportAlert"></div>
+                <form id="reportForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="report_id" id="reportId">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">نوع التقرير <span class="text-danger">*</span></label>
+                            <select name="report_type" id="r_report_type" class="form-select" required>
+                                <option value="summary">ملخص عام</option>
+                                <option value="offers">تقرير العروض</option>
+                                <option value="branches">تقرير الفروع</option>
+                                <option value="employees">تقرير الموظفين</option>
+                                <option value="students">تقرير الطلاب</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الفرع</label>
+                            <select name="branch" id="r_branch" class="form-select">
+                                <option value="">الكل</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الفترة</label>
+                            <input type="text" name="period" id="r_period" class="form-control" placeholder="مثال: يناير 2024">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">من تاريخ</label>
+                            <input type="date" name="start_date" id="r_start_date" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">إلى تاريخ</label>
+                            <input type="date" name="end_date" id="r_end_date" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveReportBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="reportSpinner"></span>
+                    <span id="reportBtnText">حفظ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const reportModal = document.getElementById('reportModal');
+    const reportForm = document.getElementById('reportForm');
+    const reportId = document.getElementById('reportId');
+    const saveBtn = document.getElementById('saveReportBtn');
+    const spinner = document.getElementById('reportSpinner');
+    const btnText = document.getElementById('reportBtnText');
+    const alertBox = document.getElementById('reportAlert');
+    const modalTitle = document.getElementById('reportModalTitle');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ';
+    }
+
+    window.openReportModal = function(id, reportType, branchId, period, startDate, endDate) {
+        alertBox.innerHTML = '';
+        reportForm.reset();
+
+        if (id) {
+            reportId.value = id;
+            document.getElementById('r_report_type').value = reportType || 'summary';
+            document.getElementById('r_branch').value = branchId || '';
+            document.getElementById('r_period').value = period || '';
+            document.getElementById('r_start_date').value = startDate || '';
+            document.getElementById('r_end_date').value = endDate || '';
+            modalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل تقرير';
+        } else {
+            reportId.value = '';
+            modalTitle.innerHTML = '<i class="bi bi-graph-up text-primary me-2"></i> تقرير جديد';
+        }
+        new bootstrap.Modal(reportModal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!reportForm.checkValidity()) {
+            reportForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(reportForm);
+        const body = new URLSearchParams(formData);
+
+        const isEdit = reportId.value !== '';
+        const url = isEdit
+            ? '/reports/ajax/' + reportId.value + '/update/'
+            : '{% url "reportsnapshot-create-ajax" %}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(reportModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>

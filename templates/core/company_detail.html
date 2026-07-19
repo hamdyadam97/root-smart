@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ company.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-building"></i> {{ company.name }}</h2>
+    <div>
+        <button type="button" class="btn btn-warning" onclick="openCompanyModal({
+            id: {{ company.id }},
+            name: '{{ company.name|escapejs }}',
+            sub_name: '{{ company.sub_name|escapejs }}',
+            address: '{{ company.address|escapejs }}',
+            phone1: '{{ company.phone1|escapejs }}',
+            phone2: '{{ company.phone2|escapejs }}',
+            postal_code: '{{ company.postal_code|escapejs }}',
+            mobile: '{{ company.mobile|escapejs }}',
+            fax: '{{ company.fax|escapejs }}',
+            email: '{{ company.email|escapejs }}',
+            website: '{{ company.website|escapejs }}',
+            commercial_registration: '{{ company.commercial_registration|escapejs }}',
+            tax_code: '{{ company.tax_code|escapejs }}',
+            currency: '{{ company.currency|escapejs }}',
+            logo_url: '{% if company.logo %}{{ company.logo.url|escapejs }}{% endif %}'
+        })">
+            <i class="bi bi-pencil"></i> تعديل
+        </button>
+        <a href="{% url 'company-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- الشعار + البيانات الأساسية -->
+    <div class="col-lg-4">
+        <div class="card mb-3 text-center">
+            <div class="card-body">
+                {% if company.logo %}
+                <img src="{{ company.logo.url }}" alt="{{ company.name }}" class="img-fluid mb-3" style="max-height: 150px;">
+                {% else %}
+                <div class="display-1 text-muted mb-3"><i class="bi bi-building"></i></div>
+                {% endif %}
+                <h4 class="fw-bold">{{ company.name }}</h4>
+                {% if company.sub_name %}
+                <p class="text-muted">{{ company.sub_name }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-info-circle"></i> البيانات الأساسية</div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="fw-bold">العملة</td><td>{{ company.get_currency_display_name }}</td></tr>
+                    <tr><td class="fw-bold">العنوان</td><td>{{ company.address|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">الرقم البريدي</td><td>{{ company.postal_code|default:"-" }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- بيانات التواصل + التجارية -->
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white"><i class="bi bi-telephone"></i> بيانات التواصل</div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tr><td class="fw-bold">التليفون 1</td><td>{{ company.phone1|default:"-" }}</td></tr>
+                            <tr><td class="fw-bold">التليفون 2</td><td>{{ company.phone2|default:"-" }}</td></tr>
+                            <tr><td class="fw-bold">المحمول</td><td>{{ company.mobile|default:"-" }}</td></tr>
+                            <tr><td class="fw-bold">الفاكس</td><td>{{ company.fax|default:"-" }}</td></tr>
+                            <tr><td class="fw-bold">البريد</td><td>{{ company.email|default:"-" }}</td></tr>
+                            <tr><td class="fw-bold">الموقع</td><td>{% if company.website %}<a href="{{ company.website }}" target="_blank">{{ company.website }}</a>{% else %}-{% endif %}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header bg-secondary text-white"><i class="bi bi-file-text"></i> البيانات التجارية</div>
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tr><td class="fw-bold" style="width:200px">السجل التجاري</td><td>{{ company.commercial_registration|default:"-" }}</td></tr>
+                            <tr><td class="fw-bold">الرقم الضريبي</td><td>{{ company.tax_code|default:"-" }}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- الفروع -->
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-diagram-3"></i> الفروع ({{ company.branches.count }})</span>
+                <a href="{% url 'branch-list' %}?company={{ company.id }}" class="btn btn-sm btn-light">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                {% if company.branches.all %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>الكود</th>
+                                <th>الاسم</th>
+                                <th>التليفون</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for branch in company.branches.all %}
+                            <tr>
+                                <td>{{ branch.code }}</td>
+                                <td>{{ branch.name }}</td>
+                                <td>{{ branch.phone1|default:"-" }}</td>
+                                <td><a href="{% url 'branch-detail' branch.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">لا توجد فروع مسجلة لهذه الشركة.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Re-use the modal from company_list if available, otherwise simple redirect
+function openCompanyModal(data) {
+    if (typeof window.openCompanyModal === 'function' && document.getElementById('companyModal')) {
+        window.openCompanyModal(data);
+    } else {
+        window.location.href = '/companies/' + data.id + '/update/';
+    }
+}
+</script>
+{% endblock %}

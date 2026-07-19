@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}أنواع فواتير الشراء{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-folder"></i> أنواع فواتير الشراء</h2>
+    <a href="{% url 'billbuytype-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> نوع جديد</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>الاسم</th>
+                <th>الكود</th>
+                <th>الوصف</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bill_buy_type in bill_buy_types %}
+            <tr>
+                <td>{{ bill_buy_type.name }}</td>
+                <td>{{ bill_buy_type.code }}</td>
+                <td>{{ bill_buy_type.description|truncatechars:50|default:'-' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'billbuytype-detail' bill_buy_type.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'billbuytype-update' bill_buy_type.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'billbuytype-delete' bill_buy_type.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">لا يوجد أنواع</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

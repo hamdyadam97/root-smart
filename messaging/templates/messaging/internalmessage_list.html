@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}الرسائل الداخلية{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-envelope"></i> الرسائل الداخلية</h2>
+    <a href="{% url 'internalmessage-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> رسالة جديدة</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control" placeholder="بحث..." value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>المرسل</th>
+                <th>المستلم</th>
+                <th>الموضوع</th>
+                <th>نوع الرسالة</th>
+                <th>مقروءة</th>
+                <th>التاريخ</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for message in messages_list %}
+            <tr class="{% if message.recipient == request.user and not message.is_read %}table-primary{% endif %}">
+                <td>{{ message.sender.get_short_name|default:message.sender.email }}</td>
+                <td>{{ message.recipient.get_short_name|default:message.recipient.email }}</td>
+                <td><a href="{% url 'internalmessage-detail' message.pk %}">{{ message.subject }}</a></td>
+                <td>{{ message.get_message_type_display }}</td>
+                <td>{% if message.is_read %}<i class="bi bi-check2-all text-success"></i>{% else %}<i class="bi bi-envelope-open text-muted"></i>{% endif %}</td>
+                <td>{{ message.created_at|date:'Y-m-d H:i' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'internalmessage-detail' message.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'internalmessage-update' message.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'internalmessage-delete' message.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted">لا توجد رسائل</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}">السابق</a>
+        </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">التالي</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

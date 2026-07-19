@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}المستفسرون | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-lines-fill"></i> المستفسرون</h2>
+    {% if user|has_perm:'add_prospect' %}
+    <a href="{% url 'prospect-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> مستفسر جديد
+    </a>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-5">
+                <input type="text" name="search" class="form-control" placeholder="ابحث بالاسم أو الجوال أو جهة العمل..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-5">
+                <select name="status" class="form-select">
+                    <option value="">جميع الحالات</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>الجوال</th>
+                <th>التخصص</th>
+                <th>حالة التواصل</th>
+                <th>تاريخ التواصل</th>
+                <th>الموظف</th>
+                <th class="text-start">الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prospect in prospects %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    {{ prospect.name }}
+                    {% if prospect.student %}
+                    <a href="{% url 'student-detail' prospect.student.slug %}" class="badge bg-success text-decoration-none" title="محول إلى طالب"><i class="bi bi-mortarboard"></i></a>
+                    {% endif %}
+                </td>
+                <td>{{ prospect.mobile|default:'-' }}</td>
+                <td>{{ prospect.master|default:'-' }}</td>
+                <td><span class="badge {{ prospect.get_status_display_class }}">{{ prospect.get_status_display }}</span></td>
+                <td>{{ prospect.contact_date|default:'-' }}</td>
+                <td>{{ prospect.contacted_by|default:'-' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'prospect-detail' prospect.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    {% has_perm_on_branch user 'change_prospect' prospect.branch as can_change %}
+                    {% if can_change %}
+                    <a href="{% url 'prospect-update' prospect.slug %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    {% endif %}
+                    {% has_perm_on_branch user 'delete_prospect' prospect.branch as can_delete %}
+                    {% if can_delete %}
+                    <a href="{% url 'prospect-delete' prospect.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center text-muted">لا يوجد مستفسرون</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}عرض سعر {{ offer.code }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tag"></i> عرض سعر {{ offer.code }}</h2>
+    <div>
+        <a href="{% url 'offer-update' offer.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'offer-delete' offer.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'offer-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-person"></i> بيانات العميل</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>اسم العميل:</strong> {{ offer.customer_name }}</li>
+                <li class="list-group-item"><strong>رقم الهوية:</strong> {{ offer.customer_identity_number|default:'-' }}</li>
+                <li class="list-group-item"><strong>المحمول:</strong> {{ offer.customer_mobile|default:'-' }}</li>
+                <li class="list-group-item"><strong>البريد:</strong> {{ offer.customer_email|default:'-' }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><i class="bi bi-mortarboard"></i> بيانات التخصص</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>التخصص:</strong> {{ offer.master.name }}</li>
+                <li class="list-group-item"><strong>الفرع:</strong> {{ offer.master.branch.name }}</li>
+                <li class="list-group-item"><strong>نوع الدفع:</strong> {{ offer.master_payment_type }}</li>
+                <li class="list-group-item"><strong>مسجل:</strong> {% if offer.registered %}<span class="badge bg-success">نعم</span>{% else %}<span class="badge bg-warning text-dark">لا</span>{% endif %}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white"><i class="bi bi-calculator"></i> المالية</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>السعر:</strong> {{ offer.master_price }}</li>
+                <li class="list-group-item"><strong>نسبة الخصم:</strong> {{ offer.master_discount_amount }}</li>
+                <li class="list-group-item"><strong>نسبة الربح:</strong> {{ offer.master_profit_amount }}</li>
+                <li class="list-group-item"><strong>مبلغ الائتمان:</strong> {{ offer.master_credit_amount }}</li>
+                <li class="list-group-item"><strong>الصافي:</strong> {{ offer.get_net }}</li>
+                <li class="list-group-item"><strong>قيمة الخصم:</strong> {{ offer.get_discount }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white"><i class="bi bi-envelope"></i> التواصل</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>إرسال بريد:</strong> {% if offer.send_email %}<span class="badge bg-success">نعم</span>{% else %}<span class="badge bg-secondary">لا</span>{% endif %}</li>
+                <li class="list-group-item"><strong>إرسال SMS:</strong> {% if offer.send_sms %}<span class="badge bg-success">نعم</span>{% else %}<span class="badge bg-secondary">لا</span>{% endif %}</li>
+                <li class="list-group-item"><strong>نص SMS:</strong> {{ offer.sms_body|default:'-'|linebreaksbr }}</li>
+                <li class="list-group-item"><strong>ملاحظات:</strong> {{ offer.note|default:'-'|linebreaksbr }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

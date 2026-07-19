@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}الإشعارات{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-bell"></i> الإشعارات</h2>
+    <a href="{% url 'appnotification-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إشعار جديد</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="q" class="form-control" placeholder="بحث..." value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>العنوان</th>
+                <th>نوع الإشعار</th>
+                <th>مقروء</th>
+                <th>رابط الإجراء</th>
+                <th>التاريخ</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for notification in notifications %}
+            <tr class="{% if not notification.is_read %}table-primary{% endif %}">
+                <td><a href="{% url 'appnotification-detail' notification.pk %}">{{ notification.title }}</a></td>
+                <td>{{ notification.get_notification_type_display }}</td>
+                <td>{% if notification.is_read %}<i class="bi bi-check2-all text-success"></i>{% else %}<i class="bi bi-envelope-open text-muted"></i>{% endif %}</td>
+                <td>{% if notification.action_url %}<a href="{{ notification.action_url }}" target="_blank">رابط</a>{% else %}-{% endif %}</td>
+                <td>{{ notification.created_at|date:'Y-m-d H:i' }}</td>
+                <td class="text-start">
+                    <a href="{% url 'appnotification-detail' notification.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'appnotification-update' notification.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'appnotification-delete' notification.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">لا توجد إشعارات</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}">السابق</a>
+        </li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">التالي</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

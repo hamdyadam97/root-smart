@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل سند صرف{% else %}سند صرف جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل سند صرف{% else %}<i class="bi bi-plus-lg"></i> سند صرف جديد{% endif %}</h2>
+    <a href="{% url 'paymentout-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.code.id_for_label }}" class="form-label">{{ form.code.label }}</label>
+                    {{ form.code }}
+                    {% if form.code.errors %}<div class="text-danger small">{{ form.code.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }}</label>
+                    {{ form.date }}
+                    {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.amount_number.id_for_label }}" class="form-label">{{ form.amount_number.label }}</label>
+                    {{ form.amount_number }}
+                    {% if form.amount_number.errors %}<div class="text-danger small">{{ form.amount_number.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.amount_string.id_for_label }}" class="form-label">{{ form.amount_string.label }}</label>
+                    {{ form.amount_string }}
+                    {% if form.amount_string.errors %}<div class="text-danger small">{{ form.amount_string.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.receiver_name.id_for_label }}" class="form-label">{{ form.receiver_name.label }}</label>
+                    {{ form.receiver_name }}
+                    {% if form.receiver_name.errors %}<div class="text-danger small">{{ form.receiver_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.payment_method.id_for_label }}" class="form-label">{{ form.payment_method.label }}</label>
+                    {{ form.payment_method }}
+                    {% if form.payment_method.errors %}<div class="text-danger small">{{ form.payment_method.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-12 mb-3">
+                    <label for="{{ form.reason.id_for_label }}" class="form-label">{{ form.reason.label }}</label>
+                    {{ form.reason }}
+                    {% if form.reason.errors %}<div class="text-danger small">{{ form.reason.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

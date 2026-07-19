@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}{{ prospect.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-lines-fill"></i> {{ prospect.name }}</h2>
+    <div>
+        {% has_perm_on_branch user 'change_prospect' prospect.branch as can_change %}
+        {% if can_change %}
+        <a href="{% url 'prospect-update' prospect.slug %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        {% endif %}
+        {% has_perm_on_branch user 'delete_prospect' prospect.branch as can_delete %}
+        {% if can_delete %}
+        <a href="{% url 'prospect-delete' prospect.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        {% endif %}
+        <a href="{% url 'prospect-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-person-vcard"></i> بيانات المستفسر</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>الاسم:</strong> {{ prospect.name }}</li>
+                <li class="list-group-item"><strong>رقم الجوال:</strong> {{ prospect.mobile|default:'-' }}</li>
+                <li class="list-group-item"><strong>التخصص:</strong> {{ prospect.master|default:'-' }}</li>
+                <li class="list-group-item"><strong>جهة العمل:</strong> {{ prospect.workplace|default:'-' }}</li>
+                <li class="list-group-item"><strong>الوزارة / المؤسسة:</strong> {{ prospect.ministry|default:'-' }}</li>
+                <li class="list-group-item"><strong>المحافظة:</strong> {{ prospect.governorate|default:'-' }}</li>
+                <li class="list-group-item"><strong>وسيلة التواصل:</strong> {{ prospect.get_communication_method_display }}</li>
+                <li class="list-group-item"><strong>ملاحظات:</strong> {{ prospect.notes|default:'-'|linebreaksbr }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><i class="bi bi-telephone"></i> بيانات التواصل</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>الفرع:</strong> {{ prospect.branch }}</li>
+                <li class="list-group-item"><strong>تاريخ التواصل:</strong> {{ prospect.contact_date|default:'-' }}</li>
+                <li class="list-group-item"><strong>الموظف الذي قام بالتواصل:</strong> {{ prospect.contacted_by|default:'-' }}</li>
+                <li class="list-group-item"><strong>حالة التواصل:</strong> <span class="badge {{ prospect.get_status_display_class }}">{{ prospect.get_status_display }}</span></li>
+                <li class="list-group-item"><strong>تاريخ الإنشاء:</strong> {{ prospect.created_at }}</li>
+                <li class="list-group-item"><strong>آخر تحديث:</strong> {{ prospect.updated_at }}</li>
+                {% if prospect.student %}
+                <li class="list-group-item"><strong>محول إلى طالب:</strong> <a href="{% url 'student-detail' prospect.student.slug %}">{{ prospect.student.contact.get_full_name }}</a></li>
+                <li class="list-group-item"><strong>تاريخ التحويل:</strong> {{ prospect.converted_at }}</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-tags"></i> العروض المرسلة</span>
+        {% if prospect.status == 'interested' and not prospect.student %}
+        {% has_perm_on_branch user 'add_prospectoffer' prospect.branch as can_add_offer %}
+        {% if can_add_offer %}
+        <a href="{% url 'prospectoffer-create' prospect.slug %}" class="btn btn-light btn-sm"><i class="bi bi-plus-lg"></i> إرسال عرض</a>
+        {% endif %}
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>اسم العرض</th>
+                        <th>الدورة</th>
+                        <th>السعر</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الإرسال</th>
+                        <th>الموظف</th>
+                        <th class="text-start">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in offers %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ offer.title }}</td>
+                        <td>{{ offer.course|default:'-' }}</td>
+                        <td>{{ offer.price }}</td>
+                        <td><span class="badge {{ offer.get_status_display_class }}">{{ offer.get_status_display }}</span></td>
+                        <td>{{ offer.sent_at }}</td>
+                        <td>{{ offer.sent_by|default:'-' }}</td>
+                        <td class="text-start">
+                            {% has_perm_on_branch user 'change_prospectoffer' offer.branch as can_change_offer %}
+                            {% if can_change_offer %}
+                            <a href="{% url 'prospectoffer-update' offer.slug %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                            {% endif %}
+                            {% has_perm_on_branch user 'delete_prospectoffer' offer.branch as can_delete_offer %}
+                            {% if can_delete_offer %}
+                            <a href="{% url 'prospectoffer-delete' offer.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">لا توجد عروض مرسلة</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if prospect.status == 'interested' and not prospect.student %}
+{% has_perm_on_branch user 'add_student' prospect.branch as can_convert %}
+{% if can_convert %}
+<div class="mt-4 text-center">
+    <form method="post" action="{% url 'prospect-convert-to-student' prospect.slug %}" onsubmit="return confirm('هل أنت متأكد من تحويل هذا المستفسر إلى طالب؟');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-mortarboard"></i> تحويل إلى طالب</button>
+    </form>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+
+{% block title %}قائمة الفروع | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-diagram-3"></i> الفروع</h2>
+    <button type="button" class="btn btn-primary" onclick="openBranchModal()">
+        <i class="bi bi-plus-lg"></i> إضافة فرع
+    </button>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالاسم..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="company" class="form-select">
+                    <option value="">جميع الشركات</option>
+                    {% for company in companies %}
+                    <option value="{{ company.id }}" {% if request.GET.company == company.id|stringformat:"s" %}selected{% endif %}>{{ company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الكود</th>
+                    <th>الاسم</th>
+                    <th>الشركة</th>
+                    <th>التليفون</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for branch in branches %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ branch.code }}</td>
+                    <td>{{ branch.name }}</td>
+                    <td>{{ branch.company.name }}</td>
+                    <td>{{ branch.phone1|default:"-" }}</td>
+                    <td>
+                        <a href="{% url 'branch-dashboard' branch.slug %}" class="btn btn-sm btn-success" title="لوحة التحكم"><i class="bi bi-speedometer2"></i></a>
+                        <a href="{% url 'branch-detail' branch.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                        <button type="button" class="btn btn-sm btn-warning" onclick="openBranchModal({
+                            id: {{ branch.id }},
+                            slug: '{{ branch.slug|escapejs }}',
+                            company: {{ branch.company.id }},
+                            code: {{ branch.code }},
+                            name: '{{ branch.name|escapejs }}',
+                            sub_name: '{{ branch.sub_name|escapejs }}',
+                            address: '{{ branch.address|escapejs }}',
+                            phone1: '{{ branch.phone1|escapejs }}',
+                            phone2: '{{ branch.phone2|escapejs }}',
+                            postal_code: '{{ branch.postal_code|escapejs }}',
+                            mobile: '{{ branch.mobile|escapejs }}',
+                            fax: '{{ branch.fax|escapejs }}',
+                            email: '{{ branch.email|escapejs }}',
+                            website: '{{ branch.website|escapejs }}',
+                            commercial_registration: '{{ branch.commercial_registration|escapejs }}',
+                            licence_code: '{{ branch.licence_code|escapejs }}',
+                            tax_code: '{{ branch.tax_code|escapejs }}',
+                            logo: '{{ branch.logo|escapejs }}',
+                            signature_url: '{% if branch.signature %}{{ branch.signature.url|escapejs }}{% endif %}'
+                        })">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <a href="{% url 'branch-delete' branch.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">لا توجد فروع</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "includes/pagination.html" %}
+
+<!-- Branch Modal -->
+<div class="modal fade" id="branchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="branchModalTitle"><i class="bi bi-building-add text-primary me-2"></i> إضافة فرع جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="branchAlert"></div>
+                <form id="branchForm" class="modal-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="branch_id" id="branchId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الشركة <span class="text-danger">*</span></label>
+                            <select name="company" id="branchCompany" class="form-select" required>
+                                <option value="">اختر الشركة...</option>
+                                {% for company in companies %}
+                                <option value="{{ company.id }}">{{ company.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الكود <span class="text-danger">*</span></label>
+                            <input type="number" name="code" id="branchCode" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">اسم الفرع <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="branchName" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الاسم الفرعي</label>
+                            <input type="text" name="sub_name" id="branchSubName" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التليفون 1</label>
+                            <input type="text" name="phone1" id="branchPhone1" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التليفون 2</label>
+                            <input type="text" name="phone2" id="branchPhone2" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">المحمول</label>
+                            <input type="text" name="mobile" id="branchMobile" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الفاكس</label>
+                            <input type="text" name="fax" id="branchFax" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" name="email" id="branchEmail" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الموقع الإلكتروني</label>
+                            <input type="url" name="website" id="branchWebsite" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الرقم البريدي</label>
+                            <input type="text" name="postal_code" id="branchPostalCode" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">السجل التجاري</label>
+                            <input type="text" name="commercial_registration" id="branchCommercialReg" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">رقم الترخيص</label>
+                            <input type="text" name="licence_code" id="branchLicenceCode" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الرقم الضريبي</label>
+                            <input type="text" name="tax_code" id="branchTaxCode" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">الشعار</label>
+                            <input type="file" name="logo" id="branchLogo" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">التوقيع</label>
+                            <input type="file" name="signature" id="branchSignature" class="form-control" accept="image/*">
+                            <div id="branchSignaturePreview" class="mt-2 d-none">
+                                <img src="" alt="التوقيع الحالي" class="img-thumbnail" style="max-height:80px;">
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label class="form-label">العنوان</label>
+                            <textarea name="address" id="branchAddress" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="saveBranchBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="branchSpinner"></span>
+                    <span id="branchBtnText">حفظ الفرع</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const branchModal = document.getElementById('branchModal');
+    const branchForm = document.getElementById('branchForm');
+    const branchId = document.getElementById('branchId');
+    const branchCompany = document.getElementById('branchCompany');
+    const branchCode = document.getElementById('branchCode');
+    const branchName = document.getElementById('branchName');
+    const branchSubName = document.getElementById('branchSubName');
+    const branchPhone1 = document.getElementById('branchPhone1');
+    const branchPhone2 = document.getElementById('branchPhone2');
+    const branchPostalCode = document.getElementById('branchPostalCode');
+    const branchMobile = document.getElementById('branchMobile');
+    const branchFax = document.getElementById('branchFax');
+    const branchEmail = document.getElementById('branchEmail');
+    const branchWebsite = document.getElementById('branchWebsite');
+    const branchCommercialReg = document.getElementById('branchCommercialReg');
+    const branchLicenceCode = document.getElementById('branchLicenceCode');
+    const branchTaxCode = document.getElementById('branchTaxCode');
+    const branchAddress = document.getElementById('branchAddress');
+    const branchSignature = document.getElementById('branchSignature');
+    const branchSignaturePreview = document.getElementById('branchSignaturePreview');
+    const branchModalTitle = document.getElementById('branchModalTitle');
+    const saveBtn = document.getElementById('saveBranchBtn');
+    const spinner = document.getElementById('branchSpinner');
+    const btnText = document.getElementById('branchBtnText');
+    const alertBox = document.getElementById('branchAlert');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الحفظ...' : 'حفظ الفرع';
+    }
+
+    window.openBranchModal = function(data) {
+        alertBox.innerHTML = '';
+        branchForm.reset();
+        if (data && data.id) {
+            branchId.value = data.id;
+            branchCompany.value = data.company || '';
+            branchCode.value = data.code || '';
+            branchName.value = data.name || '';
+            branchSubName.value = data.sub_name || '';
+            branchAddress.value = data.address || '';
+            branchPhone1.value = data.phone1 || '';
+            branchPhone2.value = data.phone2 || '';
+            branchPostalCode.value = data.postal_code || '';
+            branchMobile.value = data.mobile || '';
+            branchFax.value = data.fax || '';
+            branchEmail.value = data.email || '';
+            branchWebsite.value = data.website || '';
+            branchCommercialReg.value = data.commercial_registration || '';
+            branchLicenceCode.value = data.licence_code || '';
+            branchTaxCode.value = data.tax_code || '';
+            if (data.signature_url) {
+                branchSignaturePreview.querySelector('img').src = data.signature_url;
+                branchSignaturePreview.classList.remove('d-none');
+            } else {
+                branchSignaturePreview.classList.add('d-none');
+            }
+            branchModalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل فرع';
+            btnText.textContent = 'تحديث الفرع';
+        } else {
+            branchId.value = '';
+            branchSignaturePreview.classList.add('d-none');
+            branchModalTitle.innerHTML = '<i class="bi bi-building-add text-primary me-2"></i> إضافة فرع جديد';
+            btnText.textContent = 'حفظ الفرع';
+        }
+        const modal = new bootstrap.Modal(branchModal);
+        modal.show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!branchForm.checkValidity()) {
+            branchForm.reportValidity();
+            return;
+        }
+        setLoading(true);
+        const formData = new FormData(branchForm);
+
+        const isEdit = branchId.value !== '';
+        const url = isEdit
+            ? '/branches/ajax/' + branchId.value + '/update/'
+            : '{% url "branch-create-ajax" %}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            setLoading(false);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                branchForm.reset();
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(branchModal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.reload();
+                }, 1200);
+            } else {
+                let errors = '';
+                for (const [field, msgs] of Object.entries(data.errors)) {
+                    errors += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + msgs.join(', ') + '</div>';
+                }
+                showAlert(errors || 'حدث خطأ أثناء الحفظ', 'danger');
+            }
+        })
+        .catch(() => {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال', 'danger');
+        });
+    });
+})();
+</script>
+{% endblock %}

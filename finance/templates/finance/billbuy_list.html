@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}قائمة فواتير الشراء{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-receipt"></i> فواتير الشراء</h2>
+    <a href="{% url 'billbuy-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> فاتورة جديدة</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>الكود</th>
+                <th>التاريخ</th>
+                <th>المورد</th>
+                <th>النوع</th>
+                <th>المبلغ</th>
+                <th>الضريبة</th>
+                <th>الخصم</th>
+                <th>الصافي</th>
+                <th class="text-start">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bill_buy in bill_buys %}
+            <tr>
+                <td>{{ bill_buy.code }}</td>
+                <td>{{ bill_buy.date }}</td>
+                <td>{{ bill_buy.supplier }}</td>
+                <td>{{ bill_buy.bill_buy_type.name|default:'-' }}</td>
+                <td>{{ bill_buy.amount }}</td>
+                <td>{{ bill_buy.tax }}</td>
+                <td>{{ bill_buy.discount }}</td>
+                <td>{{ bill_buy.get_net_amount }}</td>
+                <td class="text-start">
+                    <a href="{% url 'billbuy-detail' bill_buy.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
+                    <a href="{% url 'billbuy-update' bill_buy.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'billbuy-delete' bill_buy.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center text-muted">لا يوجد فواتير</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}سند قبض {{ payment.code }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cash-stack"></i> سند قبض {{ payment.code }}</h2>
+    <div>
+        <button type="button" class="btn btn-warning" onclick="openPaymentModal({{ payment.id }}, '{{ payment.account.id }}', '{{ payment.code }}', '{{ payment.date|date:'Y-m-d\\TH:i' }}', '{{ payment.amount_number }}', '{{ payment.amount_string|escapejs }}', '{{ payment.type|escapejs }}', '{{ payment.payment_method|escapejs }}', '{{ payment.payment_method_code|escapejs }}', '{{ payment.note|escapejs }}')"><i class="bi bi-pencil"></i> تعديل</button>
+        <a href="{% url 'payment-delete' payment.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
+        <a href="{% url 'payment-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white"><i class="bi bi-receipt"></i> بيانات السند</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>الكود:</strong> {{ payment.code }}</li>
+                <li class="list-group-item"><strong>التاريخ:</strong> {{ payment.date }}</li>
+                <li class="list-group-item"><strong>المبلغ رقم:</strong> {{ payment.amount_number }}</li>
+                <li class="list-group-item"><strong>المبلغ حروف:</strong> {{ payment.amount_string|default:'-' }}</li>
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white"><i class="bi bi-info-circle"></i> أخرى</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>التسجيل:</strong> {{ payment.account.get_key_rtl|default:'-' }}</li>
+                <li class="list-group-item"><strong>النوع:</strong> {{ payment.type }}</li>
+                <li class="list-group-item"><strong>طريقة الدفع:</strong> {{ payment.get_payment_method_display }}</li>
+                <li class="list-group-item"><strong>كود الدفع:</strong> {{ payment.payment_method_code|default:'-' }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header bg-info text-white"><i class="bi bi-calculator"></i> الحسابات</div>
+    <ul class="list-group list-group-flush">
+        <li class="list-group-item"><strong>الضريبة (5%):</strong> {{ payment.get_tax }}</li>
+        <li class="list-group-item"><strong>الإجمالي مع الضريبة:</strong> {{ payment.get_amount_with_tax }}</li>
+        <li class="list-group-item"><strong>ملاحظات:</strong> {{ payment.note|default:'-'|linebreaksbr }}</li>
+        <li class="list-group-item"><strong>آخر تعديل:</strong> {{ payment.last_person.get_short_name|default:'-' }}</li>
+        <li class="list-group-item"><strong>تاريخ التعديل:</strong> {{ payment.last_update }}</li>
+    </ul>
+</div>
+
+{% include "includes/payment_modal.html" %}
+{% endblock %}

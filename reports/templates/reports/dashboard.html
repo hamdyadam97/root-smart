@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}لوحة التقارير{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-graph-up"></i> لوحة التقارير</h2>
+    <div>
+        <a href="{% url 'reportsnapshot-list' %}" class="btn btn-outline-secondary"><i class="bi bi-list"></i> قائمة التقارير</a>
+        <button type="button" class="btn btn-primary" onclick="openReportModal()"><i class="bi bi-plus-lg"></i> تقرير جديد</button>
+    </div>
+</div>
+
+<!-- Branch Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">الفرع</label>
+                <select name="branch" class="form-select" onchange="this.form.submit()">
+                    <option value="">جميع الفروع</option>
+                    {% for branch in branches %}
+                    <option value="{{ branch.id }}" {% if selected_branch and selected_branch.id == branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'report-dashboard' %}" class="btn btn-outline-secondary w-100"><i class="bi bi-x-lg"></i> إلغاء الفلتر</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-mortarboard"></i> الطلاب</div>
+            <div class="fw-bold fs-3 text-primary">{{ dashboard.students_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-journal-check"></i> التسجيلات</div>
+            <div class="fw-bold fs-3 text-success">{{ dashboard.registrations_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-cash-stack"></i> المدفوعات</div>
+            <div class="fw-bold fs-3 text-info">{{ dashboard.payments_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-currency-dollar"></i> الإجمالي</div>
+            <div class="fw-bold fs-3 text-warning">{{ dashboard.payments_amount|floatformat:2 }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-tag"></i> العروض</div>
+            <div class="fw-bold fs-3 text-secondary">{{ dashboard.offers_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-check-circle"></i> مسجلة</div>
+            <div class="fw-bold fs-3 text-success">{{ dashboard.offers_registered }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-telephone"></i> المكالمات</div>
+            <div class="fw-bold fs-3 text-primary">{{ dashboard.calls_total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stats p-3 text-center">
+            <div class="text-muted small mb-1"><i class="bi bi-person-badge"></i> الموظفين</div>
+            <div class="fw-bold fs-3 text-dark">{{ dashboard.employees_total }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-light"><i class="bi bi-pie-chart"></i> الطلاب حسب المستوى</div>
+            <div class="card-body">
+                <canvas id="studentsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-light"><i class="bi bi-pie-chart"></i> التسجيلات حسب نوع الدفع</div>
+            <div class="card-body">
+                <canvas id="registrationsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-light"><i class="bi bi-bar-chart"></i> المكالمات (صادرة vs واردة)</div>
+            <div class="card-body">
+                <canvas id="callsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-light"><i class="bi bi-bar-chart"></i> المدفوعات حسب الطريقة</div>
+            <div class="card-body">
+                <canvas id="paymentsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Branches Comparison -->
+<div class="card mb-4">
+    <div class="card-header bg-light"><i class="bi bi-building"></i> مقارنة الفروع</div>
+    <div class="card-body">
+        <canvas id="branchesChart" height="100"></canvas>
+    </div>
+</div>
+
+{% include "includes/report_modal.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    const data = {{ dashboard|safe }};
+
+    // Students by Level (Pie)
+    new Chart(document.getElementById('studentsChart'), {
+        type: 'doughnut',
+        data: {
+            labels: data.students_by_level.map(i => i.level),
+            datasets: [{
+                data: data.students_by_level.map(i => i.count),
+                backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(245,158,11,0.7)']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Registrations by Payment Type (Pie)
+    new Chart(document.getElementById('registrationsChart'), {
+        type: 'pie',
+        data: {
+            labels: data.registrations_by_payment_type.map(i => i.course_payment_type),
+            datasets: [{
+                data: data.registrations_by_payment_type.map(i => i.count),
+                backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(239,68,68,0.7)']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Calls by Type (Bar)
+    new Chart(document.getElementById('callsChart'), {
+        type: 'bar',
+        data: {
+            labels: data.calls_by_type.map(i => i.call_type === 'OUTGOING' ? 'صادرة' : 'واردة'),
+            datasets: [{
+                label: 'المكالمات',
+                data: data.calls_by_type.map(i => i.count),
+                backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)']
+            }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Payments by Method (Bar)
+    new Chart(document.getElementById('paymentsChart'), {
+        type: 'bar',
+        data: {
+            labels: data.payments_by_method.map(i => i.payment_method),
+            datasets: [{
+                label: 'المبلغ',
+                data: data.payments_by_method.map(i => i.total),
+                backgroundColor: 'rgba(245,158,11,0.7)'
+            }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Branches Comparison (Bar)
+    new Chart(document.getElementById('branchesChart'), {
+        type: 'bar',
+        data: {
+            labels: data.branches_comparison.map(i => i.name),
+            datasets: [
+                { label: 'الطلاب', data: data.branches_comparison.map(i => i.students), backgroundColor: 'rgba(59,130,246,0.7)' },
+                { label: 'التسجيلات', data: data.branches_comparison.map(i => i.registrations), backgroundColor: 'rgba(16,185,129,0.7)' },
+                { label: 'العروض', data: data.branches_comparison.map(i => i.offers), backgroundColor: 'rgba(245,158,11,0.7)' }
+            ]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+})();
+</script>
+{% endblock %}
