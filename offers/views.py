@@ -598,21 +598,25 @@ def export_offers_pdf(request):
     if not registered:
         font_name = 'Helvetica'
 
-    import arabic_reshaper
-    from bidi.algorithm import get_display
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
     def _ar(text):
         if not text:
             return ''
-        reshaped = arabic_reshaper.reshape(str(text))
-        return get_display(reshaped)
+        try:
+            import arabic_reshaper
+            from bidi.algorithm import get_display
+            reshaped = arabic_reshaper.reshape(str(text))
+            bidi_text = get_display(reshaped, base_dir='R')
+            return bidi_text.replace('&', '&amp;')
+        except Exception:
+            return str(text).replace('&', '&amp;')
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleAr', parent=styles['Normal'], fontName=font_name, fontSize=16, alignment=TA_CENTER, spaceAfter=12)
-    header_style = ParagraphStyle('HeaderAr', fontName=font_name, fontSize=9, alignment=TA_CENTER,
+    title_style = ParagraphStyle('TitleAr', parent=styles['Normal'], fontName=font_name, fontSize=16, alignment=TA_RIGHT, spaceAfter=12, leading=22)
+    header_style = ParagraphStyle('HeaderAr', parent=styles['Normal'], fontName=font_name, fontSize=9, alignment=TA_RIGHT,
                                   textColor=colors.white, leading=14)
-    cell_style = ParagraphStyle('CellAr', fontName=font_name, fontSize=8, alignment=TA_CENTER, leading=12)
+    cell_style = ParagraphStyle('CellAr', parent=styles['Normal'], fontName=font_name, fontSize=8, alignment=TA_RIGHT, leading=12)
 
     elements.append(Paragraph(_ar('تقرير العروض'), title_style))
     elements.append(Spacer(1, 0.3*cm))
@@ -652,7 +656,7 @@ def export_offers_pdf(request):
 
     elements.append(table)
     elements.append(Spacer(1, 0.5*cm))
-    count_style = ParagraphStyle('CountAr', fontName=font_name, fontSize=10, alignment=TA_RIGHT)
+    count_style = ParagraphStyle('CountAr', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=TA_RIGHT)
     elements.append(Paragraph(_ar(f'إجمالي النتائج: {qs.count()}'), count_style))
 
     doc.build(elements)
