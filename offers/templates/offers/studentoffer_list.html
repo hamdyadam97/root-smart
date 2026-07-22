@@ -13,33 +13,48 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <input type="text" name="q" class="form-control" placeholder="بحث..." value="{{ request.GET.q|default:'' }}">
+        <form method="get" id="filterForm">
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <input type="text" name="q" class="form-control" placeholder="بحث..." value="{{ request.GET.q|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="date_filter" class="form-select">
+                        <option value="">كل التواريخ</option>
+                        <option value="today" {% if filter_date == 'today' %}selected{% endif %}>اليوم</option>
+                        <option value="this_month" {% if filter_date == 'this_month' %}selected{% endif %}>هذا الشهر</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="date_from" class="form-control" value="{{ filter_date_from }}" placeholder="من تاريخ">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="date_to" class="form-control" value="{{ filter_date_to }}" placeholder="إلى تاريخ">
+                </div>
+                <div class="col-md-2">
+                    <select name="created_by" class="form-select">
+                        <option value="">كل الموظفين</option>
+                        {% for u in offer_users %}
+                        <option value="{{ u.pk }}" {% if filter_created_by == u.pk|stringformat:"d" %}selected{% endif %}>{{ u.get_full_name|default:u.email }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <select name="interaction" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="accepted" {% if filter_interaction == 'accepted' %}selected{% endif %}>مقبول</option>
+                    </select>
+                </div>
             </div>
-            <div class="col-md-2">
-                <select name="date_filter" class="form-select">
-                    <option value="">كل التواريخ</option>
-                    <option value="today" {% if filter_date == 'today' %}selected{% endif %}>اليوم</option>
-                    <option value="this_month" {% if filter_date == 'this_month' %}selected{% endif %}>هذا الشهر</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select name="created_by" class="form-select">
-                    <option value="">كل الموظفين</option>
-                    {% for u in offer_users %}
-                    <option value="{{ u.pk }}" {% if filter_created_by == u.pk|stringformat:"d" %}selected{% endif %}>{{ u.get_full_name|default:u.email }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="interaction" class="form-select">
-                    <option value="">كل الحالات</option>
-                    <option value="accepted" {% if filter_interaction == 'accepted' %}selected{% endif %}>تم القبول</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i> بحث</button>
+                    <a href="{% url 'studentoffer-list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> مسح الفلتر</a>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success" onclick="exportOffers('excel')"><i class="bi bi-file-earmark-excel"></i> تصدير Excel</button>
+                    <button type="button" class="btn btn-danger" onclick="exportOffers('pdf')"><i class="bi bi-file-earmark-pdf"></i> تصدير PDF</button>
+                </div>
             </div>
         </form>
     </div>
@@ -499,6 +514,18 @@
         });
     });
 })();
+</script>
+
+<script>
+function exportOffers(type) {
+    var form = document.getElementById('filterForm');
+    var params = new URLSearchParams(new FormData(form));
+    if (type === 'excel') {
+        window.location.href = '{% url "offers-export-excel" %}?' + params.toString();
+    } else {
+        window.location.href = '{% url "offers-export-pdf" %}?' + params.toString();
+    }
+}
 </script>
 
 {% endblock %}

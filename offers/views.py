@@ -476,6 +476,188 @@ def export_studentoffer_pdf(request, slug):
 
 
 # ============================================================
+# Bulk Export (filtered list)
+# ============================================================
+
+@login_required
+def export_offers_excel(request):
+    """Export filtered offers list as Excel."""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.cell.cell import MergedCell
+
+    user = request.user
+    qs = filter_by_branch(
+        StudentOffer.objects.all(), user, 'view_studentoffer', perm='view_studentoffer'
+    )
+    qs = _apply_offer_filters(qs, request.GET)
+    qs = qs.select_related('branch', 'course', 'created_by').order_by('-created_at')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'العروض'
+
+    header_fill = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+
+    headers = ['العنوان', 'الفرع', 'الدورة', 'السعر', 'الحالة', 'تاريخ الإنشاء', 'أنشئ بواسطة']
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = thin_border
+    ws.row_dimensions[1].height = 25
+
+    for row_num, offer in enumerate(qs, 2):
+        values = [
+            offer.title,
+            str(offer.branch),
+            str(offer.course) if offer.course else (offer.manual_course_name or '-'),
+            float(offer.price),
+            offer.status,
+            offer.created_at.strftime('%Y-%m-%d %H:%M') if offer.created_at else '',
+            offer.created_by.get_full_name() or offer.created_by.email,
+        ]
+        for col, val in enumerate(values, 1):
+            cell = ws.cell(row=row_num, column=col, value=val)
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    for col_cells in ws.columns:
+        if isinstance(col_cells[0], MergedCell):
+            continue
+        max_len = 0
+        for cell in col_cells:
+            try:
+                if len(str(cell.value)) > max_len:
+                    max_len = len(str(cell.value))
+            except Exception:
+                pass
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max_len + 4, 40)
+
+    now = timezone.localtime().strftime('%Y%m-%d_%H%M')
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="offers_report_{now}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def export_offers_pdf(request):
+    """Export filtered offers list as a PDF report table."""
+    import os
+    from io import BytesIO
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from django.conf import settings
+    from django.contrib.staticfiles.finders import find
+
+    user = request.user
+    qs = filter_by_branch(
+        StudentOffer.objects.all(), user, 'view_studentoffer', perm='view_studentoffer'
+    )
+    qs = _apply_offer_filters(qs, request.GET)
+    qs = qs.select_related('branch', 'course', 'created_by').order_by('-created_at')
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=1*cm, leftMargin=1*cm,
+                            topMargin=1*cm, bottomMargin=1*cm)
+    elements = []
+
+    font_name = 'Arial'
+    BASE_DIR = settings.BASE_DIR
+    candidates = [
+        r'C:\Windows\Fonts\arial.ttf',
+        r'C:\Windows\Fonts\arialbd.ttf',
+        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
+        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
+        find('fonts/Cairo-Regular.ttf'),
+        find('fonts/Amiri-Regular.ttf'),
+    ]
+    for font_path in candidates:
+        if font_path and os.path.exists(font_path):
+            try:
+                pdfmetrics.registerFont(TTFont(font_name, font_path))
+                break
+            except Exception:
+                continue
+
+    import arabic_reshaper
+    from bidi.algorithm import get_display
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+
+    def _ar(text):
+        if not text:
+            return ''
+        reshaped = arabic_reshaper.reshape(str(text))
+        return get_display(reshaped)
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleAr', fontName=font_name, fontSize=16, alignment=TA_CENTER, spaceAfter=12)
+    header_style = ParagraphStyle('HeaderAr', fontName=font_name, fontSize=9, alignment=TA_CENTER,
+                                  textColor=colors.white, leading=14)
+    cell_style = ParagraphStyle('CellAr', fontName=font_name, fontSize=8, alignment=TA_CENTER, leading=12)
+
+    elements.append(Paragraph(_ar('تقرير العروض'), title_style))
+    elements.append(Spacer(1, 0.3*cm))
+
+    headers = ['العنوان', 'الفرع', 'الدورة', 'السعر', 'الحالة', 'التاريخ', 'أنشئ بواسطة']
+    table_data = [[Paragraph(_ar(h), header_style) for h in headers]]
+
+    for offer in qs:
+        row = [
+            Paragraph(_ar(offer.title), cell_style),
+            Paragraph(_ar(str(offer.branch)), cell_style),
+            Paragraph(_ar(str(offer.course) if offer.course else (offer.manual_course_name or '-')), cell_style),
+            Paragraph(_ar(f'{offer.price}'), cell_style),
+            Paragraph(_ar(offer.status), cell_style),
+            Paragraph(_ar(offer.created_at.strftime('%Y-%m-%d %H:%M') if offer.created_at else ''), cell_style),
+            Paragraph(_ar(offer.created_by.get_full_name() or offer.created_by.email), cell_style),
+        ]
+        table_data.append(row)
+
+    page_w = landscape(A4)[0] - 2*cm
+    col_widths = [page_w*0.22, page_w*0.16, page_w*0.18, page_w*0.10, page_w*0.10, page_w*0.14, page_w*0.10]
+
+    table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563EB')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, -1), font_name),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F1F5F9')]),
+        ('BOX', (0, 0), (-1, -1), 0.75, colors.HexColor('#2563EB')),
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#CBD5E1')),
+    ]))
+
+    elements.append(table)
+    elements.append(Spacer(1, 0.5*cm))
+    count_style = ParagraphStyle('CountAr', fontName=font_name, fontSize=10, alignment=TA_RIGHT)
+    elements.append(Paragraph(_ar(f'إجمالي النتائج: {qs.count()}'), count_style))
+
+    doc.build(elements)
+
+    now = timezone.localtime().strftime('%Y%m-%d_%H%M')
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="offers_report_{now}.pdf"'
+    return response
+
+
+# ============================================================
 # Send Offer to Single Recipient
 # ============================================================
 
@@ -980,6 +1162,43 @@ def root_offer_ajax(request):
 # StudentOffer
 # ============================================================
 
+def _apply_offer_filters(queryset, params):
+    """Apply shared filter logic for StudentOffer list and export."""
+    q = params.get('q')
+    if q:
+        queryset = queryset.filter(
+            Q(title__icontains=q) |
+            Q(content__icontains=q) |
+            Q(branch__name__icontains=q) |
+            Q(course__master__name__icontains=q)
+        )
+
+    date_filter = params.get('date_filter')
+    if date_filter == 'today':
+        queryset = queryset.filter(created_at__date=timezone.localdate())
+    elif date_filter == 'this_month':
+        today = timezone.localdate()
+        queryset = queryset.filter(created_at__year=today.year, created_at__month=today.month)
+
+    date_from = params.get('date_from')
+    if date_from:
+        queryset = queryset.filter(created_at__date__gte=date_from)
+
+    date_to = params.get('date_to')
+    if date_to:
+        queryset = queryset.filter(created_at__date__lte=date_to)
+
+    created_by = params.get('created_by')
+    if created_by:
+        queryset = queryset.filter(created_by_id=created_by)
+
+    interaction = params.get('interaction')
+    if interaction == 'accepted':
+        queryset = queryset.filter(recipients__status='اشترك').distinct()
+
+    return queryset
+
+
 class StudentOfferListView(BranchPermissionMixin, ListView):
     model = StudentOffer
     template_name = 'offers/studentoffer_list.html'
@@ -991,38 +1210,13 @@ class StudentOfferListView(BranchPermissionMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         queryset = filter_by_branch(queryset, self.request.user, self.branch_field, perm=self.required_perm)
-        q = self.request.GET.get('q')
-        if q:
-            queryset = queryset.filter(
-                Q(title__icontains=q) |
-                Q(content__icontains=q) |
-                Q(branch__name__icontains=q) |
-                Q(course__master__name__icontains=q)
-            )
-
-        date_filter = self.request.GET.get('date_filter')
-        if date_filter == 'today':
-            queryset = queryset.filter(created_at__date=timezone.localdate())
-        elif date_filter == 'this_month':
-            today = timezone.localdate()
-            queryset = queryset.filter(created_at__year=today.year, created_at__month=today.month)
-
-        created_by = self.request.GET.get('created_by')
-        if created_by:
-            queryset = queryset.filter(created_by_id=created_by)
-
-        interaction = self.request.GET.get('interaction')
-        if interaction == 'accepted':
-            queryset = queryset.filter(recipients__status='اشترك').distinct()
-
-        return queryset
+        return _apply_offer_filters(queryset, self.request.GET)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['is_root_user'] = True
         user_branch_ids = [b.pk for b in self.request.user.get_branches_for_perm(self.required_perm)]
         context['all_prospects'] = Prospect.objects.filter(branch__in=user_branch_ids).order_by('-created_at')
-        # Filter context
         from accounts.models import Person
         offer_user_ids = StudentOffer.objects.filter(
             branch__in=user_branch_ids
@@ -1031,6 +1225,8 @@ class StudentOfferListView(BranchPermissionMixin, ListView):
         context['filter_date'] = self.request.GET.get('date_filter', '')
         context['filter_created_by'] = self.request.GET.get('created_by', '')
         context['filter_interaction'] = self.request.GET.get('interaction', '')
+        context['filter_date_from'] = self.request.GET.get('date_from', '')
+        context['filter_date_to'] = self.request.GET.get('date_to', '')
         return context
 
 
