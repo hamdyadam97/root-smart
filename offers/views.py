@@ -1093,7 +1093,7 @@ def root_offer_ajax(request):
             send_error = None
 
             if channel == 'whatsapp':
-                phone = cd['contact_phone']
+                phone = recipient.contact_phone
                 if phone:
                     try:
                         pdf_buffer = build_offer_pdf(offer, recipient)
@@ -1119,7 +1119,7 @@ def root_offer_ajax(request):
                 else:
                     send_error = 'لا يوجد رقم محمول مسجل.'
             elif channel == 'email':
-                email = cd['contact_email']
+                email = recipient.contact_email
                 if email:
                     try:
                         send_offer_email(offer, recipient, email)
