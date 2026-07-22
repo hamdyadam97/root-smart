@@ -43,13 +43,17 @@ def _register_arabic_font():
         pass
 
     BASE_DIR = settings.BASE_DIR
+    # Amiri ships glyphs for the legacy Arabic Presentation Forms block that
+    # arabic_reshaper outputs; ReportLab has no OpenType GSUB engine, so a
+    # GSUB-only font like Cairo renders those codepoints as broken/disjoint
+    # glyphs. Amiri must be tried first.
     candidates = [
-        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
-        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
-        find('fonts/Cairo-Regular.ttf'),
         find('fonts/Amiri-Regular.ttf'),
         os.path.join(BASE_DIR, 'static', 'fonts', 'Amiri-Regular.ttf'),
         os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Amiri-Regular.ttf'),
+        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
+        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
+        find('fonts/Cairo-Regular.ttf'),
     ]
     for fp in candidates:
         if fp and os.path.exists(fp):

@@ -445,7 +445,7 @@
     function loadMasters(offerType, branchId) {
         masterSelect.innerHTML = '<option value="">اختر التخصص...</option>';
         if (!offerType) return;
-        let url = '/courses/masters/ajax/by-offer-type/' + offerType + '/';
+        let url = '{% url "masters-by-offer-type-ajax" "PROGRAM" %}'.replace('PROGRAM', offerType);
         if (branchId) {
             url += '?branch=' + encodeURIComponent(branchId);
         }
@@ -491,7 +491,7 @@
 
     function loadBranchTemplate(branchId) {
         if (!branchId || !contentArea) return;
-        fetch('/offers/student-offers/ajax/branch-template/' + branchId + '/')
+        fetch('{% url "branch-offer-template-ajax" 0 %}'.replace('0', branchId))
             .then(r => r.json())
             .then(data => {
                 if (data.success && data.template && !contentArea.value.trim()) {
