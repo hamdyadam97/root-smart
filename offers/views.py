@@ -15,9 +15,8 @@ from django.views.decorators.http import require_POST, require_http_methods
 
 from core.models import Branch
 from courses.models import Course
-from students.models import Student
 from .models import StudentOffer, OfferRecipient, OfferNote
-from .forms import StudentOfferForm, OfferRecipientForm, OfferRecipientAddForm, OfferNoteForm, QuickOfferForm, RootQuickOfferForm
+from .forms import StudentOfferForm, OfferRecipientForm, OfferRecipientAddForm, OfferNoteForm, RootQuickOfferForm
 from .whatsapp import send_whatsapp_message, send_whatsapp_pdf, _is_root_branch
 from prospects.models import Prospect
 
@@ -811,7 +810,7 @@ def branch_offer_template_ajax(request, branch_id):
 
 @login_required
 def master_courses_ajax(request, master_id):
-    """AJAX endpoint to fetch courses for a given master (used in quick offer modal)."""
+    """AJAX endpoint to fetch courses for a given master."""
     from courses.models import Master, Course
     master = get_object_or_404(Master, pk=master_id)
     if not request.user.is_executive():
@@ -975,51 +974,6 @@ def root_offer_ajax(request):
         return JsonResponse({'success': False, 'error': str(exc)}, status=400)
 
 
-@require_POST
-@login_required
-def quick_offer_ajax(request):
-    """AJAX endpoint to create a quick offer with a manual recipient in one step."""
-    try:
-        if not request.user.has_perm_on_any_branch('add_studentoffer'):
-            return JsonResponse({'success': False, 'error': 'غير مسموح لك دخول هنا'}, status=403)
-        form = QuickOfferForm(request.POST, user=request.user)
-        if form.is_valid():
-            cd = form.cleaned_data
-            offer = StudentOffer.objects.create(
-                title=cd['master'].name,
-                content=cd['content'],
-                branch=cd['branch'],
-                course=cd['course'],
-                price=cd['price'],
-                price_description=cd['price_description'],
-                created_by=request.user,
-                status='مسودة',
-            )
-            recipient = OfferRecipient.objects.create(
-                offer=offer,
-                student=None,
-                contact_name=cd['contact_name'],
-                contact_phone=cd['contact_phone'],
-                contact_email=cd['contact_email'],
-                channel=cd['channel'],
-                status='مرسل',
-            )
-
-            # في شركة الجذور، المستلم يتحول لمستفسر
-            if _is_root_branch(offer.branch):
-                prospect = _create_prospect_from_recipient(offer, recipient, request.user)
-                recipient.prospect = prospect
-                recipient.save(update_fields=['prospect'])
-
-            return JsonResponse({
-                'success': True,
-                'message': 'تم إنشاء العرض السريع وإضافة المستلم بنجاح.',
-                'slug': offer.slug,
-            })
-        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-    except Exception as exc:
-        logger.exception('Error in quick_offer_ajax')
-        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
 
 
 # ============================================================
@@ -1049,40 +1003,9 @@ class StudentOfferListView(BranchPermissionMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from accounts.mixins import filter_by_branch
-        from courses.models import Master
-        if self.request.user.is_executive():
-            context['branches'] = Branch.objects.all().order_by('code', 'name')
-            context['masters'] = Master.objects.select_related('branch').all().order_by('branch__name', 'name')
-            context['courses'] = Course.objects.select_related('master').all()
-        else:
-            allowed_ids = [b.pk for b in self.request.user.get_branches_for_perm(self.required_perm)]
-            context['branches'] = Branch.objects.filter(pk__in=allowed_ids).order_by('code', 'name')
-            context['masters'] = Master.objects.select_related('branch').filter(
-                branch__in=allowed_ids
-            ).order_by('branch__name', 'name')
-            context['courses'] = filter_by_branch(
-                Course.objects.select_related('master'), self.request.user, 'master__branch', perm='view_course'
-            )
-        # Determine if user belongs to Root company (custom offer flow)
+        context['is_root_user'] = True
         user_branch_ids = [b.pk for b in self.request.user.get_branches_for_perm(self.required_perm)]
-        context['is_root_user'] = Branch.objects.filter(
-            pk__in=user_branch_ids
-        ).filter(
-            Q(name__icontains='root') |
-            Q(company__name__icontains='جذور') |
-            Q(company__name__icontains='root')
-        ).exists()
-        # المستفسرين المسجلين لعرض Root
-        if context['is_root_user']:
-            root_ids = [b.pk for b in Branch.objects.filter(
-                pk__in=user_branch_ids
-            ).filter(
-                Q(name__icontains='root') |
-                Q(company__name__icontains='جذور') |
-                Q(company__name__icontains='root')
-            )]
-            context['all_prospects'] = Prospect.objects.filter(branch__in=root_ids).order_by('-created_at')
+        context['all_prospects'] = Prospect.objects.filter(branch__in=user_branch_ids).order_by('-created_at')
         return context
 
 
@@ -1097,29 +1020,7 @@ class StudentOfferDetailView(BranchPermissionMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from accounts.mixins import filter_by_branch
-        if self.request.user.is_executive():
-            context['branches'] = Branch.objects.all().order_by('code', 'name')
-            context['courses'] = Course.objects.select_related('master').all()
-            context['all_students'] = Student.objects.select_related('contact').all()
-            context['all_offers'] = StudentOffer.objects.select_related('branch', 'course__master').all()
-        else:
-            allowed_ids = [b.pk for b in self.request.user.get_branches_for_perm(self.required_perm)]
-            context['branches'] = Branch.objects.filter(pk__in=allowed_ids).order_by('code', 'name')
-            context['courses'] = filter_by_branch(
-                Course.objects.select_related('master'), self.request.user, 'master__branch', perm='view_course'
-            )
-            context['all_students'] = filter_by_branch(
-                Student.objects.select_related('contact'), self.request.user, 'branch', perm='view_student'
-            )
-            context['all_offers'] = filter_by_branch(
-                StudentOffer.objects.select_related('branch', 'course__master'), self.request.user, 'branch', perm='view_studentoffer'
-            )
-        # في الجذور نعرض المستفسرين المخزنين عشان نختار منهم
-        if _is_root_branch(self.object.branch):
-            context['all_prospects'] = Prospect.objects.filter(branch=self.object.branch).order_by('-created_at')
-        else:
-            context['all_prospects'] = Prospect.objects.none()
+        context['all_prospects'] = Prospect.objects.filter(branch=self.object.branch).order_by('-created_at')
         return context
 
 

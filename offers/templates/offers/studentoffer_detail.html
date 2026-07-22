@@ -8,7 +8,6 @@
     <div>
         <a href="{% url 'studentoffer-export-pdf' offer.slug %}" class="btn btn-success"><i class="bi bi-file-earmark-pdf"></i> تحميل PDF</a>
         <a href="https://wa.me/966569736794" target="_blank" class="btn btn-success" style="background-color: #25D366; border-color: #25D366;"><i class="bi bi-whatsapp"></i> واتساب</a>
-        <button type="button" class="btn btn-warning" onclick="openStudentOfferModal({{ offer.id }}, '{{ offer.title|escapejs }}', '{{ offer.content|escapejs }}', '{{ offer.branch.id }}', '{{ offer.course.id|default:'' }}', '{{ offer.price }}', '{{ offer.price_description|escapejs }}', '{{ offer.start_date|date:'Y-m-d' }}', '{{ offer.end_date|date:'Y-m-d' }}', '{{ offer.scheduled_at|date:'Y-m-d\\TH:i' }}', '{{ offer.status|escapejs }}')"><i class="bi bi-pencil"></i> تعديل</button>
         <a href="{% url 'studentoffer-delete' offer.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
         <a href="{% url 'studentoffer-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
     </div>
@@ -136,7 +135,6 @@
                 <div id="addRecipientAlert"></div>
                 <form id="addRecipientForm">
                     {% csrf_token %}
-                    {% if 'جذور' in offer.branch.company.name %}
                     <ul class="nav nav-tabs mb-3" id="recipientTab" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="prospect-tab" data-bs-toggle="tab" data-bs-target="#prospect-pane" type="button" role="tab">مستفسر مسجل</button>
@@ -174,45 +172,6 @@
                             </div>
                         </div>
                     </div>
-                    {% else %}
-                    <ul class="nav nav-tabs mb-3" id="recipientTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="registered-tab" data-bs-toggle="tab" data-bs-target="#registered-pane" type="button" role="tab">طالب مسجل</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="quick-tab" data-bs-toggle="tab" data-bs-target="#quick-pane" type="button" role="tab">مستلم سريع</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content" id="recipientTabContent">
-                        <div class="tab-pane fade show active" id="registered-pane" role="tabpanel">
-                            <div class="mb-3">
-                                <label class="form-label">الطالب</label>
-                                <select name="student" id="ar_student" class="form-select">
-                                    <option value="">اختر الطالب...</option>
-                                    {% for s in all_students %}
-                                    <option value="{{ s.id }}">{{ s }}{% if s.get_mobile %} ({{ s.get_mobile }}){% endif %}</option>
-                                    {% empty %}
-                                    <option value="" disabled>لا يوجد طلاب مسجلون في النظام</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="quick-pane" role="tabpanel">
-                            <div class="mb-3">
-                                <label class="form-label">الاسم</label>
-                                <input type="text" name="contact_name" id="ar_contact_name" class="form-control" placeholder="اسم المستلم">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">الجوال</label>
-                                <input type="text" name="contact_phone" id="ar_contact_phone" class="form-control" placeholder="مثال: 966501234567">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">البريد الإلكتروني</label>
-                                <input type="email" name="contact_email" id="ar_contact_email" class="form-control" placeholder="email@example.com">
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
                     <div class="mb-3">
                         <label class="form-label">قناة الإرسال <span class="text-danger">*</span></label>
                         <select name="channel" id="ar_channel" class="form-select" required>
@@ -316,5 +275,4 @@
 })();
 </script>
 
-{% include "includes/studentoffer_modal.html" %}
 {% endblock %}

@@ -4,7 +4,6 @@ from . import views
 urlpatterns = [
     # StudentOffer
     path('student-offers/', views.StudentOfferListView.as_view(), name='studentoffer-list'),
-    path('student-offers/ajax/quick/', views.quick_offer_ajax, name='quick-offer-ajax'),
     path('student-offers/ajax/root/', views.root_offer_ajax, name='root-offer-ajax'),
     path('student-offers/ajax/branch-template/<int:branch_id>/', views.branch_offer_template_ajax, name='branch-offer-template-ajax'),
     path('student-offers/ajax/master-courses/<int:master_id>/', views.master_courses_ajax, name='master-courses-ajax'),

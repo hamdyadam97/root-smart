@@ -85,38 +85,6 @@ class OfferRecipientAddForm(forms.ModelForm):
         return cleaned_data
 
 
-class QuickOfferForm(forms.Form):
-    """Form to quickly create an offer + recipient in one step."""
-    # Offer fields
-    master = forms.ModelChoiceField(queryset=None, label='نوع الاشتراك (التخصص)', widget=forms.Select(attrs={'class': 'form-select'}))
-    content = forms.CharField(label=' البيان ووصف العرض ', widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}))
-    branch = forms.ModelChoiceField(queryset=None, label='الفرع', widget=forms.Select(attrs={'class': 'form-select'}))
-    course = forms.ModelChoiceField(queryset=None, required=False, label='الدورة', widget=forms.Select(attrs={'class': 'form-select'}))
-    price = forms.DecimalField(max_digits=10, decimal_places=2, initial=0, label='السعر', widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}))
-    price_description = forms.CharField(max_length=255, required=False, label='وصف السعر', widget=forms.TextInput(attrs={'class': 'form-control'}))
-    # Recipient fields
-    contact_name = forms.CharField(max_length=255, label='اسم المشترك', widget=forms.TextInput(attrs={'class': 'form-control'}))
-    contact_phone = forms.CharField(max_length=20, label='جوال المشترك', widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مثال: 966501234567'}))
-    contact_email = forms.EmailField(required=False, label='بريد المشترك', widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    channel = forms.ChoiceField(choices=OfferRecipient.CHANNEL_CHOICES, initial='whatsapp', label='قناة الإرسال', widget=forms.Select(attrs={'class': 'form-select'}))
-
-    def __init__(self, *args, user=None, **kwargs):
-        from core.models import Branch
-        from courses.models import Master, Course
-        super().__init__(*args, **kwargs)
-        if user is not None:
-            branch_ids = [b.pk for b in user.get_branches_for_perm('add_studentoffer')]
-            self.fields['branch'].queryset = Branch.objects.filter(pk__in=branch_ids)
-            self.fields['master'].queryset = Master.objects.select_related('branch').filter(branch__in=branch_ids)
-            self.fields['course'].queryset = Course.objects.select_related('master').filter(master__branch__in=branch_ids)
-        else:
-            self.fields['branch'].queryset = Branch.objects.all()
-            self.fields['master'].queryset = Master.objects.select_related('branch').all()
-            self.fields['course'].queryset = Course.objects.select_related('master').all()
-        # Display course name only in the dropdown
-        self.fields['course'].label_from_instance = lambda obj: obj.name or obj.master.name
-
-
 class RootQuickOfferForm(forms.Form):
     """Form for Root company to create program/course offers quickly."""
     offer_type = forms.ChoiceField(
