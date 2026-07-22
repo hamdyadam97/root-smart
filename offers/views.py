@@ -999,6 +999,22 @@ class StudentOfferListView(BranchPermissionMixin, ListView):
                 Q(branch__name__icontains=q) |
                 Q(course__master__name__icontains=q)
             )
+
+        date_filter = self.request.GET.get('date_filter')
+        if date_filter == 'today':
+            queryset = queryset.filter(created_at__date=timezone.localdate())
+        elif date_filter == 'this_month':
+            today = timezone.localdate()
+            queryset = queryset.filter(created_at__year=today.year, created_at__month=today.month)
+
+        created_by = self.request.GET.get('created_by')
+        if created_by:
+            queryset = queryset.filter(created_by_id=created_by)
+
+        interaction = self.request.GET.get('interaction')
+        if interaction == 'accepted':
+            queryset = queryset.filter(recipients__status='اشترك').distinct()
+
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -1006,6 +1022,15 @@ class StudentOfferListView(BranchPermissionMixin, ListView):
         context['is_root_user'] = True
         user_branch_ids = [b.pk for b in self.request.user.get_branches_for_perm(self.required_perm)]
         context['all_prospects'] = Prospect.objects.filter(branch__in=user_branch_ids).order_by('-created_at')
+        # Filter context
+        from accounts.models import Person
+        offer_user_ids = StudentOffer.objects.filter(
+            branch__in=user_branch_ids
+        ).values_list('created_by_id', flat=True).distinct()
+        context['offer_users'] = Person.objects.filter(pk__in=offer_user_ids).order_by('first_name', 'email')
+        context['filter_date'] = self.request.GET.get('date_filter', '')
+        context['filter_created_by'] = self.request.GET.get('created_by', '')
+        context['filter_interaction'] = self.request.GET.get('interaction', '')
         return context
 
 

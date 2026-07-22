@@ -14,8 +14,29 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <input type="text" name="q" class="form-control" placeholder="بحث..." value="{{ request.GET.q|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <select name="date_filter" class="form-select">
+                    <option value="">كل التواريخ</option>
+                    <option value="today" {% if filter_date == 'today' %}selected{% endif %}>اليوم</option>
+                    <option value="this_month" {% if filter_date == 'this_month' %}selected{% endif %}>هذا الشهر</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="created_by" class="form-select">
+                    <option value="">كل الموظفين</option>
+                    {% for u in offer_users %}
+                    <option value="{{ u.pk }}" {% if filter_created_by == u.pk|stringformat:"d" %}selected{% endif %}>{{ u.get_full_name|default:u.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="interaction" class="form-select">
+                    <option value="">كل الحالات</option>
+                    <option value="accepted" {% if filter_interaction == 'accepted' %}selected{% endif %}>تم القبول</option>
+                </select>
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
