@@ -580,25 +580,26 @@ def export_offers_pdf(request):
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
     BASE_DIR = settings.BASE_DIR
-    candidates = [
+    font_candidates = [
         r'C:\Windows\Fonts\arial.ttf',
-        r'C:\Windows\Fonts\arialbd.ttf',
         os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
         os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
         find('fonts/Cairo-Regular.ttf'),
         find('fonts/Amiri-Regular.ttf'),
     ]
-    registered = False
-    for font_path in candidates:
-        if font_path and os.path.exists(font_path):
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, font_path))
-                registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
-                registered = True
-                break
-            except Exception:
-                continue
-    if not registered:
+    font_path_found = None
+    for fp in font_candidates:
+        if fp and os.path.exists(fp):
+            font_path_found = fp
+            break
+
+    if font_path_found:
+        try:
+            pdfmetrics.registerFont(TTFont(font_name, font_path_found))
+            registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
+        except Exception:
+            font_name = 'Helvetica'
+    else:
         font_name = 'Helvetica'
 
     def _ar(text):
