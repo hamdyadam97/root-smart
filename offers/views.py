@@ -576,10 +576,12 @@ def export_offers_pdf(request):
 
     font_name = 'ArialArabicReport'
     from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.pdfmetrics import registerFontFamily
+    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
     try:
         pdfmetrics.getFont(font_name)
-    except KeyError:
+    except Exception:
         BASE_DIR = settings.BASE_DIR
         candidates = [
             r'C:\Windows\Fonts\arial.ttf',
@@ -593,13 +595,10 @@ def export_offers_pdf(request):
             if font_path and os.path.exists(font_path):
                 try:
                     pdfmetrics.registerFont(TTFont(font_name, font_path))
-                    from reportlab.pdfbase.pdfmetrics import registerFontFamily
                     registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
                     break
                 except Exception:
                     continue
-
-    from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
     def _ar(text):
         if not text:
