@@ -77,6 +77,10 @@ class ProspectDetailView(BranchPermissionMixin, DetailView):
             context['available_courses'] = Course.objects.filter(master=self.object.master)
         else:
             context['available_courses'] = Course.objects.filter(master__branch=self.object.branch)
+        # Root offer modal context
+        allowed_ids = get_user_root_branch_ids(self.request.user, 'add_studentoffer')
+        context['branches'] = Branch.objects.filter(pk__in=allowed_ids).order_by('code', 'name')
+        context['all_prospects'] = Prospect.objects.filter(branch__in=allowed_ids).order_by('-created_at')
         return context
 
 

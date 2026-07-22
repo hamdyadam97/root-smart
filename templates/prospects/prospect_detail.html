@@ -7,6 +7,10 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-person-lines-fill"></i> {{ prospect.name }}</h2>
     <div>
+        {% has_perm_on_branch user 'add_studentoffer' prospect.branch as can_add_offer %}
+        {% if can_add_offer %}
+        <button type="button" class="btn btn-info" onclick="openRootOfferModal()"><i class="bi bi-lightning-charge"></i> إرسال عرض</button>
+        {% endif %}
         {% has_perm_on_branch user 'change_prospect' prospect.branch as can_change %}
         {% if can_change %}
         <a href="{% url 'prospect-update' prospect.slug %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
@@ -190,4 +194,418 @@
     <a href="{% url 'student-detail' prospect.student.slug %}" class="alert-link">عرض بيانات الطالب</a>
 </div>
 {% endif %}
+
+<!-- Root Offer Modal -->
+<div class="modal fade" id="rootOfferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-lightning-charge"></i> إرسال عرض لـ {{ prospect.name }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="rootOfferAlert"></div>
+                <form id="rootOfferForm">
+                    {% csrf_token %}
+                    <ul class="nav nav-tabs mb-3" id="rootOfferTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="r-offer-tab" data-bs-toggle="tab" data-bs-target="#r-offer-pane" type="button" role="tab">بيانات العرض</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="r-recipient-tab" data-bs-toggle="tab" data-bs-target="#r-recipient-pane" type="button" role="tab">بيانات المستلم</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="rootOfferTabContent">
+                        <div class="tab-pane fade show active" id="r-offer-pane" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">نوع الاشتراك <span class="text-danger">*</span></label>
+                                    <select name="offer_type" id="rootOfferType" class="form-select" required>
+                                        <option value="">اختر النوع...</option>
+                                        <option value="program">بكج / برنامج</option>
+                                        <option value="course">انفرادي / دورة</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">الفرع <span class="text-danger">*</span></label>
+                                    <select name="branch" id="rootOfferBranch" class="form-select" required>
+                                        <option value="">اختر الفرع...</option>
+                                        {% for b in branches %}
+                                        <option value="{{ b.id }}" {% if b.id == prospect.branch.id %}selected{% endif %}>{{ b.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="rootMasterSection" class="d-none">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">التخصص <span class="text-danger" id="rootMasterRequired">*</span></label>
+                                        <select name="master" id="rootOfferMaster" class="form-select" required>
+                                            <option value="">اختر التخصص...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">عدد ساعات البرنامج</label>
+                                        <input type="number" name="program_hours" id="rootProgramHours" class="form-control" placeholder="عدد الساعات لهذا العرض">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="rootCourseSection" class="d-none">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">اسم الدورة <span class="text-danger" id="rootCourseNameRequired">*</span></label>
+                                        <input type="text" name="course_name" id="rootOfferCourseName" class="form-control" placeholder="اكتب اسم الدورة" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">عدد ساعات الدورة</label>
+                                        <input type="number" name="course_hours" id="rootOfferCourseHours" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">السعر</label>
+                                    <input type="number" name="price" class="form-control" step="0.01" value="0">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">وصف السعر</label>
+                                <input type="text" name="price_description" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">البيان ووصف العرض <span class="text-danger">*</span></label>
+                                <textarea name="content" id="rootOfferContent" class="form-control" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="r-recipient-pane" role="tabpanel">
+                            <ul class="nav nav-pills mb-3" id="rootRecipientType" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="rr-registered-tab" data-bs-toggle="tab" data-bs-target="#rr-registered-pane" type="button" role="tab">مستفسر مسجل</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="rr-new-tab" data-bs-toggle="tab" data-bs-target="#rr-new-pane" type="button" role="tab">مستفسر جديد</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="rootRecipientTabContent">
+                                <div class="tab-pane fade show active" id="rr-registered-pane" role="tabpanel">
+                                    <div class="mb-3">
+                                        <label class="form-label">المستفسر المسجل <span class="text-danger">*</span></label>
+                                        <select name="prospect" id="rootOfferProspect" class="form-select">
+                                            <option value="">اختر المستفسر...</option>
+                                            {% for p in all_prospects %}
+                                            <option value="{{ p.id }}" data-name="{{ p.name|escapejs }}" data-mobile="{{ p.mobile|escapejs }}" data-workplace="{{ p.workplace|escapejs }}" data-ministry="{{ p.ministry|escapejs }}" data-governorate="{{ p.governorate|escapejs }}" data-notes="{{ p.notes|escapejs }}" {% if p.id == prospect.id %}selected{% endif %}>{{ p.name }}{% if p.mobile %} ({{ p.mobile }}){% endif %}</option>
+                                            {% empty %}
+                                            <option value="" disabled>لا يوجد مستفسرون مسجلون</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="rr-new-pane" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">الاسم <span class="text-danger">*</span></label>
+                                            <input type="text" name="contact_name" id="rootNewContactName" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">الجوال <span class="text-danger">*</span></label>
+                                            <input type="text" name="contact_phone" id="rootNewContactPhone" class="form-control" placeholder="مثال: 966501234567">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">البريد الإلكتروني</label>
+                                            <input type="email" name="contact_email" id="rootNewContactEmail" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">جهة العمل</label>
+                                            <input type="text" name="workplace" id="rootNewWorkplace" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">الوزارة / المؤسسة</label>
+                                            <input type="text" name="ministry" id="rootNewMinistry" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">المحافظة</label>
+                                            <input type="text" name="governorate" id="rootNewGovernorate" class="form-control">
+                                        </div>
+                                        <div class="col-md-12 mb-3">
+                                            <label class="form-label">ملاحظات</label>
+                                            <textarea name="notes" id="rootNewNotes" class="form-control" rows="2"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">قناة الإرسال <span class="text-danger">*</span></label>
+                                <select name="channel" id="rootOfferChannel" class="form-select" required>
+                                    <option value="whatsapp">واتساب</option>
+                                    <option value="email">البريد الإلكتروني</option>
+                                    <option value="app">إشعار التطبيق</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-info" id="saveRootOfferBtn">
+                    <span class="spinner-border spinner-border-sm d-none" id="rootOfferSpinner"></span>
+                    <span id="rootOfferBtnText">إنشاء العرض والإرسال</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const modal = document.getElementById('rootOfferModal');
+    const form = document.getElementById('rootOfferForm');
+    const alertBox = document.getElementById('rootOfferAlert');
+    const saveBtn = document.getElementById('saveRootOfferBtn');
+    const spinner = document.getElementById('rootOfferSpinner');
+    const btnText = document.getElementById('rootOfferBtnText');
+    const offerTypeSelect = document.getElementById('rootOfferType');
+    const masterSection = document.getElementById('rootMasterSection');
+    const masterSelect = document.getElementById('rootOfferMaster');
+    const masterRequired = document.getElementById('rootMasterRequired');
+    const programHoursInput = document.getElementById('rootProgramHours');
+    const courseSection = document.getElementById('rootCourseSection');
+    const courseNameInput = document.getElementById('rootOfferCourseName');
+    const courseHoursInput = document.getElementById('rootOfferCourseHours');
+    const courseNameRequired = document.getElementById('rootCourseNameRequired');
+    const branchSelect = document.getElementById('rootOfferBranch');
+    const contentArea = document.getElementById('rootOfferContent');
+
+    function showAlert(message, type) {
+        alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+
+    function clearFieldErrors() {
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+    }
+
+    function showFieldErrors(errors) {
+        clearFieldErrors();
+        for (const [field, msgs] of Object.entries(errors)) {
+            if (field === '__all__') continue;
+            const input = form.querySelector('[name="' + field + '"]');
+            if (!input) continue;
+            input.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback d-block';
+            feedback.textContent = Array.isArray(msgs) ? msgs.join(' ') : String(msgs);
+            input.parentNode.appendChild(feedback);
+        }
+    }
+
+    function formatErrors(errors) {
+        let html = '';
+        for (const [field, msgs] of Object.entries(errors)) {
+            html += '<div><strong>' + (field === '__all__' ? '' : field + ': ') + '</strong>' + (Array.isArray(msgs) ? msgs.join(', ') : String(msgs)) + '</div>';
+        }
+        return html;
+    }
+
+    function setLoading(loading) {
+        saveBtn.disabled = loading;
+        spinner.classList.toggle('d-none', !loading);
+        btnText.textContent = loading ? 'جاري الإرسال...' : 'إنشاء العرض والإرسال';
+    }
+
+    function resetFormState() {
+        masterSelect.innerHTML = '<option value="">اختر التخصص...</option>';
+        masterSelect.value = '';
+        masterSelect.required = false;
+        masterRequired.classList.add('d-none');
+        masterSection.classList.add('d-none');
+        programHoursInput.value = '';
+        courseSection.classList.add('d-none');
+        courseNameInput.value = '';
+        courseHoursInput.value = '';
+        courseNameInput.required = false;
+        courseNameRequired.classList.add('d-none');
+    }
+
+    function showProgramMode() {
+        resetFormState();
+        masterSection.classList.remove('d-none');
+        masterSelect.required = true;
+        masterRequired.classList.remove('d-none');
+        loadMasters('program', branchSelect ? branchSelect.value : '');
+    }
+
+    function showCourseMode() {
+        resetFormState();
+        courseSection.classList.remove('d-none');
+        courseNameInput.required = true;
+        courseNameRequired.classList.remove('d-none');
+    }
+
+    function loadMasters(offerType, branchId) {
+        masterSelect.innerHTML = '<option value="">اختر التخصص...</option>';
+        if (!offerType) return;
+        let url = '/courses/masters/ajax/by-offer-type/' + offerType + '/';
+        if (branchId) {
+            url += '?branch=' + encodeURIComponent(branchId);
+        }
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.masters) {
+                    data.masters.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m.id;
+                        option.textContent = (m.branch__name ? m.branch__name + ' - ' : '') + m.name;
+                        masterSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(() => {});
+    }
+
+    function onOfferTypeChange(offerType) {
+        if (offerType === 'program') {
+            showProgramMode();
+        } else if (offerType === 'course') {
+            showCourseMode();
+        } else {
+            resetFormState();
+        }
+    }
+
+    if (offerTypeSelect) {
+        offerTypeSelect.addEventListener('change', function() {
+            onOfferTypeChange(this.value);
+        });
+    }
+
+    if (branchSelect) {
+        branchSelect.addEventListener('change', function() {
+            if (offerTypeSelect && offerTypeSelect.value === 'program') {
+                loadMasters('program', this.value);
+            }
+            loadBranchTemplate(this.value);
+        });
+    }
+
+    function loadBranchTemplate(branchId) {
+        if (!branchId || !contentArea) return;
+        fetch('/offers/student-offers/ajax/branch-template/' + branchId + '/')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.template && !contentArea.value.trim()) {
+                    contentArea.value = data.template;
+                }
+            })
+            .catch(() => {});
+    }
+
+    var prospectSelect = document.getElementById('rootOfferProspect');
+    var newContactName = document.getElementById('rootNewContactName');
+    var newContactPhone = document.getElementById('rootNewContactPhone');
+    var newContactEmail = document.getElementById('rootNewContactEmail');
+    var newWorkplace = document.getElementById('rootNewWorkplace');
+    var newMinistry = document.getElementById('rootNewMinistry');
+    var newGovernorate = document.getElementById('rootNewGovernorate');
+    var newNotes = document.getElementById('rootNewNotes');
+    var newFields = [newContactName, newContactPhone, newContactEmail, newWorkplace, newMinistry, newGovernorate, newNotes];
+
+    function setRecipientMode(isNew) {
+        if (prospectSelect) {
+            prospectSelect.required = !isNew;
+            prospectSelect.disabled = isNew;
+        }
+        newFields.forEach(function(f) {
+            if (f) {
+                f.required = isNew;
+                f.disabled = !isNew;
+            }
+        });
+    }
+
+    if (prospectSelect) {
+        prospectSelect.addEventListener('change', function() {
+            var opt = this.options[this.selectedIndex];
+            if (opt && opt.value) {
+                if (newContactName) newContactName.value = opt.dataset.name || '';
+                if (newContactPhone) newContactPhone.value = opt.dataset.mobile || '';
+                if (newWorkplace) newWorkplace.value = opt.dataset.workplace || '';
+                if (newMinistry) newMinistry.value = opt.dataset.ministry || '';
+                if (newGovernorate) newGovernorate.value = opt.dataset.governorate || '';
+                if (newNotes) newNotes.value = opt.dataset.notes || '';
+            }
+        });
+    }
+
+    document.querySelectorAll('#rootRecipientType button[data-bs-toggle="tab"]').forEach(function(btn) {
+        btn.addEventListener('shown.bs.tab', function(e) {
+            var isNew = e.target.id === 'rr-new-tab';
+            setRecipientMode(isNew);
+            if (!isNew && prospectSelect) prospectSelect.value = '';
+            if (isNew) {
+                newFields.forEach(function(f) { if (f) f.value = ''; });
+            }
+        });
+    });
+
+    window.openRootOfferModal = function() {
+        alertBox.innerHTML = '';
+        clearFieldErrors();
+        form.reset();
+        resetFormState();
+        setRecipientMode(false);
+        if (branchSelect) branchSelect.value = '{{ prospect.branch.id }}';
+        new bootstrap.Modal(modal).show();
+    };
+
+    saveBtn.addEventListener('click', function() {
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        setLoading(true);
+        clearFieldErrors();
+        var formData = new FormData(form);
+
+        fetch('{% url "root-offer-ajax" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(function(r) {
+            return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+        })
+        .then(function(result) {
+            setLoading(false);
+            var data = result.data;
+            if (!result.ok || !data) {
+                showAlert('حدث خطأ غير متوقع', 'danger');
+                return;
+            }
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(function() {
+                    bootstrap.Modal.getInstance(modal).hide();
+                    alertBox.innerHTML = '';
+                    window.location.href = '/offers/student-offers/' + data.slug + '/';
+                }, 1200);
+            } else {
+                if (data.errors) {
+                    showAlert(formatErrors(data.errors), 'danger');
+                    showFieldErrors(data.errors);
+                } else {
+                    showAlert(data.error || 'حدث خطأ أثناء الإنشاء', 'danger');
+                }
+            }
+        })
+        .catch(function(err) {
+            setLoading(false);
+            showAlert('حدث خطأ في الاتصال: ' + (err.message || ''), 'danger');
+        });
+    });
+})();
+</script>
 {% endblock %}
