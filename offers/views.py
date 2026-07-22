@@ -26,6 +26,46 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _register_arabic_font():
+    """Register Arabic font once at module level. Returns font_name."""
+    import os
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase.pdfmetrics import registerFontFamily
+    from django.contrib.staticfiles.finders import find
+
+    font_name = 'ArabicFontOffers'
+
+    try:
+        pdfmetrics.getFont(font_name)
+        return font_name
+    except Exception:
+        pass
+
+    BASE_DIR = settings.BASE_DIR
+    candidates = [
+        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
+        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
+        find('fonts/Cairo-Regular.ttf'),
+        find('fonts/Amiri-Regular.ttf'),
+        os.path.join(BASE_DIR, 'static', 'fonts', 'Amiri-Regular.ttf'),
+        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Amiri-Regular.ttf'),
+    ]
+    for fp in candidates:
+        if fp and os.path.exists(fp):
+            try:
+                pdfmetrics.registerFont(TTFont(font_name, fp))
+                registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
+                return font_name
+            except Exception:
+                continue
+
+    return 'Helvetica'
+
+
+ARABIC_FONT = _register_arabic_font()
+
+
 def _prepare_arabic(text):
     """Reshape and apply BiDi algorithm for Arabic text in ReportLab PDF.
     Escapes XML special chars so ReportLab Paragraph doesn't break."""
@@ -94,35 +134,7 @@ def build_offer_pdf(offer, recipient=None):
     elements = []
     styles = getSampleStyleSheet()
 
-    # Register Arabic font
-    from reportlab.pdfbase.pdfmetrics import registerFontFamily
-    from django.conf import settings
-    font_name = 'ArialArabic'
-    BASE_DIR = settings.BASE_DIR
-
-    candidates = [
-        r'C:\Windows\Fonts\arial.ttf',
-        os.path.join(BASE_DIR, 'static', 'fonts', 'Amiri-Regular.ttf'),
-        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Amiri-Regular.ttf'),
-        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
-        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
-        find('fonts/Amiri-Regular.ttf'),
-        find('fonts/Cairo-Regular.ttf'),
-    ]
-
-    registered = False
-    for font_path in candidates:
-        if font_path and os.path.exists(font_path):
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, font_path))
-                registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
-                registered = True
-                break
-            except Exception:
-                continue
-
-    if not registered:
-        font_name = 'Helvetica'
+    font_name = ARABIC_FONT
 
     # Palette
     PRIMARY = colors.HexColor('#1e40af')
@@ -574,33 +586,8 @@ def export_offers_pdf(request):
                             topMargin=1*cm, bottomMargin=1*cm)
     elements = []
 
-    font_name = 'OfferReportFont'
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.pdfmetrics import registerFontFamily
+    font_name = ARABIC_FONT
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
-
-    BASE_DIR = settings.BASE_DIR
-    font_candidates = [
-        r'C:\Windows\Fonts\arial.ttf',
-        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
-        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
-        find('fonts/Cairo-Regular.ttf'),
-        find('fonts/Amiri-Regular.ttf'),
-    ]
-    font_path_found = None
-    for fp in font_candidates:
-        if fp and os.path.exists(fp):
-            font_path_found = fp
-            break
-
-    if font_path_found:
-        try:
-            pdfmetrics.registerFont(TTFont(font_name, font_path_found))
-            registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
-        except Exception:
-            font_name = 'Helvetica'
-    else:
-        font_name = 'Helvetica'
 
     def _ar(text):
         if not text:
