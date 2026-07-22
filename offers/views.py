@@ -574,7 +574,7 @@ def export_offers_pdf(request):
                             topMargin=1*cm, bottomMargin=1*cm)
     elements = []
 
-    font_name = 'Arial'
+    font_name = 'ArialArabic'
     BASE_DIR = settings.BASE_DIR
     candidates = [
         r'C:\Windows\Fonts\arial.ttf',
@@ -584,13 +584,19 @@ def export_offers_pdf(request):
         find('fonts/Cairo-Regular.ttf'),
         find('fonts/Amiri-Regular.ttf'),
     ]
+    registered = False
     for font_path in candidates:
         if font_path and os.path.exists(font_path):
             try:
                 pdfmetrics.registerFont(TTFont(font_name, font_path))
+                from reportlab.pdfbase.pdfmetrics import registerFontFamily
+                registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
+                registered = True
                 break
             except Exception:
                 continue
+    if not registered:
+        font_name = 'Helvetica'
 
     import arabic_reshaper
     from bidi.algorithm import get_display
@@ -603,7 +609,7 @@ def export_offers_pdf(request):
         return get_display(reshaped)
 
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleAr', fontName=font_name, fontSize=16, alignment=TA_CENTER, spaceAfter=12)
+    title_style = ParagraphStyle('TitleAr', parent=styles['Normal'], fontName=font_name, fontSize=16, alignment=TA_CENTER, spaceAfter=12)
     header_style = ParagraphStyle('HeaderAr', fontName=font_name, fontSize=9, alignment=TA_CENTER,
                                   textColor=colors.white, leading=14)
     cell_style = ParagraphStyle('CellAr', fontName=font_name, fontSize=8, alignment=TA_CENTER, leading=12)
