@@ -58,6 +58,18 @@ class Payment(models.Model):
                 counter += 1
             self.slug = slug
             Payment.objects.filter(pk=self.pk).update(slug=self.slug)
+        if self.amount_number and self.amount_number > 0:
+            prospect = getattr(self.account.student, 'prospect', None)
+            if prospect:
+                update_fields = []
+                if prospect.account_id != self.account_id:
+                    prospect.account = self.account
+                    update_fields.append('account')
+                if prospect.status != 'paid':
+                    prospect.status = 'paid'
+                    update_fields.append('status')
+                if update_fields:
+                    prospect.save(update_fields=update_fields)
 
     def __str__(self):
         return f"{self.code} - {self.account.get_key()}"

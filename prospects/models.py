@@ -53,6 +53,9 @@ class Prospect(models.Model):
     converted_at = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ التحويل')
     converted_by = models.ForeignKey('accounts.Person', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospects_converted', verbose_name='المحول إلى طالب')
 
+    # ربط دائم بالتسجيل (Account) الناتج عن قبول العرض أو أول دفعة
+    account = models.ForeignKey('registrations.Account', on_delete=models.SET_NULL, null=True, blank=True, related_name='prospects', verbose_name='التسجيل')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
