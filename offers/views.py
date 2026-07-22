@@ -575,6 +575,7 @@ def export_offers_pdf(request):
     elements = []
 
     font_name = 'ArialArabicReport'
+    from reportlab.pdfbase import pdfmetrics
 
     try:
         pdfmetrics.getFont(font_name)
