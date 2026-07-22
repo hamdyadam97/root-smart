@@ -307,6 +307,7 @@ function acceptRejectOffer(action) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
+            alert(data.message);
             window.location.reload();
         } else {
             alert(data.error || 'حدث خطأ');
