@@ -12,6 +12,8 @@ class Prospect(models.Model):
         ('no_answer', 'لم يتم الرد'),
         ('not_interested', 'غير مهتم'),
         ('interested', 'مهتم'),
+        ('registered', 'مسجل'),
+        ('paid', 'مدفوع'),
     ]
 
     COMMUNICATION_METHOD_CHOICES = [
@@ -80,6 +82,8 @@ class Prospect(models.Model):
             'no_answer': 'bg-warning',
             'not_interested': 'bg-dark',
             'interested': 'bg-success',
+            'registered': 'bg-primary',
+            'paid': 'bg-success',
         }
         return mapping.get(self.status, 'bg-secondary')
 

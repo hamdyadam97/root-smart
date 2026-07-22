@@ -54,7 +54,7 @@
     </div>
 </div>
 
-<div class="card">
+<div class="card mb-3">
     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
         <span><i class="bi bi-tags"></i> العروض المرسلة</span>
         {% if prospect.status == 'interested' and not prospect.student %}
@@ -111,15 +111,83 @@
     </div>
 </div>
 
-{% if prospect.status == 'interested' and not prospect.student %}
-{% has_perm_on_branch user 'add_student' prospect.branch as can_convert %}
-{% if can_convert %}
+<!-- Workflow Actions -->
+{% if not prospect.student %}
+{% has_perm_on_branch user 'change_prospect' prospect.branch as can_change_prospect %}
+
+{% if prospect.status == 'interested' and can_change_prospect %}
 <div class="mt-4 text-center">
-    <form method="post" action="{% url 'prospect-convert-to-student' prospect.slug %}" onsubmit="return confirm('هل أنت متأكد من تحويل هذا المستفسر إلى طالب؟');">
+    <form method="post" action="{% url 'prospect-register' prospect.slug %}" onsubmit="return confirm('هل أنت متأكد من تسجيل هذا المستفسر؟');">
         {% csrf_token %}
-        <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-mortarboard"></i> تحويل إلى طالب</button>
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-circle"></i> تسجيل المستفسر</button>
     </form>
 </div>
 {% endif %}
+
+{% if prospect.status == 'registered' and can_change_prospect %}
+<div class="card mt-4">
+    <div class="card-header bg-success text-white"><i class="bi bi-credit-card"></i> تحويل إلى طالب - إدخال الدفع</div>
+    <div class="card-body">
+        <form method="post" action="{% url 'prospect-convert-to-student' prospect.slug %}">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">التخصص <span class="text-danger">*</span></label>
+                    <select name="course_id" class="form-select" required>
+                        <option value="">اختر الدورة...</option>
+                        {% for course in available_courses %}
+                        <option value="{{ course.id }}">{{ course }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">نوع الدفع <span class="text-danger">*</span></label>
+                    <select name="payment_type" class="form-select" required>
+                        <option value="نقدي">نقدي</option>
+                        <option value="تقسيط">تقسيط</option>
+                        <option value="آجل">آجل</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">السعر <span class="text-danger">*</span></label>
+                    <input type="number" name="course_price" class="form-control" step="0.01" value="0" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">الخصم (%)</label>
+                    <input type="number" name="discount" class="form-control" step="0.01" value="0">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">نسبة الربح (%)</label>
+                    <input type="number" name="profit" class="form-control" step="0.01" value="0">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">مبلغ الائتمان</label>
+                    <input type="number" name="credit" class="form-control" step="0.01" value="0">
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('هل أنت متأكد من تحويل المستفسر إلى طالب مع التسجيل في الدورة؟');"><i class="bi bi-mortarboard"></i> تسجيل وتحويل إلى طالب</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if prospect.status == 'paid' %}
+<div class="alert alert-success mt-4 text-center">
+    <i class="bi bi-check-circle-fill"></i> تم التحويل إلى طالب بنجاح.
+    {% if prospect.student %}
+    <a href="{% url 'student-detail' prospect.student.slug %}" class="alert-link">عرض بيانات الطالب</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endif %}
+
+{% if prospect.student %}
+<div class="alert alert-info mt-4 text-center">
+    <i class="bi bi-info-circle"></i> هذا المستفسر محول إلى طالب.
+    <a href="{% url 'student-detail' prospect.student.slug %}" class="alert-link">عرض بيانات الطالب</a>
+</div>
 {% endif %}
 {% endblock %}

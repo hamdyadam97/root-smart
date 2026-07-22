@@ -72,6 +72,11 @@ class ProspectDetailView(BranchPermissionMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['offers'] = self.object.offers.select_related('course', 'sent_by').all()
+        from courses.models import Course
+        if self.object.master:
+            context['available_courses'] = Course.objects.filter(master=self.object.master)
+        else:
+            context['available_courses'] = Course.objects.filter(master__branch=self.object.branch)
         return context
 
 
@@ -258,7 +263,34 @@ class ProspectOfferDeleteView(BranchPermissionMixin, DeleteView):
 
 
 # ---------------------------------------------------------------------------
-# Convert Prospect to Student
+# Register Prospect (mark as registered)
+# ---------------------------------------------------------------------------
+
+@require_POST
+def prospect_register(request, slug):
+    prospect = get_object_or_404(Prospect, slug=slug)
+
+    if not is_root_branch(prospect.branch):
+        messages.error(request, 'المستفسرون متاحون فقط لشركة الجذور الرقمية')
+        return redirect('prospect-detail', slug=prospect.slug)
+
+    if not request.user.has_perm('change_prospect', branch=prospect.branch):
+        messages.error(request, 'غير مسموح لك بتسجيل هذا المستفسر')
+        return redirect('prospect-detail', slug=prospect.slug)
+
+    if prospect.status != 'interested':
+        messages.warning(request, 'لا يمكن تسجيل مستفسر غير مهتم')
+        return redirect('prospect-detail', slug=prospect.slug)
+
+    prospect.status = 'registered'
+    prospect.save(update_fields=['status', 'updated_at'])
+
+    messages.success(request, f'تم تسجيل {prospect.name} بنجاح. يمكنك الآن تحويله إلى طالب عند الدفع.')
+    return redirect('prospect-detail', slug=prospect.slug)
+
+
+# ---------------------------------------------------------------------------
+# Convert Prospect to Student (with registration + payment)
 # ---------------------------------------------------------------------------
 
 @require_POST
@@ -277,7 +309,45 @@ def convert_prospect_to_student(request, slug):
         messages.warning(request, 'هذا المستفسر محول إلى طالب بالفعل')
         return redirect('student-detail', slug=prospect.student.slug)
 
+    course_id = request.POST.get('course_id')
+    payment_type = request.POST.get('payment_type', 'نقدي')
+    course_price = request.POST.get('course_price', '0')
+    discount = request.POST.get('discount', '0')
+    profit = request.POST.get('profit', '0')
+    credit = request.POST.get('credit', '0')
+
+    if not course_id:
+        messages.error(request, 'يجب اختيار الدورة')
+        return redirect('prospect-detail', slug=prospect.slug)
+
+    from courses.models import Course
+    from registrations.models import Account
+
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        messages.error(request, 'الدورة غير موجودة')
+        return redirect('prospect-detail', slug=prospect.slug)
+
     student = do_convert_prospect_to_student(prospect, request.user)
 
-    messages.success(request, 'تم تحويل المستفسر إلى طالب بنجاح')
+    last_code = Account.objects.filter(course=course).order_by('-code').values_list('code', flat=True).first()
+    new_code = (last_code or 0) + 1
+
+    account = Account.objects.create(
+        course=course,
+        student=student,
+        code=new_code,
+        course_payment_type=payment_type,
+        course_price=float(course_price),
+        course_discount_amount=float(discount),
+        course_profit_amount=float(profit),
+        course_credit_amount=float(credit),
+        last_person=request.user,
+    )
+
+    prospect.status = 'paid'
+    prospect.save(update_fields=['status', 'updated_at'])
+
+    messages.success(request, f'تم تحويل {prospect.name} إلى طالب والتسجيل في الدورة "{course}" بنجاح.')
     return redirect('student-detail', slug=student.slug)
