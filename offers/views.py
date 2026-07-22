@@ -574,29 +574,29 @@ def export_offers_pdf(request):
                             topMargin=1*cm, bottomMargin=1*cm)
     elements = []
 
-    font_name = 'ArialArabic'
-    BASE_DIR = settings.BASE_DIR
-    candidates = [
-        r'C:\Windows\Fonts\arial.ttf',
-        r'C:\Windows\Fonts\arialbd.ttf',
-        os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
-        os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
-        find('fonts/Cairo-Regular.ttf'),
-        find('fonts/Amiri-Regular.ttf'),
-    ]
-    registered = False
-    for font_path in candidates:
-        if font_path and os.path.exists(font_path):
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, font_path))
-                from reportlab.pdfbase.pdfmetrics import registerFontFamily
-                registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
-                registered = True
-                break
-            except Exception:
-                continue
-    if not registered:
-        font_name = 'Helvetica'
+    font_name = 'ArialArabicReport'
+
+    try:
+        pdfmetrics.getFont(font_name)
+    except KeyError:
+        BASE_DIR = settings.BASE_DIR
+        candidates = [
+            r'C:\Windows\Fonts\arial.ttf',
+            r'C:\Windows\Fonts\arialbd.ttf',
+            os.path.join(BASE_DIR, 'static', 'fonts', 'Cairo-Regular.ttf'),
+            os.path.join(BASE_DIR, 'staticfiles', 'fonts', 'Cairo-Regular.ttf'),
+            find('fonts/Cairo-Regular.ttf'),
+            find('fonts/Amiri-Regular.ttf'),
+        ]
+        for font_path in candidates:
+            if font_path and os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    from reportlab.pdfbase.pdfmetrics import registerFontFamily
+                    registerFontFamily(font_name, normal=font_name, bold=font_name, italic=font_name, boldItalic=font_name)
+                    break
+                except Exception:
+                    continue
 
     from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
