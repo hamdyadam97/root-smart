@@ -195,6 +195,8 @@ def build_offer_pdf(offer, recipient=None):
         if not image_field:
             return None
         try:
+            if not os.path.exists(image_field.path):
+                return None
             return Image(image_field.path, width=width, height=height)
         except Exception:
             return None
@@ -413,7 +415,7 @@ def build_offer_pdf(offer, recipient=None):
     # ========== SIGNATURE ==========
     sig_path = branch.signature.path if branch and branch.signature else None
     sig_img = None
-    if sig_path:
+    if sig_path and os.path.exists(sig_path):
         try:
             sig_img = Image(sig_path, width=4.0*cm, height=1.8*cm)
         except Exception:
