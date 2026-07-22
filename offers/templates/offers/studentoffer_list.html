@@ -45,6 +45,14 @@
                         <option value="accepted" {% if filter_interaction == 'accepted' %}selected{% endif %}>مقبول</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <select name="acceptance" class="form-select">
+                        <option value="">كل حالات القبول</option>
+                        <option value="accepted" {% if filter_acceptance == 'accepted' %}selected{% endif %}>مقبول</option>
+                        <option value="pending" {% if filter_acceptance == 'pending' %}selected{% endif %}>في الانتظار</option>
+                        <option value="rejected" {% if filter_acceptance == 'rejected' %}selected{% endif %}>مرفوض</option>
+                    </select>
+                </div>
             </div>
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -69,6 +77,7 @@
                 <th>الدورة</th>
                 <th>السعر</th>
                 <th>الحالة</th>
+                <th>حالة القبول</th>
                 <th>تاريخ الإنشاء</th>
                 <th class="text-start">إجراءات</th>
             </tr>
@@ -81,6 +90,15 @@
                 <td>{{ offer.course|default:'-' }}</td>
                 <td>{{ offer.price }} {{ offer.branch.company.get_currency_display_name }}</td>
                 <td><span class="badge bg-secondary">{{ offer.get_status_display }}</span></td>
+                <td>
+                    {% if offer.acceptance_status == 'accepted' %}
+                        <span class="badge bg-success">مقبول</span>
+                    {% elif offer.acceptance_status == 'rejected' %}
+                        <span class="badge bg-danger">مرفوض</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">في الانتظار</span>
+                    {% endif %}
+                </td>
                 <td>{{ offer.created_at|date:'Y-m-d H:i' }}</td>
                 <td class="text-start">
                     <a href="{% url 'studentoffer-detail' offer.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
@@ -92,7 +110,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center text-muted">لا توجد عروض</td>
+                <td colspan="8" class="text-center text-muted">لا توجد عروض</td>
             </tr>
             {% endfor %}
         </tbody>

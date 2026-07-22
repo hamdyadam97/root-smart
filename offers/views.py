@@ -1195,6 +1195,10 @@ def _apply_offer_filters(queryset, params):
     if interaction == 'accepted':
         queryset = queryset.filter(recipients__status='اشترك').distinct()
 
+    acceptance = params.get('acceptance')
+    if acceptance:
+        queryset = queryset.filter(acceptance_status=acceptance)
+
     return queryset
 
 
@@ -1226,6 +1230,7 @@ class StudentOfferListView(BranchPermissionMixin, ListView):
         context['filter_interaction'] = self.request.GET.get('interaction', '')
         context['filter_date_from'] = self.request.GET.get('date_from', '')
         context['filter_date_to'] = self.request.GET.get('date_to', '')
+        context['filter_acceptance'] = self.request.GET.get('acceptance', '')
         return context
 
 
@@ -1324,6 +1329,29 @@ def studentoffer_update_ajax(request, pk):
     except Exception as exc:
         logger.exception('Error in studentoffer_update_ajax')
         return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+
+
+@login_required
+@require_POST
+def studentoffer_accept_reject(request, slug):
+    offer = get_object_or_404(StudentOffer, slug=slug)
+    if not request.user.has_perm('change_studentoffer', branch=offer.branch):
+        return JsonResponse({'success': False, 'error': 'غير مسموح لك'}, status=403)
+    action = request.POST.get('action')
+    if action == 'accept':
+        offer.acceptance_status = 'accepted'
+        offer.status = 'مسدل'
+        offer.save()
+        return JsonResponse({'success': True, 'message': 'تم قبول العرض', 'status': 'مسدل', 'acceptance': 'accepted'})
+    elif action == 'reject':
+        offer.acceptance_status = 'rejected'
+        offer.save()
+        return JsonResponse({'success': True, 'message': 'تم رفض العرض', 'status': offer.status, 'acceptance': 'rejected'})
+    elif action == 'pending':
+        offer.acceptance_status = 'pending'
+        offer.save()
+        return JsonResponse({'success': True, 'message': 'تم إرجاع العرض للانتظار', 'status': offer.status, 'acceptance': 'pending'})
+    return JsonResponse({'success': False, 'error': 'إجراء غير صحيح'}, status=400)
 
 
 # ============================================================

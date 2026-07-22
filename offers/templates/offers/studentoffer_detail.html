@@ -4,8 +4,25 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-tag"></i> {{ offer.title }}</h2>
-    <div>
+    <h2><i class="bi bi-tag"></i> {{ offer.title }}
+        {% if offer.acceptance_status == 'accepted' %}
+            <span class="badge bg-success fs-6">مقبول</span>
+        {% elif offer.acceptance_status == 'rejected' %}
+            <span class="badge bg-danger fs-6">مرفوض</span>
+        {% else %}
+            <span class="badge bg-warning text-dark fs-6">في الانتظار</span>
+        {% endif %}
+    </h2>
+    <div class="d-flex gap-2 align-items-center">
+        {% if offer.acceptance_status != 'accepted' %}
+        <button type="button" class="btn btn-success" onclick="acceptRejectOffer('accept')"><i class="bi bi-check-circle"></i> قبول العرض</button>
+        {% endif %}
+        {% if offer.acceptance_status != 'rejected' %}
+        <button type="button" class="btn btn-danger" onclick="acceptRejectOffer('reject')"><i class="bi bi-x-circle"></i> رفض العرض</button>
+        {% endif %}
+        {% if offer.acceptance_status != 'pending' %}
+        <button type="button" class="btn btn-outline-warning" onclick="acceptRejectOffer('pending')"><i class="bi bi-arrow-counterclockwise"></i> إرجاع للانتظار</button>
+        {% endif %}
         <a href="{% url 'studentoffer-export-pdf' offer.slug %}" class="btn btn-success"><i class="bi bi-file-earmark-pdf"></i> تحميل PDF</a>
         <a href="https://wa.me/966569736794" target="_blank" class="btn btn-success" style="background-color: #25D366; border-color: #25D366;"><i class="bi bi-whatsapp"></i> واتساب</a>
         <a href="{% url 'studentoffer-delete' offer.slug %}" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</a>
@@ -273,6 +290,30 @@
         });
     });
 })();
+</script>
+
+<script>
+function acceptRejectOffer(action) {
+    var labels = {'accept': 'قبول العرض', 'reject': 'رفض العرض', 'pending': 'إرجاع للانتظار'};
+    if (!confirm('هل أنت متأكد من ' + labels[action] + '?')) return;
+
+    fetch('{% url "studentoffer-accept-reject" offer.slug %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: new URLSearchParams({action: action})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.error || 'حدث خطأ');
+        }
+    })
+    .catch(() => alert('حدث خطأ في الاتصال'));
+}
 </script>
 
 {% endblock %}

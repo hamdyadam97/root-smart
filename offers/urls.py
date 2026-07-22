@@ -19,6 +19,7 @@ urlpatterns = [
     path('student-offers/export/excel/', views.export_offers_excel, name='offers-export-excel'),
     path('student-offers/<str:slug>/export/pdf/', views.export_studentoffer_pdf, name='studentoffer-export-pdf'),
     path('student-offers/ajax/create/', views.studentoffer_create_ajax, name='studentoffer-create-ajax'),
+    path('student-offers/<str:slug>/accept-reject/', views.studentoffer_accept_reject, name='studentoffer-accept-reject'),
     path('student-offers/ajax/<int:pk>/update/', views.studentoffer_update_ajax, name='studentoffer-update-ajax'),
 
     # OfferRecipient

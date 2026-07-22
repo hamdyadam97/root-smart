@@ -11,7 +11,13 @@ class StudentOffer(models.Model):
         ('مسودة', 'مسودة'),
         ('مجدولة', 'مجدولة'),
         ('مرسلة', 'مرسلة'),
+        ('مسدل', 'مسدل'),
         ('منتهية', 'منتهية'),
+    ]
+    ACCEPTANCE_CHOICES = [
+        ('pending', 'في الانتظار'),
+        ('accepted', 'مقبول'),
+        ('rejected', 'مرفوض'),
     ]
     title = models.CharField(max_length=255, verbose_name='نوع الاشتراك ')
     content = models.TextField(verbose_name='محتوى العرض')
@@ -29,6 +35,7 @@ class StudentOffer(models.Model):
     sent_at = models.DateTimeField(null=True, blank=True, db_index=True, verbose_name='تاريخ الإرسال الفعلي')
     slug = models.SlugField(unique=True, blank=True, null=True, db_index=True, verbose_name='الرابط')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='مسودة', db_index=True, verbose_name='الحالة')
+    acceptance_status = models.CharField(max_length=20, choices=ACCEPTANCE_CHOICES, default='pending', db_index=True, verbose_name='حالة القبول')
     created_by = models.ForeignKey('accounts.Person', on_delete=models.CASCADE, db_index=True, related_name='created_offers', verbose_name='تم الإنشاء بواسطة')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
