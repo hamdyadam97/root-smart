@@ -1351,51 +1351,26 @@ def studentoffer_accept_reject(request, slug):
         return JsonResponse({'success': False, 'error': 'غير مسموح لك'}, status=403)
     action = request.POST.get('action')
     if action == 'accept':
-        from prospects.utils import do_convert_prospect_to_student
-        from registrations.models import Account
-
-        accounts_created = []
-        recipients = offer.recipients.select_related('prospect', 'student').all()
+        # قبول العرض بيحوّل المستفسر من "مستفسر" إلى "مسجل" فقط.
+        # التحويل الفعلي لـ"طالب" (إنشاء Student + تسجيل الدورة والدفع) بيحصل
+        # في خطوة منفصلة لاحقًا من صفحة المستفسر (تحويل إلى طالب - إدخال الدفع).
+        registered_count = 0
+        recipients = offer.recipients.select_related('prospect').all()
         for recipient in recipients:
             prospect = recipient.prospect
             if not prospect:
                 continue
-            student = do_convert_prospect_to_student(prospect, request.user)
-            recipient.student = student
-            recipient.save(update_fields=['student'])
-
-            account = None
-            if offer.course:
-                account = Account.objects.filter(course=offer.course, student=student).first()
-                if account is None:
-                    last_code = Account.objects.filter(course=offer.course).order_by('-code').values_list('code', flat=True).first()
-                    new_code = (last_code or 0) + 1
-                    account = Account.objects.create(
-                        course=offer.course,
-                        student=student,
-                        code=new_code,
-                        course_price=offer.price,
-                        last_person=request.user,
-                        note=f'تسجيل تلقائي من قبول العرض: {offer.title}',
-                    )
-                accounts_created.append(account.get_key())
-
-            update_fields = []
-            if account is not None and prospect.account_id != account.id:
-                prospect.account = account
-                update_fields.append('account')
-            if prospect.status != 'paid':
+            if prospect.status not in ('registered', 'paid'):
                 prospect.status = 'registered'
-                update_fields.append('status')
-            if update_fields:
-                prospect.save(update_fields=update_fields)
+                prospect.save(update_fields=['status', 'updated_at'])
+            registered_count += 1
 
         offer.acceptance_status = 'accepted'
         offer.status = 'مسدل'
         offer.save()
-        msg = 'تم قبول العرض وتسجيل ' + str(len(accounts_created)) + ' طالب'
-        if accounts_created:
-            msg += ' - أكواد التسجيل: ' + ', '.join(accounts_created)
+        msg = 'تم قبول العرض'
+        if registered_count:
+            msg += f' وتسجيل {registered_count} مستفسر. يمكنك تحويله إلى طالب لاحقًا من صفحة المستفسر.'
         return JsonResponse({'success': True, 'message': msg, 'status': 'مسدل', 'acceptance': 'accepted'})
     elif action == 'reject':
         offer.acceptance_status = 'rejected'

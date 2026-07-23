@@ -355,7 +355,8 @@ def convert_prospect_to_student(request, slug):
     )
 
     prospect.status = 'paid'
-    prospect.save(update_fields=['status', 'updated_at'])
+    prospect.account = account
+    prospect.save(update_fields=['status', 'account', 'updated_at'])
 
     messages.success(request, f'تم تحويل {prospect.name} إلى طالب والتسجيل في الدورة "{course}" بنجاح.')
     return redirect('student-detail', slug=student.slug)
