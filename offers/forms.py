@@ -47,6 +47,20 @@ class OfferRecipientForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        channel = cleaned_data.get('channel')
+        contact_email = cleaned_data.get('contact_email')
+        if channel == 'email' and not contact_email:
+            self.add_error('contact_email', 'يجب إدخال بريد إلكتروني عند اختيار قناة الإرسال بريد إلكتروني.')
+
+        offer = cleaned_data.get('offer')
+        is_new = not (self.instance and self.instance.pk)
+        if offer and is_new and offer.recipients.exists():
+            self.add_error('offer', 'هذا العرض مخصص لمستلم واحد فقط، ولديه مستلم بالفعل.')
+
+        return cleaned_data
+
 
 class OfferRecipientAddForm(forms.ModelForm):
     """Form to add a recipient directly from an offer detail page (offer is preset)."""
@@ -82,6 +96,12 @@ class OfferRecipientAddForm(forms.ModelForm):
         contact_name = cleaned_data.get('contact_name')
         if not student and not prospect and not contact_phone and not contact_name:
             raise forms.ValidationError('يجب اختيار طالب مسجل أو مستفسر أو إدخال بيانات المستلم (اسم + جوال).')
+
+        channel = cleaned_data.get('channel')
+        contact_email = cleaned_data.get('contact_email')
+        if channel == 'email' and not contact_email:
+            self.add_error('contact_email', 'يجب إدخال بريد إلكتروني عند اختيار قناة الإرسال بريد إلكتروني.')
+
         return cleaned_data
 
 
@@ -146,6 +166,11 @@ class RootQuickOfferForm(forms.Form):
 
         if not prospect and not (contact_name and contact_phone):
             self.add_error('contact_name', 'يجب اختيار مستفسر مسجل أو إدخال اسم وجوال مستفسر جديد.')
+
+        channel = cleaned_data.get('channel')
+        contact_email = cleaned_data.get('contact_email')
+        if channel == 'email' and not contact_email:
+            self.add_error('contact_email', 'يجب إدخال بريد إلكتروني عند اختيار قناة الإرسال بريد إلكتروني.')
 
         return cleaned_data
 

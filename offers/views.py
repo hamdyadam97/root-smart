@@ -298,7 +298,7 @@ def build_offer_pdf(offer, recipient=None):
         if student:
             r_name = contact.get_full_name() if contact else student.get_full_name()
             r_phone = contact.mobile if contact else ''
-            r_email = contact.email if contact else ''
+            r_email = recipient.contact_email or ''
         else:
             r_name = recipient.contact_name or 'مستلم سريع'
             r_phone = recipient.contact_phone
@@ -778,7 +778,7 @@ def send_offer_to_recipient(request, slug, recipient_pk):
             logger.exception('Failed to send offer WhatsApp to %s', phone)
             messages.error(request, f'فشل إرسال واتساب: {str(e)}')
     elif channel == 'email':
-        email = contact.email if contact else recipient.contact_email
+        email = recipient.contact_email
         if not email:
             messages.warning(request, 'لا يوجد بريد إلكتروني مسجل لهذا المستلم.')
         else:
@@ -805,6 +805,9 @@ def add_recipient_to_offer(request, slug):
     offer = get_object_or_404(StudentOffer, slug=slug)
     if not request.user.has_perm('change_studentoffer', branch=offer.branch):
         raise PermissionDenied('غير مسموح لك دخول هنا')
+    if offer.recipients.exists():
+        messages.error(request, 'هذا العرض مخصص لمستلم واحد فقط، ولديه مستلم بالفعل.')
+        return redirect('studentoffer-detail', slug=slug)
     if request.method == 'POST':
         form = OfferRecipientAddForm(request.POST, user=request.user)
         if form.is_valid():
@@ -867,6 +870,8 @@ def studentoffer_add_recipient_ajax(request, slug):
     offer = get_object_or_404(StudentOffer, slug=slug)
     if not request.user.has_perm('change_studentoffer', branch=offer.branch):
         raise PermissionDenied('غير مسموح لك دخول هنا')
+    if offer.recipients.exists():
+        return JsonResponse({'success': False, 'error': 'هذا العرض مخصص لمستلم واحد فقط، ولديه مستلم بالفعل.'}, status=400)
     form = OfferRecipientAddForm(request.POST, user=request.user)
     if form.is_valid():
         recipient = form.save(commit=False)
@@ -947,7 +952,7 @@ def send_offer_to_all(request, slug):
             else:
                 failed_count += 1
         elif channel == 'email':
-            email = contact.email if contact else recipient.contact_email
+            email = recipient.contact_email
             if email:
                 try:
                     send_offer_email(offer, recipient, email)

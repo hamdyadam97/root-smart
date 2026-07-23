@@ -84,23 +84,19 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for offer in offers %}
+                    {% for recipient in sent_offers %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td>{{ offer.title }}</td>
-                        <td>{{ offer.course|default:'-' }}</td>
-                        <td>{{ offer.price }}</td>
-                        <td><span class="badge {{ offer.get_status_display_class }}">{{ offer.get_status_display }}</span></td>
-                        <td>{{ offer.sent_at }}</td>
-                        <td>{{ offer.sent_by|default:'-' }}</td>
+                        <td>{{ recipient.offer.title }}</td>
+                        <td>{{ recipient.offer.course|default:'-' }}</td>
+                        <td>{{ recipient.offer.price }}</td>
+                        <td><span class="badge bg-info">{{ recipient.offer.get_status_display }}</span></td>
+                        <td>{{ recipient.sent_at }}</td>
+                        <td>{{ recipient.offer.created_by|default:'-' }}</td>
                         <td class="text-start">
-                            {% has_perm_on_branch user 'change_prospectoffer' offer.branch as can_change_offer %}
-                            {% if can_change_offer %}
-                            <a href="{% url 'prospectoffer-update' offer.slug %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-                            {% endif %}
-                            {% has_perm_on_branch user 'delete_prospectoffer' offer.branch as can_delete_offer %}
-                            {% if can_delete_offer %}
-                            <a href="{% url 'prospectoffer-delete' offer.slug %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                            {% has_perm_on_branch user 'view_studentoffer' recipient.offer.branch as can_view_offer %}
+                            {% if can_view_offer %}
+                            <a href="{% url 'studentoffer-detail' recipient.offer.slug %}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
                             {% endif %}
                         </td>
                     </tr>

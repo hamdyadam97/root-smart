@@ -70,8 +70,12 @@ class ProspectDetailView(BranchPermissionMixin, DetailView):
         return Prospect.objects.filter(branch__in=allowed_ids)
 
     def get_context_data(self, **kwargs):
+        from offers.models import OfferRecipient
         context = super().get_context_data(**kwargs)
         context['offers'] = self.object.offers.select_related('course', 'sent_by').all()
+        context['sent_offers'] = OfferRecipient.objects.filter(prospect=self.object).select_related(
+            'offer', 'offer__course', 'offer__branch', 'offer__created_by'
+        ).order_by('-sent_at')
         from courses.models import Course
         if self.object.master:
             context['available_courses'] = Course.objects.filter(master=self.object.master)
