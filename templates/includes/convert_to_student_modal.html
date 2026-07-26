@@ -1,0 +1,89 @@
+<!-- Convert Prospect to Student Modal -->
+<div class="modal fade" id="convertToStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold" id="convertToStudentTitle"><i class="bi bi-mortarboard"></i> تحويل إلى طالب</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="convertToStudentForm" method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الدورة <span class="text-danger">*</span></label>
+                            <select name="course_id" id="ct_course" class="form-select" required>
+                                <option value="">اختر الدورة...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">نوع الدفع <span class="text-danger">*</span></label>
+                            <select name="payment_type" id="ct_payment_type" class="form-select" required>
+                                <option value="نقدي">نقدي</option>
+                                <option value="تقسيط">تقسيط</option>
+                                <option value="آجل">آجل</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">السعر <span class="text-danger">*</span></label>
+                            <input type="number" name="course_price" id="ct_course_price" class="form-control" step="0.01" value="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">الخصم (%)</label>
+                            <input type="number" name="discount" id="ct_discount" class="form-control" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">نسبة الربح (%)</label>
+                            <input type="number" name="profit" id="ct_profit" class="form-control" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">مبلغ الائتمان</label>
+                            <input type="number" name="credit" id="ct_credit" class="form-control" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="modal-footer px-0 pb-0 mt-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-success" onclick="return confirm('هل أنت متأكد من تحويل المستفسر إلى طالب مع التسجيل في الدورة؟');">
+                            <i class="bi bi-mortarboard"></i> تسجيل وتحويل إلى طالب
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const modalEl = document.getElementById('convertToStudentModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const form = document.getElementById('convertToStudentForm');
+    const titleEl = document.getElementById('convertToStudentTitle');
+    const courseSelect = document.getElementById('ct_course');
+
+    window.openConvertToStudentModal = function(prospectSlug, prospectName, masterId) {
+        form.action = '{% url "prospect-convert-to-student" "PLACEHOLDER" %}'.replace('PLACEHOLDER', prospectSlug);
+        titleEl.innerHTML = '<i class="bi bi-mortarboard"></i> تحويل ' + prospectName + ' إلى طالب';
+        form.reset();
+        courseSelect.innerHTML = '<option value="">اختر الدورة...</option>';
+
+        if (masterId) {
+            fetch('{% url "master-courses-ajax" 0 %}'.replace('0', masterId))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.courses) {
+                        data.courses.forEach(c => {
+                            const option = document.createElement('option');
+                            option.value = c.id;
+                            option.textContent = (c.master__name ? c.master__name + ' - ' : '') + c.name;
+                            courseSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(() => {});
+        }
+
+        modal.show();
+    };
+})();
+</script>

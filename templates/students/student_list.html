@@ -15,7 +15,7 @@
 
 <div class="card mb-4">
     <div class="card-body">
-        <form method="get" class="row g-3">
+        <form method="get" id="filterForm" class="row g-3">
             <div class="col-md-4">
                 <input type="text" name="search" class="form-control" placeholder="ابحث بالاسم أو الجوال أو الرابط..." value="{{ request.GET.search|default:'' }}">
             </div>
@@ -37,6 +37,10 @@
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-success" onclick="exportStudents('excel')"><i class="bi bi-file-earmark-excel"></i> تصدير Excel</button>
+                <button type="button" class="btn btn-danger" onclick="exportStudents('pdf')"><i class="bi bi-file-earmark-pdf"></i> تصدير PDF</button>
             </div>
         </form>
     </div>
@@ -90,4 +94,16 @@
 {% include "includes/pagination.html" %}
 
 {% include "includes/student_modal.html" %}
+
+<script>
+function exportStudents(type) {
+    var form = document.getElementById('filterForm');
+    var params = new URLSearchParams(new FormData(form));
+    if (type === 'excel') {
+        window.location.href = '{% url "students-export-excel" %}?' + params.toString();
+    } else {
+        window.location.href = '{% url "students-export-pdf" %}?' + params.toString();
+    }
+}
+</script>
 {% endblock %}

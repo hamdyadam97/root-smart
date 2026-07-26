@@ -3,10 +3,13 @@ from .views import (
     StudentListView, StudentDetailView,
     StudentCreateView, StudentUpdateView, StudentDeleteView,
     student_create_ajax, student_update_ajax,
+    export_students_excel, export_students_pdf,
 )
 
 urlpatterns = [
     path('students/', StudentListView.as_view(), name='student-list'),
+    path('students/export/pdf/', export_students_pdf, name='students-export-pdf'),
+    path('students/export/excel/', export_students_excel, name='students-export-excel'),
     path('students/<str:slug>/', StudentDetailView.as_view(), name='student-detail'),
     path('students/create/', StudentCreateView.as_view(), name='student-create'),
     path('students/<str:slug>/update/', StudentUpdateView.as_view(), name='student-update'),

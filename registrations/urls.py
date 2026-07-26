@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     AccountListView, AccountDetailView, AccountCreateView, AccountUpdateView, AccountDeleteView,
     account_create_ajax, account_update_ajax,
+    export_registrations_excel, export_registrations_pdf,
     AttachTypeListView, AttachTypeDetailView, AttachTypeCreateView, AttachTypeUpdateView, AttachTypeDeleteView,
     AttachListView, AttachDetailView, AttachCreateView, AttachUpdateView, AttachDeleteView,
     AccountAttachListView, AccountAttachDetailView, AccountAttachCreateView, AccountAttachUpdateView, AccountAttachDeleteView,
@@ -12,6 +13,8 @@ from .views import (
 urlpatterns = [
     # Account (Registration)
     path('registrations/', AccountListView.as_view(), name='registration-list'),
+    path('registrations/export/pdf/', export_registrations_pdf, name='registrations-export-pdf'),
+    path('registrations/export/excel/', export_registrations_excel, name='registrations-export-excel'),
     path('registrations/<str:slug>/', AccountDetailView.as_view(), name='registration-detail'),
     path('registrations/create/', AccountCreateView.as_view(), name='registration-create'),
     path('registrations/<str:slug>/update/', AccountUpdateView.as_view(), name='registration-update'),
