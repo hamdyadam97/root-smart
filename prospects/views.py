@@ -77,10 +77,14 @@ class ProspectDetailView(BranchPermissionMixin, DetailView):
             'offer', 'offer__course', 'offer__branch', 'offer__created_by'
         ).order_by('-sent_at')
         from courses.models import Course
+        available_courses = Course.objects.none()
         if self.object.master:
-            context['available_courses'] = Course.objects.filter(master=self.object.master)
-        else:
-            context['available_courses'] = Course.objects.filter(master__branch=self.object.branch)
+            available_courses = Course.objects.filter(master=self.object.master)
+        if not self.object.master or not available_courses.exists():
+            # لا يوجد تخصص محدد للمستفسر، أو التخصص المحدد ماعندوش دورات مضافة بعد
+            # نعرض كل دورات الفرع بدل ما نسيب القايمة فاضية.
+            available_courses = Course.objects.filter(master__branch=self.object.branch)
+        context['available_courses'] = available_courses.select_related('master').order_by('master__name', 'code')
         # Root offer modal context
         allowed_ids = get_user_root_branch_ids(self.request.user, 'add_studentoffer')
         context['branches'] = Branch.objects.filter(pk__in=allowed_ids).order_by('code', 'name')
