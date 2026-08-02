@@ -77,11 +77,18 @@ class ProspectDetailView(BranchPermissionMixin, DetailView):
             'offer', 'offer__course', 'offer__branch', 'offer__created_by'
         ).order_by('-sent_at')
         from courses.models import Course
+        # التخصص اللي العرض المرسل له اتبعت عليه هو الأساس، مش تخصص المستفسر
+        # المسجل وقت إنشائه (ممكن يكونوا مختلفين، أو يبقى فاضي).
+        latest_offer_with_master = context['sent_offers'].filter(
+            offer__master__isnull=False
+        ).order_by('-sent_at').first()
+        target_master = latest_offer_with_master.offer.master if latest_offer_with_master else self.object.master
+
         available_courses = Course.objects.none()
-        if self.object.master:
-            available_courses = Course.objects.filter(master=self.object.master)
-        if not self.object.master or not available_courses.exists():
-            # لا يوجد تخصص محدد للمستفسر، أو التخصص المحدد ماعندوش دورات مضافة بعد
+        if target_master:
+            available_courses = Course.objects.filter(master=target_master)
+        if not target_master or not available_courses.exists():
+            # لا يوجد تخصص محدد، أو التخصص المحدد ماعندوش دورات مضافة بعد
             # نعرض كل دورات الفرع بدل ما نسيب القايمة فاضية.
             available_courses = Course.objects.filter(master__branch=self.object.branch)
         context['available_courses'] = available_courses.select_related('master').order_by('master__name', 'code')
