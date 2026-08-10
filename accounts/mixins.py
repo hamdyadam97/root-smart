@@ -37,6 +37,10 @@ class BranchPermissionMixin(LoginRequiredMixin):
         return [b.pk for b in self.request.user.get_branches_for_perm(self.required_perm)]
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # اترك LoginRequiredMixin (عبر super().dispatch) يتصرف بتحويل
+            # المستخدم غير المسجل لصفحة الدخول، قبل أي وصول لـ is_executive().
+            return super().dispatch(request, *args, **kwargs)
         if self.required_perm and not request.user.is_executive():
             allowed_ids = self._get_allowed_branch_ids()
             if not allowed_ids:

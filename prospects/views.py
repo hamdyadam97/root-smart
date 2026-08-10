@@ -108,6 +108,8 @@ class ProspectCreateView(BranchPermissionMixin, CreateView):
     branch_field = 'branch'
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
         if not get_user_root_branch_ids(request.user, self.required_perm):
             raise PermissionDenied('غير مسموح لك دخول هنا')
         return super().dispatch(request, *args, **kwargs)
@@ -195,6 +197,8 @@ class ProspectOfferCreateView(BranchPermissionMixin, CreateView):
     branch_field = 'branch'
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
         if not get_user_root_branch_ids(request.user, self.required_perm):
             raise PermissionDenied('غير مسموح لك دخول هنا')
         prospect_slug = self.kwargs.get('prospect_slug')
@@ -244,6 +248,8 @@ class ProspectOfferUpdateView(BranchPermissionMixin, UpdateView):
     branch_field = 'branch'
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
         offer = self.get_object()
         if not is_root_branch(offer.branch):
             raise PermissionDenied('المستفسرون متاحون فقط لشركة الجذور الرقمية')
@@ -270,6 +276,8 @@ class ProspectOfferDeleteView(BranchPermissionMixin, DeleteView):
     branch_field = 'branch'
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
         offer = self.get_object()
         if not is_root_branch(offer.branch):
             raise PermissionDenied('المستفسرون متاحون فقط لشركة الجذور الرقمية')
