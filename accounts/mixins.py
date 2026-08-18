@@ -9,25 +9,39 @@ class ProtectedDeleteMixin:
     """Mix into any DeleteView to turn a ProtectedError (deleting a row that's
     still referenced by a PROTECT foreign key) into a friendly message and a
     redirect back, instead of an unhandled 500 crash.
+
+    Django's generic DeleteView (4.0+) routes POST through form_valid(),
+    which calls self.object.delete() directly — NOT the delete() handler
+    from DeletionMixin. Both are overridden here so the guard applies
+    regardless of which path a given Django version/view actually uses.
     """
+
+    def _handle_protected_error(self, request, exc):
+        labels = []
+        seen = set()
+        for obj in exc.protected_objects:
+            label = str(obj._meta.verbose_name)
+            if label not in seen:
+                seen.add(label)
+                labels.append(label)
+        related = '، '.join(labels) if labels else 'بيانات أخرى'
+        messages.error(
+            request,
+            f'لا يمكن الحذف لأن هذا العنصر مرتبط بـ: {related}. احذف أو عدّل البيانات المرتبطة أولاً.'
+        )
+        return redirect(self.get_success_url())
 
     def delete(self, request, *args, **kwargs):
         try:
             return super().delete(request, *args, **kwargs)
         except ProtectedError as exc:
-            labels = []
-            seen = set()
-            for obj in exc.protected_objects:
-                label = str(obj._meta.verbose_name)
-                if label not in seen:
-                    seen.add(label)
-                    labels.append(label)
-            related = '، '.join(labels) if labels else 'بيانات أخرى'
-            messages.error(
-                request,
-                f'لا يمكن الحذف لأن هذا العنصر مرتبط بـ: {related}. احذف أو عدّل البيانات المرتبطة أولاً.'
-            )
-            return redirect(self.get_success_url())
+            return self._handle_protected_error(request, exc)
+
+    def form_valid(self, form):
+        try:
+            return super().form_valid(form)
+        except ProtectedError as exc:
+            return self._handle_protected_error(self.request, exc)
 
 
 class BranchPermissionMixin(LoginRequiredMixin):
