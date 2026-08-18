@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 
 from registrations.models import Account
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from .models import Payment, PaymentOut, Deposit, Withdraw, BillBuyType, BillBuy, Offer, Call
 from .forms import (
     PaymentForm, PaymentOutForm, DepositForm, WithdrawForm,
@@ -102,7 +102,7 @@ class PaymentUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class PaymentDeleteView(BranchPermissionMixin, DeleteView):
+class PaymentDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Payment
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -196,7 +196,7 @@ class PaymentOutUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class PaymentOutDeleteView(BranchPermissionMixin, DeleteView):
+class PaymentOutDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = PaymentOut
     template_name = 'finance/paymentout_confirm_delete.html'
     success_url = reverse_lazy('paymentout-list')
@@ -269,7 +269,7 @@ class DepositUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class DepositDeleteView(BranchPermissionMixin, DeleteView):
+class DepositDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Deposit
     template_name = 'finance/deposit_confirm_delete.html'
     success_url = reverse_lazy('deposit-list')
@@ -342,7 +342,7 @@ class WithdrawUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class WithdrawDeleteView(BranchPermissionMixin, DeleteView):
+class WithdrawDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Withdraw
     template_name = 'finance/withdraw_confirm_delete.html'
     success_url = reverse_lazy('withdraw-list')
@@ -395,7 +395,7 @@ class BillBuyTypeUpdateView(BranchPermissionMixin, UpdateView):
         return kwargs
 
 
-class BillBuyTypeDeleteView(BranchPermissionMixin, DeleteView):
+class BillBuyTypeDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = BillBuyType
     template_name = 'finance/billbuytype_confirm_delete.html'
     success_url = reverse_lazy('billbuytype-list')
@@ -467,7 +467,7 @@ class BillBuyUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class BillBuyDeleteView(BranchPermissionMixin, DeleteView):
+class BillBuyDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = BillBuy
     template_name = 'finance/billbuy_confirm_delete.html'
     success_url = reverse_lazy('billbuy-list')
@@ -549,7 +549,7 @@ class OfferUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class OfferDeleteView(BranchPermissionMixin, DeleteView):
+class OfferDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Offer
     template_name = 'finance/offer_confirm_delete.html'
     success_url = reverse_lazy('offer-list')
@@ -642,7 +642,7 @@ class CallUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class CallDeleteView(BranchPermissionMixin, DeleteView):
+class CallDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Call
     slug_field = 'slug'
     slug_url_kwarg = 'slug'

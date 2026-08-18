@@ -1,4 +1,4 @@
-from accounts.mixins import BranchPermissionMixin
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Q
 from django.urls import reverse_lazy
@@ -62,7 +62,7 @@ class AppNotificationUpdateView(BranchPermissionMixin, SuccessMessageMixin, Upda
     required_perm = 'change_appnotification'
 
 
-class AppNotificationDeleteView(BranchPermissionMixin, SuccessMessageMixin, DeleteView):
+class AppNotificationDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, SuccessMessageMixin, DeleteView):
     model = AppNotification
     template_name = 'notifications/appnotification_confirm_delete.html'
     success_url = reverse_lazy('appnotification-list')

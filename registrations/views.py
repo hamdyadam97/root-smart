@@ -1,14 +1,13 @@
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import ProtectedError, Q
-from django.shortcuts import get_object_or_404, redirect
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from courses.models import Course
 from students.models import Student
 from prospects.models import Prospect
@@ -134,7 +133,7 @@ class AccountUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class AccountDeleteView(BranchPermissionMixin, DeleteView):
+class AccountDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Account
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -142,13 +141,6 @@ class AccountDeleteView(BranchPermissionMixin, DeleteView):
     success_url = reverse_lazy('registration-list')
     required_perm = 'delete_registration'
     branch_field = 'course__master__branch'
-
-    def delete(self, request, *args, **kwargs):
-        try:
-            return super().delete(request, *args, **kwargs)
-        except ProtectedError:
-            messages.error(request, 'لا يمكن حذف التسجيل لأنه مرتبط بمدفوعات. احذف المدفوعات الأول.')
-            return redirect(self.success_url)
 
 
 @login_required
@@ -391,7 +383,7 @@ class AttachTypeUpdateView(BranchPermissionMixin, UpdateView):
         return kwargs
 
 
-class AttachTypeDeleteView(BranchPermissionMixin, DeleteView):
+class AttachTypeDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = AttachType
     template_name = 'registrations/attachtype_confirm_delete.html'
     success_url = reverse_lazy('attachtype-list')
@@ -462,7 +454,7 @@ class AttachUpdateView(BranchPermissionMixin, UpdateView):
         return kwargs
 
 
-class AttachDeleteView(BranchPermissionMixin, DeleteView):
+class AttachDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Attach
     template_name = 'registrations/attach_confirm_delete.html'
     success_url = reverse_lazy('attach-list')
@@ -530,7 +522,7 @@ class AccountAttachUpdateView(BranchPermissionMixin, UpdateView):
         return kwargs
 
 
-class AccountAttachDeleteView(BranchPermissionMixin, DeleteView):
+class AccountAttachDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = AccountAttach
     template_name = 'registrations/accountattach_confirm_delete.html'
     success_url = reverse_lazy('accountattach-list')
@@ -609,7 +601,7 @@ class AccountConditionUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class AccountConditionDeleteView(BranchPermissionMixin, DeleteView):
+class AccountConditionDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = AccountCondition
     template_name = 'registrations/accountcondition_confirm_delete.html'
     success_url = reverse_lazy('accountcondition-list')
@@ -685,7 +677,7 @@ class AccountNoteUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class AccountNoteDeleteView(BranchPermissionMixin, DeleteView):
+class AccountNoteDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = AccountNote
     template_name = 'registrations/accountnote_confirm_delete.html'
     success_url = reverse_lazy('accountnote-list')

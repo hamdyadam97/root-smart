@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 
 from .models import Master, Course
 from .forms import MasterForm, CourseForm
@@ -114,7 +114,7 @@ class MasterUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class MasterDeleteView(BranchPermissionMixin, DeleteView):
+class MasterDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     required_perm = 'delete_master'
     branch_field = 'branch'
     model = Master
@@ -230,7 +230,7 @@ class CourseUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class CourseDeleteView(BranchPermissionMixin, DeleteView):
+class CourseDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     required_perm = 'delete_course'
     branch_field = 'master__branch'
     model = Course

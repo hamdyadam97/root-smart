@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from django.db.models import Sum, Count, Q
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView
 )
@@ -503,7 +503,7 @@ class CompanyUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class CompanyDeleteView(BranchPermissionMixin, DeleteView):
+class CompanyDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Company
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -581,7 +581,7 @@ class BranchUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class BranchDeleteView(BranchPermissionMixin, DeleteView):
+class BranchDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Branch
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -656,7 +656,7 @@ class BankUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class BankDeleteView(BranchPermissionMixin, DeleteView):
+class BankDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Bank
     template_name = 'core/bank_confirm_delete.html'
     success_url = reverse_lazy('bank-list')
@@ -741,7 +741,7 @@ class MasterCategoryUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class MasterCategoryDeleteView(BranchPermissionMixin, DeleteView):
+class MasterCategoryDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = MasterCategory
     slug_field = 'slug'
     slug_url_kwarg = 'slug'

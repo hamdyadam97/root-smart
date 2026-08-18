@@ -3,7 +3,7 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from .models import InternalMessage
 from .forms import InternalMessageForm
 
@@ -66,7 +66,7 @@ class InternalMessageUpdateView(BranchPermissionMixin, SuccessMessageMixin, Upda
     required_perm = 'change_message'
 
 
-class InternalMessageDeleteView(BranchPermissionMixin, SuccessMessageMixin, DeleteView):
+class InternalMessageDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, SuccessMessageMixin, DeleteView):
     model = InternalMessage
     template_name = 'messaging/internalmessage_confirm_delete.html'
     success_url = reverse_lazy('internalmessage-list')

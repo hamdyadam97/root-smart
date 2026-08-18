@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 
 from .models import Contact, Student
 from .forms import StudentForm
@@ -148,7 +148,7 @@ class StudentUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class StudentDeleteView(BranchPermissionMixin, DeleteView):
+class StudentDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     required_perm = 'delete_student'
     model = Student
     slug_field = 'slug'

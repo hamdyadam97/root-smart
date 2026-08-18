@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -1296,7 +1296,7 @@ class StudentOfferUpdateView(BranchPermissionMixin, SuccessMessageMixin, UpdateV
         return kwargs
 
 
-class StudentOfferDeleteView(BranchPermissionMixin, SuccessMessageMixin, DeleteView):
+class StudentOfferDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, SuccessMessageMixin, DeleteView):
     model = StudentOffer
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -1447,7 +1447,7 @@ class OfferRecipientUpdateView(BranchPermissionMixin, SuccessMessageMixin, Updat
         return kwargs
 
 
-class OfferRecipientDeleteView(BranchPermissionMixin, SuccessMessageMixin, DeleteView):
+class OfferRecipientDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, SuccessMessageMixin, DeleteView):
     model = OfferRecipient
     template_name = 'offers/offerrecipient_confirm_delete.html'
     success_url = reverse_lazy('offerrecipient-list')
@@ -1521,7 +1521,7 @@ class OfferNoteUpdateView(BranchPermissionMixin, SuccessMessageMixin, UpdateView
         return kwargs
 
 
-class OfferNoteDeleteView(BranchPermissionMixin, SuccessMessageMixin, DeleteView):
+class OfferNoteDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, SuccessMessageMixin, DeleteView):
     model = OfferNote
     template_name = 'offers/offernote_confirm_delete.html'
     success_url = reverse_lazy('offernote-list')

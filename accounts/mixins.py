@@ -1,5 +1,33 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.db.models import ProtectedError
+from django.shortcuts import redirect
+
+
+class ProtectedDeleteMixin:
+    """Mix into any DeleteView to turn a ProtectedError (deleting a row that's
+    still referenced by a PROTECT foreign key) into a friendly message and a
+    redirect back, instead of an unhandled 500 crash.
+    """
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            return super().delete(request, *args, **kwargs)
+        except ProtectedError as exc:
+            labels = []
+            seen = set()
+            for obj in exc.protected_objects:
+                label = str(obj._meta.verbose_name)
+                if label not in seen:
+                    seen.add(label)
+                    labels.append(label)
+            related = '، '.join(labels) if labels else 'بيانات أخرى'
+            messages.error(
+                request,
+                f'لا يمكن الحذف لأن هذا العنصر مرتبط بـ: {related}. احذف أو عدّل البيانات المرتبطة أولاً.'
+            )
+            return redirect(self.get_success_url())
 
 
 class BranchPermissionMixin(LoginRequiredMixin):

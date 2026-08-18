@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from .models import Person, Team, BranchAccess, Role, EmployeeRole, EmployeePerformance, Permission
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from .forms import (
     PersonCreationForm, PersonChangeForm, TeamForm,
     BranchAccessForm, RoleForm, EmployeeRoleForm, EmployeePerformanceForm, PermissionForm
@@ -128,7 +128,7 @@ class PersonUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class PersonDeleteView(BranchPermissionMixin, DeleteView):
+class PersonDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Person
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -244,7 +244,7 @@ class TeamUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class TeamDeleteView(BranchPermissionMixin, DeleteView):
+class TeamDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Team
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -337,7 +337,7 @@ class BranchAccessUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class BranchAccessDeleteView(BranchPermissionMixin, DeleteView):
+class BranchAccessDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = BranchAccess
     template_name = 'accounts/branchaccess_confirm_delete.html'
     success_url = reverse_lazy('branchaccess-list')
@@ -456,7 +456,7 @@ class RoleUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class RoleDeleteView(BranchPermissionMixin, DeleteView):
+class RoleDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Role
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -562,7 +562,7 @@ class PermissionUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class PermissionDeleteView(BranchPermissionMixin, DeleteView):
+class PermissionDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Permission
     template_name = 'accounts/permission_confirm_delete.html'
     success_url = reverse_lazy('permission-list')
@@ -666,7 +666,7 @@ class EmployeeRoleUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class EmployeeRoleDeleteView(BranchPermissionMixin, DeleteView):
+class EmployeeRoleDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = EmployeeRole
     template_name = 'accounts/employeerole_confirm_delete.html'
     success_url = reverse_lazy('employeerole-list')
@@ -800,7 +800,7 @@ class EmployeePerformanceUpdateView(BranchPermissionMixin, UpdateView):
         return super().form_valid(form)
 
 
-class EmployeePerformanceDeleteView(BranchPermissionMixin, DeleteView):
+class EmployeePerformanceDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = EmployeePerformance
     template_name = 'accounts/employeeperformance_confirm_delete.html'
     success_url = reverse_lazy('employeeperformance-list')

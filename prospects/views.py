@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from core.models import Branch
 from students.models import Contact, Student
 from accounts.models import Person
@@ -150,7 +150,7 @@ class ProspectUpdateView(BranchPermissionMixin, UpdateView):
         return kwargs
 
 
-class ProspectDeleteView(BranchPermissionMixin, DeleteView):
+class ProspectDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = Prospect
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -267,7 +267,7 @@ class ProspectOfferUpdateView(BranchPermissionMixin, UpdateView):
         return reverse('prospect-list')
 
 
-class ProspectOfferDeleteView(BranchPermissionMixin, DeleteView):
+class ProspectOfferDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
     model = ProspectOffer
     slug_field = 'slug'
     slug_url_kwarg = 'slug'

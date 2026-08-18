@@ -8,7 +8,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404
 
-from accounts.mixins import BranchPermissionMixin, filter_by_branch
+from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
 from core.models import Branch
 from .models import ReportSnapshot
 from .forms import ReportSnapshotForm
@@ -131,7 +131,7 @@ class ReportSnapshotUpdateView(BranchPermissionMixin, SuccessMessageMixin, Updat
         return response
 
 
-class ReportSnapshotDeleteView(BranchPermissionMixin, SuccessMessageMixin, DeleteView):
+class ReportSnapshotDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, SuccessMessageMixin, DeleteView):
     model = ReportSnapshot
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
