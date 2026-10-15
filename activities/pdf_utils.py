@@ -2,6 +2,10 @@
 
 نفس منهج تطبيق offers: خط Amiri (يدعم رموز Arabic Presentation Forms التي
 يخرجها arabic_reshaper) مع arabic_reshaper + python-bidi لمعالجة النص العربي.
+
+التصميم: هيدر كحلي موحد (الشركة + عنوان النموذج + الرقم والتاريخ)، البيانات
+بطاقات (تصنيف فوق وقيمة تحته)، تواقيع في ثلاثة صناديق، ومؤشرات بصرية للحضور
+والربحية.
 """
 import logging
 import os
@@ -10,7 +14,6 @@ from io import BytesIO
 
 from django.conf import settings
 from django.contrib.staticfiles.finders import find
-from django.utils import timezone
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
@@ -24,15 +27,28 @@ from reportlab.pdfbase.pdfmetrics import registerFontFamily
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable,
 )
+from reportlab.graphics.shapes import Drawing, Rect, String, PolyLine
 
 logger = logging.getLogger(__name__)
 
-PRIMARY_COLOR = colors.HexColor('#1e40af')
+NAVY = colors.HexColor('#0f2a4c')          # كحلي
+PRIMARY_COLOR = NAVY
 LIGHT_BG = colors.HexColor('#f1f5f9')
 BORDER_COLOR = colors.HexColor('#cbd5e1')
+GREEN = colors.HexColor('#16a34a')
+RED = colors.HexColor('#dc2626')
+SLATE = colors.HexColor('#334155')
+MUTED = colors.HexColor('#64748b')
+NOTE_BG = colors.HexColor('#eff6ff')
+NOTE_BORDER = colors.HexColor('#3b82f6')
+ALERT_BG = colors.HexColor('#fee2e2')
+ALERT_BORDER = colors.HexColor('#ef4444')
+OK_BG = colors.HexColor('#dcfce7')
+TRACK_BG = colors.HexColor('#e2e8f0')
+HIGHLIGHT_BG = colors.HexColor('#dbeafe')
+
 ARABIC_RE = re.compile(r'[\u0600-\u06FF]')
 FONT_NAME = 'ArabicFontActivities'
-
 MONEY = 'دينار'
 
 
@@ -103,16 +119,52 @@ def money(value):
     return f'{value:,.2f} {MONEY}'
 
 
+def _fmt(value):
+    return f'{value or 0:,.2f}'
+
+
+def _diff_text(actual, expected):
+    """نص الفرق (فعلي − متوقع) مع لونه."""
+    diff = (actual or 0) - (expected or 0)
+    if diff < 0:
+        return f'−{_fmt(abs(diff))}', RED
+    if diff > 0:
+        return f'+{_fmt(diff)}', GREEN
+    return _fmt(0), None
+
+
+def _profit_color(value):
+    return RED if (value or 0) < 0 else GREEN
+
+
+def _date(value):
+    return value.strftime('%Y-%m-%d') if value else '-'
+
+
+def _time(value):
+    return value.strftime('%H:%M') if value else '-'
+
+
 def _styles():
     base = ParagraphStyle('base', fontName=ARABIC_FONT, fontSize=10, leading=14)
     return {
-        'title': ParagraphStyle('title', parent=base, fontSize=15, leading=20, alignment=TA_CENTER, textColor=colors.white),
-        'header': ParagraphStyle('header', parent=base, fontSize=12, leading=16, alignment=TA_CENTER, textColor=colors.white),
-        'info': ParagraphStyle('info', parent=base, fontSize=8.5, leading=12, alignment=TA_RIGHT, textColor=colors.HexColor('#1e293b')),
-        'label': ParagraphStyle('label', parent=base, fontSize=9, leading=12, textColor=colors.HexColor('#334155')),
-        'value': ParagraphStyle('value', parent=base, fontSize=10, leading=13),
+        'bar_org': ParagraphStyle('bar_org', parent=base, fontSize=10.5, leading=14, textColor=colors.white),
+        'bar_title': ParagraphStyle('bar_title', parent=base, fontSize=14, leading=18, textColor=colors.white),
+        'bar_meta': ParagraphStyle('bar_meta', parent=base, fontSize=9, leading=13, alignment=TA_RIGHT, textColor=colors.white),
         'section': ParagraphStyle('section', parent=base, fontSize=11, leading=15, alignment=TA_CENTER, textColor=colors.white),
-        'footer': ParagraphStyle('footer', parent=base, fontSize=8, leading=10, textColor=colors.HexColor('#64748b'), alignment=TA_CENTER),
+        'card_label': ParagraphStyle('card_label', parent=base, fontSize=8.5, leading=11, alignment=TA_CENTER, textColor=MUTED),
+        'card_value': ParagraphStyle('card_value', parent=base, fontSize=11, leading=14, alignment=TA_CENTER, textColor=NAVY),
+        'tbl_head': ParagraphStyle('tbl_head', parent=base, fontSize=9.5, leading=12, alignment=TA_CENTER, textColor=colors.white),
+        'tbl_cell': ParagraphStyle('tbl_cell', parent=base, fontSize=9.5, leading=12, textColor=SLATE),
+        'tbl_cell_strong': ParagraphStyle('tbl_cell_strong', parent=base, fontSize=10, leading=12, textColor=NAVY),
+        'tbl_num': ParagraphStyle('tbl_num', parent=base, fontSize=9.5, leading=12, alignment=TA_CENTER, textColor=SLATE),
+        'note': ParagraphStyle('note', parent=base, fontSize=9.5, leading=13, textColor=SLATE),
+        'approved': ParagraphStyle('approved', parent=base, fontSize=12, leading=14, textColor=GREEN),
+        'status_plain': ParagraphStyle('status_plain', parent=base, fontSize=10, leading=14, textColor=MUTED),
+        'box_header': ParagraphStyle('box_header', parent=base, fontSize=9.5, leading=12, alignment=TA_CENTER, textColor=colors.white),
+        'box_date': ParagraphStyle('box_date', parent=base, fontSize=8, leading=10, alignment=TA_CENTER, textColor=MUTED),
+        'sig_name': ParagraphStyle('sig_name', parent=base, fontSize=9.5, leading=12, alignment=TA_CENTER, textColor=SLATE),
+        'footer': ParagraphStyle('footer', parent=base, fontSize=8, leading=10, textColor=MUTED, alignment=TA_CENTER),
     }
 
 
@@ -128,14 +180,14 @@ def _doc(buffer, title, footer_text):
     def _footer(canvas, doc_obj):
         canvas.saveState()
         # خط فاصل مميز في بداية كل صفحة
-        canvas.setStrokeColor(PRIMARY_COLOR)
+        canvas.setStrokeColor(NAVY)
         canvas.setLineWidth(1.2)
         canvas.line(15 * mm, page_height - 11 * mm, page_width - 15 * mm, page_height - 11 * mm)
         # خط فاصل مميز في نهاية كل صفحة
         canvas.setLineWidth(1.6)
         canvas.line(15 * mm, 14 * mm, page_width - 15 * mm, 14 * mm)
         canvas.setFont(ARABIC_FONT, 8)
-        canvas.setFillColor(colors.HexColor('#64748b'))
+        canvas.setFillColor(MUTED)
         canvas.drawCentredString(page_width / 2, 9 * mm, ar(footer_text))
         canvas.drawCentredString(page_width / 2, 5 * mm, ar(f'صفحة {doc_obj.page}'))
         canvas.restoreState()
@@ -162,199 +214,297 @@ def _logo_flowable(company, branch):
             img_w, img_h = reader.getSize()
             if not img_w or not img_h:
                 continue
-            scale = min(34 * mm / img_w, 20 * mm / img_h)
+            scale = min(24 * mm / img_w, 14 * mm / img_h)
             return Image(path, width=img_w * scale, height=img_h * scale)
         except Exception as exc:
             logger.warning('PDF logo load failed for %s: %s', path, exc)
     return None
 
 
-def _company_info_lines(company, branch):
-    """بيانات الشركة والفرع كنصوص في ترويسة النموذج."""
-    lines = []
-    if company:
-        name = str(company.name)
-        if branch and branch.name:
-            name = f'{branch.name} — {name}'
-        lines.append(name)
-        address = getattr(branch, 'address', '') if branch else ''
-        if not address:
-            address = getattr(company, 'address', '') or ''
-        if address:
-            lines.append(f'العنوان: {address}')
-        phones = []
-        for source in (branch, company):
-            for attr in ('phone1', 'phone2', 'mobile'):
-                value = getattr(source, attr, '') if source else ''
-                if value and value not in phones:
-                    phones.append(value)
-        if phones:
-            lines.append('هاتف: ' + ' / '.join(str(p) for p in phones))
-        email = (getattr(branch, 'email', '') if branch else '') or getattr(company, 'email', '') or ''
-        if email:
-            lines.append(f'البريد الإلكتروني: {email}')
-    elif branch:
-        lines.append(str(branch.name))
-    return lines
-
-
-def _header_table(company, branch, form_title, styles, form_number, form_date):
+def _header_bar(company, branch, form_title, styles, form_number, form_date):
+    """شريط كحلي واحد: اسم الشركة + عنوان النموذج + الرقم والتاريخ على الجنب."""
     logo = _logo_flowable(company, branch)
-    info_lines = _company_info_lines(company, branch)
-    info_paras = [Paragraph(ar(line), styles['info']) for line in info_lines]
 
-    header = Table(
-        [[logo or '', info_paras]],
-        colWidths=[35 * mm, 145 * mm],
-    )
-    header.setStyle(TableStyle([
+    if branch and company:
+        org = f'{branch.name} — {company.name}'
+    else:
+        org = str(branch.name if branch else (company.name if company else ''))
+
+    title_block = [
+        Paragraph(ar(org), styles['bar_org']),
+        Paragraph(ar(form_title), styles['bar_title']),
+    ]
+    meta_block = [
+        Paragraph(ar(f'رقم النموذج: {form_number or "-"}'), styles['bar_meta']),
+        Paragraph(ar(f'التاريخ: {form_date or "-"}'), styles['bar_meta']),
+    ]
+
+    bar = Table([[logo or '', title_block, meta_block]], colWidths=[28 * mm, 107 * mm, 45 * mm])
+    bar.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), NAVY),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (0, 0), 'CENTER'),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-    ]))
-
-    title = Table(
-        [[Paragraph(ar(form_title), styles['title'])]],
-        colWidths=[180 * mm],
-    )
-    title.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), PRIMARY_COLOR),
         ('TOPPADDING', (0, 0), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
     ]))
 
-    meta = Table(
-        [[Paragraph(ar('رقم النموذج'), styles['label']), cv(form_number or '-'),
-          Paragraph(ar('التاريخ'), styles['label']), cv(form_date or '-')]],
-        colWidths=[25 * mm, 65 * mm, 25 * mm, 65 * mm],
-    )
-    meta.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-        ('BACKGROUND', (0, 0), (0, -1), LIGHT_BG),
-        ('BACKGROUND', (2, 0), (2, -1), LIGHT_BG),
-        ('FONTNAME', (0, 0), (-1, -1), ARABIC_FONT),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-    ]))
-
-    # خط فاصل مميز بعد بيانات النموذج
-    separator = HRFlowable(width='100%', thickness=2, color=PRIMARY_COLOR, spaceBefore=2, spaceAfter=2)
-    return [header, title, meta, separator, Spacer(1, 4 * mm)]
+    separator = HRFlowable(width='100%', thickness=2, color=NAVY, spaceBefore=2, spaceAfter=2)
+    return [bar, separator, Spacer(1, 4 * mm)]
 
 
-def _section_bar(text, styles, width_mm=180):
-    bar = Table([[Paragraph(ar(text), styles['section'])]], colWidths=[width_mm * mm])
+def _section_bar(text, styles):
+    bar = Table([[Paragraph(ar(text), styles['section'])]], colWidths=[180 * mm])
     bar.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), PRIMARY_COLOR),
+        ('BACKGROUND', (0, 0), (-1, -1), NAVY),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
     return bar
 
 
-def _kv_table(rows, styles, label_width=40, value_width=50):
-    """جدول حقول بعمودين (عنوان/قيمة) — كل صف زوج عناصر ليملأ عرض الصفحة."""
-    data = []
-    for i in range(0, len(rows), 2):
-        left_label, left_value = rows[i]
-        cells = [Paragraph(ar(left_label), styles['label']), Paragraph(cv(left_value), styles['value'])]
-        if i + 1 < len(rows):
-            right_label, right_value = rows[i + 1]
-            cells += [Paragraph(ar(right_label), styles['label']), Paragraph(cv(right_value), styles['value'])]
-        else:
-            cells += ['', '']
-        data.append(cells)
+def _card(label, value, styles, width_mm, color=None, bg=None):
+    """بطاقة بيانات: تصنيف فوق وقيمة تحته."""
+    value_style = ParagraphStyle('card_v', parent=styles['card_value'], textColor=color or NAVY)
+    card = Table(
+        [
+            [Paragraph(ar(label), styles['card_label'])],
+            [Paragraph(cv(value), value_style)],
+        ],
+        colWidths=[width_mm * mm],
+    )
+    card.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.7, BORDER_COLOR),
+        ('BACKGROUND', (0, 0), (0, 0), LIGHT_BG),
+        ('BACKGROUND', (0, 1), (0, 1), bg or colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, 0), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 3),
+        ('TOPPADDING', (0, 1), (0, 1), 5),
+        ('BOTTOMPADDING', (0, 1), (0, 1), 5),
+    ]))
+    return card
 
-    table = Table(data, colWidths=[label_width * mm, value_width * mm] * 2, repeatRows=0)
+
+def _cards_grid(items, styles, cols=3, total_mm=180):
+    """شبكة بطاقات: items = [(label, value, color_or_None), ...]."""
+    gap = 3
+    w = (total_mm - gap * (cols - 1)) / cols
+    rows = []
+    for i in range(0, len(items), cols):
+        chunk = items[i:i + cols]
+        cells = [
+            _card(label, value, styles, w, color) if label is not None else ''
+            for label, value, color in (chunk + [(None, None, None)] * (cols - len(chunk)))
+        ]
+        rows.append(cells)
+    grid = Table(rows, colWidths=[(w + gap) * mm] * cols)
+    grid.setStyle(TableStyle([
+        ('LEFTPADDING', (0, 0), (-1, -1), gap / 2 * mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), gap / 2 * mm),
+        ('TOPPADDING', (0, 0), (-1, -1), 1.2 * mm),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 1.2 * mm),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    return grid
+
+
+def _check_flowable(size=5 * mm):
+    """علامة صح خضراء مرسومة كشكل متجهي."""
+    d = Drawing(size, size)
+    d.add(PolyLine(
+        [size * 0.12, size * 0.5, size * 0.4, size * 0.2, size * 0.88, size * 0.82],
+        strokeColor=GREEN, strokeWidth=1.8, fillColor=None,
+    ))
+    return d
+
+
+def _status_content(status, styles):
+    """محتوى صندوق الحالة: معتمد ✓ بالأخضر أو نص الحالة رماديًا."""
+    if status == 'approved':
+        inner = Table(
+            [[_check_flowable(), Paragraph(ar('معتمد'), styles['approved'])]],
+            colWidths=[8 * mm, 22 * mm],
+        )
+        inner.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ]))
+        return inner
+    return Paragraph(ar(STATUS_LABELS.get(status, status or '-')), styles['status_plain'])
+
+
+STATUS_LABELS = {
+    'draft': 'مسودة',
+    'completed': 'مكتمل',
+    'pending': 'بانتظار الاعتماد',
+    'approved': 'معتمد',
+    'rejected': 'مرفوض',
+}
+
+
+def _signature_line():
+    return HRFlowable(width='85%', thickness=0.8, color=MUTED, dash=(1.5, 2), hAlign='CENTER')
+
+
+def _signature_boxes(boxes, styles, total_mm=180):
+    """ثلاثة صناديق توقيع جنبًا إلى جنب: (عنوان، محتوى Flowable، تاريخ)."""
+    gap = 4
+    w = (total_mm - gap * (len(boxes) - 1)) / len(boxes)
+    cells = []
+    for header, content, date_str in boxes:
+        inner = Table(
+            [
+                [Paragraph(ar(header), styles['box_header'])],
+                [content],
+                [Paragraph(ar(f'التاريخ: {date_str or ".........."}'), styles['box_date'])],
+            ],
+            colWidths=[w * mm],
+            rowHeights=[7 * mm, 17 * mm, 6 * mm],
+        )
+        inner.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.8, BORDER_COLOR),
+            ('BACKGROUND', (0, 0), (0, 0), NAVY),
+            ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
+            ('VALIGN', (0, 1), (0, 1), 'BOTTOM' if content == '' else 'MIDDLE'),
+            ('VALIGN', (0, 2), (0, 2), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ]))
+        cells.append(inner)
+    outer = Table([cells], colWidths=[(w + gap) * mm] * len(boxes))
+    outer.setStyle(TableStyle([
+        ('LEFTPADDING', (0, 0), (-1, -1), gap / 2 * mm),
+        ('RIGHTPADDING', (0, 0), (-1, -1), gap / 2 * mm),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    return outer
+
+
+def _note_box(text, styles, bg=NOTE_BG, border=NOTE_BORDER):
+    box = Table([[Paragraph(ar(text), styles['note'])]], colWidths=[180 * mm])
+    box.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), bg),
+        ('BOX', (0, 0), (-1, -1), 1, border),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    return box
+
+
+def _progress_bar(percent, width_mm=180, height_mm=7):
+    """شريط تقدم بصري لنسبة الحضور."""
+    w, h = width_mm * mm, height_mm * mm
+    pct = max(0.0, min(float(percent or 0), 100.0))
+    d = Drawing(w, h)
+    d.add(Rect(0, 0, w, h, fillColor=TRACK_BG, strokeColor=BORDER_COLOR, strokeWidth=0.5, rx=2, ry=2))
+    if pct > 0:
+        d.add(Rect(0, 0, w * pct / 100, h, fillColor=GREEN, strokeColor=None, rx=2, ry=2))
+    d.add(String(w / 2, h / 2 - 3, f'{pct:.2f}%', fontName=ARABIC_FONT, fontSize=9, fillColor=NAVY, textAnchor='middle'))
+    return d
+
+
+def _comparison_table(rows, styles, highlight_label):
+    """جدول مقارنة واحد (ترتيب عربي من اليمين): البند | الفعلي | المتوقع | الفرق."""
+    header = [Paragraph(ar(h), styles['tbl_head']) for h in ['الفرق', 'المتوقع', 'الفعلي', 'البند']]
+    data = [header]
     style = [
         ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-        ('BACKGROUND', (0, 0), (0, -1), LIGHT_BG),
-        ('BACKGROUND', (2, 0), (2, -1), LIGHT_BG),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BACKGROUND', (0, 0), (-1, 0), NAVY),
+        ('ALIGN', (0, 0), (2, -1), 'CENTER'),
+        ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
         ('TOPPADDING', (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('LEFTPADDING', (0, 0), (-1, -1), 5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
     ]
+    for idx, (label, expected, actual, strong) in enumerate(rows, start=1):
+        diff, diff_color = _diff_text(actual, expected)
+        diff_style = ParagraphStyle('diff', parent=styles['tbl_num'], textColor=diff_color or SLATE)
+        data.append([
+            Paragraph(diff, diff_style),
+            Paragraph(_fmt(expected), styles['tbl_num']),
+            Paragraph(_fmt(actual), styles['tbl_num']),
+            Paragraph(ar(label), styles['tbl_cell_strong' if strong else 'tbl_cell']),
+        ])
+        if label == highlight_label:
+            style += [
+                ('BACKGROUND', (0, idx), (-1, idx), HIGHLIGHT_BG),
+                ('LINEABOVE', (0, idx), (-1, idx), 1, NAVY),
+                ('LINEBELOW', (0, idx), (-1, idx), 1, NAVY),
+            ]
+    table = Table(data, colWidths=[36 * mm, 37 * mm, 37 * mm, 70 * mm], repeatRows=1)
     table.setStyle(TableStyle(style))
     return table
 
 
-def _signature_table(rows, styles, width_mm=180):
-    """صف توقيع: (العنوان، القيمة أو خط فارغ) — قيمة None تعني خط توقيع."""
-    cells_top = [Paragraph(ar(label), styles['label']) for label, _ in rows]
-    cells_bottom = [Paragraph(cv(value) if value else '.................................', styles['value']) for _, value in rows]
-    col = width_mm / len(rows)
-    table = Table([cells_top, cells_bottom], colWidths=[col * mm] * len(rows))
-    table.setStyle(TableStyle([
-        ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
-        ('BACKGROUND', (0, 0), (-1, 0), LIGHT_BG),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-    ]))
-    return table
+def _org_of(activity):
+    company = activity.branch.company if activity.branch and activity.branch.company_id else None
+    return company, activity.branch
 
 
-def _date(value):
-    return value.strftime('%Y-%m-%d') if value else '-'
-
-
-def _time(value):
-    return value.strftime('%H:%M') if value else '-'
+def _section(story, title, styles):
+    story.append(_section_bar(title, styles))
+    story.append(Spacer(1, 2 * mm))
 
 
 def build_activity_pdf(activity):
     """نموذج عقد النشاط (المرحلة الأولى)."""
     styles = _styles()
     buffer = BytesIO()
-    company = activity.branch.company if activity.branch and activity.branch.company_id else None
-    branch = activity.branch
+    company, branch = _org_of(activity)
     doc, footer = _doc(buffer, f'عقد النشاط - {activity.name}', f'نموذج عقد النشاط رقم {activity.form_number or "-"}')
-    story = _header_table(company, branch, 'نموذج عقد النشاط', styles, activity.form_number, _date(activity.form_date))
+    story = _header_bar(company, branch, 'نموذج عقد النشاط', styles, activity.form_number, _date(activity.form_date))
 
-    story.append(_section_bar('بيانات النشاط', styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('رقم الطلب', activity.request_number),
-        ('اسم النشاط', activity.name),
-        ('مكان الانعقاد', activity.location),
-        ('تاريخ الانعقاد', _date(activity.event_date)),
-        ('نوع النشاط', activity.get_activity_type_display()),
-        ('الفئة المستهدفة', activity.target_audience),
-        ('الإقليم', activity.get_region_display()),
-        ('نوع الاعتماد', activity.get_accreditation_type_display()),
-        ('عدد الحضور المتوقع', activity.expected_attendees),
-        ('اسم المدرب', activity.trainer_name),
+    _section(story, 'بيانات النشاط', styles)
+    story.append(_cards_grid([
+        ('رقم الطلب', activity.request_number, None),
+        ('اسم النشاط', activity.name, None),
+        ('مكان الانعقاد', activity.location, None),
+        ('تاريخ الانعقاد', _date(activity.event_date), None),
+        ('نوع النشاط', activity.get_activity_type_display(), None),
+        ('الفئة المستهدفة', activity.target_audience, None),
+        ('الإقليم', activity.get_region_display(), None),
+        ('نوع الاعتماد', activity.get_accreditation_type_display(), None),
+        ('عدد الحضور المتوقع', activity.expected_attendees, None),
+        ('اسم المدرب', activity.trainer_name, None),
     ], styles))
-    story.append(Spacer(1, 6 * mm))
+    story.append(Spacer(1, 5 * mm))
 
-    story.append(_section_bar('بيانات الشريك', styles))
-    story.append(Spacer(1, 2 * mm))
+    _section(story, 'بيانات الشريك', styles)
     if activity.no_partner:
-        partner_rows = [('حالة الشريك', 'لا يوجد شريك')]
-    else:
-        partner_rows = [
-            ('صفة الشريك', activity.get_partner_kind_display()),
-            ('اسم الشريك', activity.partner_name),
-            ('نسبة الشريك أو المنسق من صافي الأرباح (%)', f'{activity.partner_share_percent}%'),
+        partner_cards = [
+            ('حالة الشريك', 'لا يوجد شريك', MUTED),
+            ('اسم المفوض بالتوقيع', activity.authorized_signatory, None),
+            ('اسم منسق النشاط', activity.coordinator_name, None),
         ]
-    partner_rows += [
-        ('اسم المفوض بالتوقيع', activity.authorized_signatory),
-        ('اسم منسق النشاط', activity.coordinator_name),
-    ]
-    story.append(_kv_table(partner_rows, styles))
-    story.append(Spacer(1, 6 * mm))
+    else:
+        partner_cards = [
+            ('صفة الشريك', activity.get_partner_kind_display(), None),
+            ('اسم الشريك', activity.partner_name, None),
+            ('نسبة الشريك من صافي الأرباح (%)', f'{activity.partner_share_percent}%', None),
+            ('اسم المفوض بالتوقيع', activity.authorized_signatory, None),
+            ('اسم منسق النشاط', activity.coordinator_name, None),
+        ]
+    story.append(_cards_grid(partner_cards, styles))
+    story.append(Spacer(1, 5 * mm))
 
-    story.append(_section_bar('التوقيع والختم', styles))
+    _section(story, 'الحالة والتوقيع والختم', styles)
     story.append(Spacer(1, 2 * mm))
-    story.append(_signature_table([
-        ('اسم الموقّع', activity.signatory_name),
-        ('الختم', 'تم الختم' if activity.sealed else None),
-        ('التاريخ', _date(activity.signature_date)),
+    signature_content = [
+        Paragraph(cv(activity.signatory_name), styles['sig_name']),
+        Spacer(1, 6 * mm),
+        _signature_line(),
+    ]
+    story.append(_signature_boxes([
+        ('الحالة', _status_content(activity.status, styles), _date(activity.signature_date)),
+        ('التوقيع', signature_content, _date(activity.signature_date)),
+        ('الختم', '', _date(activity.signature_date)),
     ], styles))
 
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
@@ -367,82 +517,86 @@ def build_financial_pdf(analysis):
     styles = _styles()
     buffer = BytesIO()
     activity = analysis.activity
-    company = activity.branch.company if activity.branch and activity.branch.company_id else None
-    branch = activity.branch
-    doc, footer = _doc(buffer, f'التحليل المالي - {activity.name}', f'التحليل المالي للنشاط رقم {activity.form_number or "-"}')
-    story = _header_table(company, branch, 'التحليل المالي للنشاط', styles, analysis.form_number, _date(analysis.analysis_date))
+    company, branch = _org_of(activity)
+    doc, footer = _doc(buffer, f'التحليل المالي - {activity.name}', f'التحليل المالي للنشاط رقم {analysis.form_number or "-"}')
+    story = _header_bar(company, branch, 'التحليل المالي للنشاط', styles, analysis.form_number, _date(analysis.analysis_date))
 
-    story.append(_section_bar('البيانات الأساسية', styles))
+    _section(story, 'المؤشرات المالية الرئيسية (دينار)', styles)
+    story.append(_cards_grid([
+        ('قيمة العقد', money(analysis.expected_total_revenue), NAVY),
+        ('الربح المتوقع', money(analysis.expected_net_profit), _profit_color(analysis.expected_net_profit)),
+        ('الربح الفعلي', money(analysis.actual_net_profit), _profit_color(analysis.actual_net_profit)),
+        ('عدد المتدربين', analysis.trainee_count, NAVY),
+    ], styles, cols=4))
     story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('رقم النشاط', activity.form_number),
-        ('اسم النشاط التدريبي', activity.name),
-        ('مكان الانعقاد', activity.location),
-        ('تاريخ الانعقاد', _date(activity.event_date)),
-        ('عدد المتدربين', analysis.trainee_count),
-        ('بدل التدريب لكل متدرب', money(analysis.fee_per_trainee)),
+    story.append(_cards_grid([
+        ('بدل التدريب لكل متدرب', money(analysis.fee_per_trainee), None),
+        ('مكان الانعقاد', activity.location, None),
+        ('تاريخ الانعقاد', _date(activity.event_date), None),
     ], styles))
-    story.append(Spacer(1, 6 * mm))
+    story.append(Spacer(1, 5 * mm))
 
-    story.append(_section_bar('الإيرادات المتوقعة والفعلية (دينار)', styles))
+    _section(story, 'مقارنة الإيرادات والتكاليف المتوقعة والفعلية (دينار)', styles)
     story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('رسوم المتدربين المتوقعة', money(analysis.expected_trainee_fees)),
-        ('رسوم المتدربين الفعلية', money(analysis.actual_trainee_fees)),
-        ('إجمالي الإيرادات المتوقعة', money(analysis.expected_total_revenue)),
-        ('إجمالي الإيرادات الفعلية', money(analysis.actual_total_revenue)),
+    story.append(_comparison_table([
+        ('رسوم المتدربين', analysis.expected_trainee_fees, analysis.actual_trainee_fees, False),
+        ('بدل الكهرباء', analysis.expected_electricity, analysis.actual_electricity, False),
+        ('بدل المياه', analysis.expected_water, analysis.actual_water, False),
+        ('بدل استخدام القاعة', analysis.expected_hall, analysis.actual_hall, False),
+        ('بدل الضيافة', analysis.expected_hospitality, analysis.actual_hospitality, False),
+        ('تكاليف الشهادات', analysis.expected_certificates, analysis.actual_certificates, False),
+        ('أجرة المدرب', analysis.expected_trainer_fee, analysis.actual_trainer_fee, False),
+        ('إجمالي التكاليف', analysis.expected_total_costs, analysis.actual_total_costs, True),
+        ('إجمالي الإيرادات', analysis.expected_total_revenue, analysis.actual_total_revenue, True),
+        ('صافي الربح', analysis.expected_net_profit, analysis.actual_net_profit, True),
+    ], styles, highlight_label='صافي الربح'))
+    story.append(Spacer(1, 4 * mm))
+
+    if (analysis.actual_net_profit or 0) < 0:
+        if analysis.actual_total_revenue < analysis.actual_total_costs:
+            reason = (
+                f'الإيرادات الفعلية ({_fmt(analysis.actual_total_revenue)} دينار) أقل من إجمالي التكاليف '
+                f'الفعلية ({_fmt(analysis.actual_total_costs)} دينار)'
+            )
+        else:
+            reason = 'الإيرادات الفعلية جاءت دون المتوقعة'
+        story.append(_note_box(
+            f'تنبيه: تحقق خسارة فعلية قدرها {money(abs(analysis.actual_net_profit))} لأن {reason}.',
+            styles, bg=ALERT_BG, border=ALERT_BORDER,
+        ))
+        story.append(Spacer(1, 4 * mm))
+
+    _section(story, 'مستحقات الشركة والشريك (دينار)', styles)
+    story.append(_cards_grid([
+        ('مستحقات الشركة المتوقعة', money(analysis.expected_company_share), None),
+        ('مستحقات الشركة الفعلية', money(analysis.actual_company_share), None),
+        ('مستحقات الشريك المتوقعة', money(analysis.expected_partner_share), None),
+        ('مستحقات الشريك الفعلية', money(analysis.actual_partner_share), None),
+    ], styles, cols=4))
+    story.append(Spacer(1, 4 * mm))
+    story.append(_note_box(
+        'ملاحظة: نسبة 0.20% المذكورة في النموذج الأصلي رسوم تُحتسب من صافي أرباح النشاط.',
+        styles,
+    ))
+    story.append(Spacer(1, 5 * mm))
+
+    _section(story, 'معد التحليل والاعتماد', styles)
+    story.append(Spacer(1, 2 * mm))
+    story.append(_cards_grid([
+        ('اسم معد التحليل', analysis.prepared_by, None),
+        ('المسمى الوظيفي', analysis.preparer_job_title, None),
+        ('تاريخ توقيع المعد', _date(analysis.preparer_signature_date), None),
     ], styles))
-    story.append(Spacer(1, 6 * mm))
-
-    story.append(_section_bar('التكاليف المتوقعة والفعلية (دينار)', styles))
-    story.append(Spacer(1, 2 * mm))
-    cost_rows = [
-        ('بدل الكهرباء المتوقع', money(analysis.expected_electricity)),
-        ('بدل الكهرباء الفعلي', money(analysis.actual_electricity)),
-        ('بدل المياه المتوقع', money(analysis.expected_water)),
-        ('بدل المياه الفعلي', money(analysis.actual_water)),
-        ('بدل استخدام القاعة المتوقع', money(analysis.expected_hall)),
-        ('بدل استخدام القاعة الفعلي', money(analysis.actual_hall)),
-        ('بدل الضيافة المتوقع', money(analysis.expected_hospitality)),
-        ('بدل الضيافة الفعلي', money(analysis.actual_hospitality)),
-        ('تكاليف الشهادات المتوقعة', money(analysis.expected_certificates)),
-        ('تكاليف الشهادات الفعلية', money(analysis.actual_certificates)),
-        ('أجرة المدرب المتوقعة', money(analysis.expected_trainer_fee)),
-        ('أجرة المدرب الفعلية', money(analysis.actual_trainer_fee)),
-        ('إجمالي التكاليف المتوقعة', money(analysis.expected_total_costs)),
-        ('إجمالي التكاليف الفعلية', money(analysis.actual_total_costs)),
+    story.append(Spacer(1, 4 * mm))
+    approval_content = [
+        Paragraph(cv(analysis.approval_name or ''), styles['sig_name']),
+        Spacer(1, 6 * mm),
+        _signature_line(),
     ]
-    story.append(_kv_table(cost_rows, styles))
-    story.append(Spacer(1, 6 * mm))
-
-    story.append(_section_bar('الملخص المالي (دينار)', styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('إجمالي الدخل المتوقع', money(analysis.expected_total_revenue)),
-        ('إجمالي الدخل الفعلي', money(analysis.actual_total_revenue)),
-        ('إجمالي النفقات المتوقعة', money(analysis.expected_total_costs)),
-        ('إجمالي النفقات الفعلية', money(analysis.actual_total_costs)),
-        ('صافي الربح المتوقع', money(analysis.expected_net_profit)),
-        ('صافي الربح الفعلي', money(analysis.actual_net_profit)),
-        ('مستحقات الشركة المتوقعة', money(analysis.expected_company_share)),
-        ('مستحقات الشركة الفعلية', money(analysis.actual_company_share)),
-        ('مستحقات الشريك المتوقعة', money(analysis.expected_partner_share)),
-        ('مستحقات الشريك الفعلية', money(analysis.actual_partner_share)),
-    ], styles))
-    story.append(Spacer(1, 6 * mm))
-
-    story.append(_section_bar('معد التحليل والاعتماد', styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_signature_table([
-        ('اسم معد التحليل', analysis.prepared_by),
-        ('المسمى الوظيفي', analysis.preparer_job_title),
-        ('تاريخ التوقيع', _date(analysis.preparer_signature_date)),
-    ], styles))
-    story.append(Spacer(1, 3 * mm))
-    story.append(_signature_table([
-        ('اسم المعتمد', analysis.approval_name),
-        ('تاريخ الاعتماد', _date(analysis.approval_date)),
-        ('الحالة', analysis.get_status_display()),
+    story.append(_signature_boxes([
+        ('الحالة', _status_content(analysis.status, styles), _date(analysis.approval_date)),
+        ('التوقيع', approval_content, _date(analysis.approval_date)),
+        ('الختم', '', _date(analysis.approval_date)),
     ], styles))
 
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
@@ -450,56 +604,79 @@ def build_financial_pdf(analysis):
     return buffer
 
 
+def _approval_card(status, signer, date_str, styles):
+    """بطاقة اعتماد واضحة: الحالة (معتمد ✓) / الموقّع / التاريخ."""
+    card = Table(
+        [[
+            Table([[_status_content(status, styles)]], colWidths=[56 * mm]),
+            Paragraph(ar(f'الموقّع: {signer or "-"}'), styles['sig_name']),
+            Paragraph(ar(f'التاريخ: {date_str or "-"}'), styles['sig_name']),
+        ]],
+        colWidths=[60 * mm, 60 * mm, 60 * mm],
+    )
+    card.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 1.2, NAVY),
+        ('INNERGRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+        ('BACKGROUND', (0, 0), (0, 0), OK_BG if status == 'approved' else LIGHT_BG),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+    ]))
+    return card
+
+
 def build_coordination_pdf(coordination):
     """نموذج تنسيق وجاهزية النشاط (المرحلة الثالثة)."""
     styles = _styles()
     buffer = BytesIO()
     activity = coordination.activity
-    company = activity.branch.company if activity.branch and activity.branch.company_id else None
-    branch = activity.branch
+    company, branch = _org_of(activity)
     doc, footer = _doc(buffer, f'تنسيق وجاهزية النشاط - {activity.name}', f'نموذج التنسيق والجاهزية رقم {coordination.form_number or "-"}')
-    story = _header_table(company, branch, 'نموذج تنسيق وجاهزية النشاط', styles, coordination.form_number, _date(coordination.coordination_date))
+    story = _header_bar(company, branch, 'نموذج تنسيق وجاهزية النشاط', styles, coordination.form_number, _date(coordination.coordination_date))
 
-    story.append(_section_bar('بيانات النشاط', styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('رقم النشاط', activity.form_number),
-        ('اسم النشاط', activity.name),
-        ('تاريخ الانعقاد', _date(activity.event_date)),
-        ('مكان الانعقاد', activity.location),
-        ('نوع النشاط', activity.get_activity_type_display()),
+    _section(story, 'بيانات النشاط', styles)
+    story.append(_cards_grid([
+        ('رقم النشاط', activity.form_number, None),
+        ('اسم النشاط', activity.name, None),
+        ('تاريخ الانعقاد', _date(activity.event_date), None),
+        ('مكان الانعقاد', activity.location, None),
+        ('نوع النشاط', activity.get_activity_type_display(), None),
     ], styles))
-    story.append(Spacer(1, 6 * mm))
+    story.append(Spacer(1, 5 * mm))
 
-    story.append(_section_bar('بيانات التنسيق', styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('اسم المحاضر', coordination.lecturer_name),
-        ('رقم هاتف المحاضر', coordination.lecturer_phone),
-        ('عدد الحضور المتوقع', coordination.expected_attendees),
-        ('الضيافة', 'مشمولة' if coordination.hospitality_included else 'غير مشمولة'),
-        ('اسم منسق النشاط', coordination.coordinator_name),
-        ('وقت بداية النشاط', _time(coordination.start_time)),
-        ('وقت نهاية النشاط', _time(coordination.end_time)),
+    _section(story, 'بيانات التنسيق', styles)
+    story.append(_cards_grid([
+        ('اسم المحاضر', coordination.lecturer_name, None),
+        ('رقم هاتف المحاضر', coordination.lecturer_phone, None),
+        ('عدد الحضور المتوقع', coordination.expected_attendees, None),
+        ('الضيافة', 'مشمولة' if coordination.hospitality_included else 'غير مشمولة', None),
+        ('اسم منسق النشاط', coordination.coordinator_name, None),
+        ('وقت بداية النشاط', _time(coordination.start_time), None),
+        ('وقت نهاية النشاط', _time(coordination.end_time), None),
     ], styles))
-    story.append(Spacer(1, 6 * mm))
+    story.append(Spacer(1, 5 * mm))
 
-    story.append(_section_bar('بيانات الحضور', styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_kv_table([
-        ('عدد المسجلين', coordination.registered_count),
-        ('عدد الحاضرين', coordination.attended_count),
-        ('عدد الغائبين', coordination.absent_count),
-        ('نسبة الحضور (%)', f'{coordination.attendance_rate}%'),
-    ], styles))
-    story.append(Spacer(1, 6 * mm))
+    _section(story, 'بيانات الحضور', styles)
+    story.append(_cards_grid([
+        ('عدد المسجلين', coordination.registered_count, NAVY),
+        ('عدد الحاضرين', coordination.attended_count, GREEN),
+        ('عدد الغائبين', coordination.absent_count, RED),
+        ('نسبة الحضور (%)', f'{coordination.attendance_rate}%', GREEN),
+    ], styles, cols=4))
+    story.append(Spacer(1, 3 * mm))
+    story.append(_progress_bar(coordination.attendance_rate))
+    story.append(Spacer(1, 5 * mm))
 
-    story.append(_section_bar('التوقيع', styles))
+    _section(story, 'الاعتماد والتوقيع', styles)
     story.append(Spacer(1, 2 * mm))
-    story.append(_signature_table([
-        ('اسم الموقّع', coordination.signed_name),
-        ('تاريخ التوقيع', _date(coordination.signature_date)),
-        ('الحالة', coordination.get_status_display()),
+    story.append(_approval_card(
+        coordination.status, coordination.signed_name, _date(coordination.signature_date), styles
+    ))
+    story.append(Spacer(1, 4 * mm))
+    story.append(_signature_boxes([
+        ('التوقيع', '', _date(coordination.signature_date)),
+        ('الختم', '', _date(coordination.signature_date)),
     ], styles))
 
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
