@@ -13,14 +13,17 @@ from django.contrib.staticfiles.finders import find
 from django.utils import timezone
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +108,7 @@ def _styles():
     return {
         'title': ParagraphStyle('title', parent=base, fontSize=15, leading=20, alignment=TA_CENTER, textColor=colors.white),
         'header': ParagraphStyle('header', parent=base, fontSize=12, leading=16, alignment=TA_CENTER, textColor=colors.white),
+        'info': ParagraphStyle('info', parent=base, fontSize=8.5, leading=12, alignment=TA_RIGHT, textColor=colors.HexColor('#1e293b')),
         'label': ParagraphStyle('label', parent=base, fontSize=9, leading=12, textColor=colors.HexColor('#334155')),
         'value': ParagraphStyle('value', parent=base, fontSize=10, leading=13),
         'section': ParagraphStyle('section', parent=base, fontSize=11, leading=15, alignment=TA_CENTER, textColor=colors.white),
@@ -119,36 +123,108 @@ def _doc(buffer, title, footer_text):
         topMargin=15 * mm, bottomMargin=18 * mm,
         title=title,
     )
+    page_width, page_height = A4
 
     def _footer(canvas, doc_obj):
         canvas.saveState()
+        # خط فاصل مميز في بداية كل صفحة
+        canvas.setStrokeColor(PRIMARY_COLOR)
+        canvas.setLineWidth(1.2)
+        canvas.line(15 * mm, page_height - 11 * mm, page_width - 15 * mm, page_height - 11 * mm)
+        # خط فاصل مميز في نهاية كل صفحة
+        canvas.setLineWidth(1.6)
+        canvas.line(15 * mm, 14 * mm, page_width - 15 * mm, 14 * mm)
         canvas.setFont(ARABIC_FONT, 8)
         canvas.setFillColor(colors.HexColor('#64748b'))
-        canvas.drawCentredString(A4[0] / 2, 10 * mm, ar(footer_text))
-        canvas.drawCentredString(A4[0] / 2, 6 * mm, ar(f'صفحة {doc_obj.page}'))
+        canvas.drawCentredString(page_width / 2, 9 * mm, ar(footer_text))
+        canvas.drawCentredString(page_width / 2, 5 * mm, ar(f'صفحة {doc_obj.page}'))
         canvas.restoreState()
 
     return doc, _footer
 
 
-def _header_table(company_name, branch_name, form_title, styles, form_number, form_date):
-    title_row = [Paragraph(ar(form_title), styles['title'])]
-    org_line = company_name
-    if branch_name:
-        org_line = f'{branch_name} — {company_name}' if company_name else branch_name
+def _logo_flowable(company, branch):
+    """شعار الفرع ثم الشركة — يُعاد Image جاهز للطباعة أو None."""
+    for obj in (branch, company):
+        if obj is None:
+            continue
+        logo = getattr(obj, 'logo', None)
+        if not logo or not logo.name:
+            continue
+        try:
+            path = logo.path
+        except (ValueError, NotImplementedError):
+            continue
+        if not os.path.exists(path):
+            continue
+        try:
+            reader = ImageReader(path)
+            img_w, img_h = reader.getSize()
+            if not img_w or not img_h:
+                continue
+            scale = min(34 * mm / img_w, 20 * mm / img_h)
+            return Image(path, width=img_w * scale, height=img_h * scale)
+        except Exception as exc:
+            logger.warning('PDF logo load failed for %s: %s', path, exc)
+    return None
+
+
+def _company_info_lines(company, branch):
+    """بيانات الشركة والفرع كنصوص في ترويسة النموذج."""
+    lines = []
+    if company:
+        name = str(company.name)
+        if branch and branch.name:
+            name = f'{branch.name} — {name}'
+        lines.append(name)
+        address = getattr(branch, 'address', '') if branch else ''
+        if not address:
+            address = getattr(company, 'address', '') or ''
+        if address:
+            lines.append(f'العنوان: {address}')
+        phones = []
+        for source in (branch, company):
+            for attr in ('phone1', 'phone2', 'mobile'):
+                value = getattr(source, attr, '') if source else ''
+                if value and value not in phones:
+                    phones.append(value)
+        if phones:
+            lines.append('هاتف: ' + ' / '.join(str(p) for p in phones))
+        email = (getattr(branch, 'email', '') if branch else '') or getattr(company, 'email', '') or ''
+        if email:
+            lines.append(f'البريد الإلكتروني: {email}')
+    elif branch:
+        lines.append(str(branch.name))
+    return lines
+
+
+def _header_table(company, branch, form_title, styles, form_number, form_date):
+    logo = _logo_flowable(company, branch)
+    info_lines = _company_info_lines(company, branch)
+    info_paras = [Paragraph(ar(line), styles['info']) for line in info_lines]
+
     header = Table(
-        [
-            [Paragraph(ar(org_line or ''), styles['header'])],
-            [Paragraph(ar(form_title), styles['title'])],
-        ],
-        colWidths=[180 * mm],
+        [[logo or '', info_paras]],
+        colWidths=[35 * mm, 145 * mm],
     )
     header.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+
+    title = Table(
+        [[Paragraph(ar(form_title), styles['title'])]],
+        colWidths=[180 * mm],
+    )
+    title.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), PRIMARY_COLOR),
-        ('LINEBELOW', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
         ('TOPPADDING', (0, 0), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
+
     meta = Table(
         [[Paragraph(ar('رقم النموذج'), styles['label']), cv(form_number or '-'),
           Paragraph(ar('التاريخ'), styles['label']), cv(form_date or '-')]],
@@ -163,7 +239,10 @@ def _header_table(company_name, branch_name, form_title, styles, form_number, fo
         ('TOPPADDING', (0, 0), (-1, -1), 4),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
-    return [header, meta, Spacer(1, 6 * mm)]
+
+    # خط فاصل مميز بعد بيانات النموذج
+    separator = HRFlowable(width='100%', thickness=2, color=PRIMARY_COLOR, spaceBefore=2, spaceAfter=2)
+    return [header, title, meta, separator, Spacer(1, 4 * mm)]
 
 
 def _section_bar(text, styles, width_mm=180):
@@ -232,10 +311,10 @@ def build_activity_pdf(activity):
     """نموذج عقد النشاط (المرحلة الأولى)."""
     styles = _styles()
     buffer = BytesIO()
-    company_name = activity.branch.company.name if activity.branch and activity.branch.company_id else ''
-    branch_name = activity.branch.name if activity.branch else ''
+    company = activity.branch.company if activity.branch and activity.branch.company_id else None
+    branch = activity.branch
     doc, footer = _doc(buffer, f'عقد النشاط - {activity.name}', f'نموذج عقد النشاط رقم {activity.form_number or "-"}')
-    story = _header_table(company_name, branch_name, 'نموذج عقد النشاط', styles, activity.form_number, _date(activity.form_date))
+    story = _header_table(company, branch, 'نموذج عقد النشاط', styles, activity.form_number, _date(activity.form_date))
 
     story.append(_section_bar('بيانات النشاط', styles))
     story.append(Spacer(1, 2 * mm))
@@ -288,10 +367,10 @@ def build_financial_pdf(analysis):
     styles = _styles()
     buffer = BytesIO()
     activity = analysis.activity
-    company_name = activity.branch.company.name if activity.branch and activity.branch.company_id else ''
-    branch_name = activity.branch.name if activity.branch else ''
+    company = activity.branch.company if activity.branch and activity.branch.company_id else None
+    branch = activity.branch
     doc, footer = _doc(buffer, f'التحليل المالي - {activity.name}', f'التحليل المالي للنشاط رقم {activity.form_number or "-"}')
-    story = _header_table(company_name, branch_name, 'التحليل المالي للنشاط', styles, analysis.form_number, _date(analysis.analysis_date))
+    story = _header_table(company, branch, 'التحليل المالي للنشاط', styles, analysis.form_number, _date(analysis.analysis_date))
 
     story.append(_section_bar('البيانات الأساسية', styles))
     story.append(Spacer(1, 2 * mm))
@@ -376,10 +455,10 @@ def build_coordination_pdf(coordination):
     styles = _styles()
     buffer = BytesIO()
     activity = coordination.activity
-    company_name = activity.branch.company.name if activity.branch and activity.branch.company_id else ''
-    branch_name = activity.branch.name if activity.branch else ''
+    company = activity.branch.company if activity.branch and activity.branch.company_id else None
+    branch = activity.branch
     doc, footer = _doc(buffer, f'تنسيق وجاهزية النشاط - {activity.name}', f'نموذج التنسيق والجاهزية رقم {coordination.form_number or "-"}')
-    story = _header_table(company_name, branch_name, 'نموذج تنسيق وجاهزية النشاط', styles, coordination.form_number, _date(coordination.coordination_date))
+    story = _header_table(company, branch, 'نموذج تنسيق وجاهزية النشاط', styles, coordination.form_number, _date(coordination.coordination_date))
 
     story.append(_section_bar('بيانات النشاط', styles))
     story.append(Spacer(1, 2 * mm))
