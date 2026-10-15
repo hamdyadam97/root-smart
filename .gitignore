@@ -86,3 +86,5 @@ coverage.xml
 *.pid
 *.seed
 *.pid.lock
+db_test.sqlite3
+db_test.sqlite3-journal

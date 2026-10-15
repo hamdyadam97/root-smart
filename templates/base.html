@@ -737,6 +737,7 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'student-list' %}">الطلاب</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'course-list' %}">الدورات</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'registration-list' %}">التسجيلات</a></li>
+                    {% if user|has_perm:'view_activity' %}<li class="nav-item"><a class="nav-link" href="{% url 'activity-list' %}">نشاط</a></li>{% endif %}
                     <li class="nav-item"><a class="nav-link" href="{% url 'payment-list' %}">المدفوعات</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'studentoffer-list' %}">عروض الأسعار</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'person-list' %}">الموظفين</a></li>
@@ -809,6 +810,7 @@
                     {% if user|has_root_prospect_perm %}<li class="nav-item"><a class="nav-link {% if '/prospects/' in request.path %}active{% endif %}" href="{% url 'prospect-list' %}"><i class="bi bi-person-lines-fill"></i> المستفسرون</a></li>{% endif %}
                     {% if user|has_perm:'view_studentoffer' %}<li class="nav-item"><a class="nav-link {% if '/student-offers/' in request.path %}active{% endif %}" href="{% url 'studentoffer-list' %}"><i class="bi bi-tag"></i> عروض الأسعار</a></li>{% endif %}
                     {% if user|has_perm:'view_registration' %}<li class="nav-item"><a class="nav-link {% if '/registrations/' in request.path %}active{% endif %}" href="{% url 'registration-list' %}"><i class="bi bi-journal-check"></i> التسجيلات</a></li>{% endif %}
+                    {% if user|has_perm:'view_activity' %}<li class="nav-item"><a class="nav-link {% if '/activities/' in request.path %}active{% endif %}" href="{% url 'activity-list' %}"><i class="bi bi-calendar2-event"></i> نشاط</a></li>{% endif %}
                     {% if user|has_non_root_student_perm %}<li class="nav-item"><a class="nav-link {% if '/students/' in request.path %}active{% endif %}" href="{% url 'student-list' %}"><i class="bi bi-mortarboard"></i> الطلاب</a></li>{% endif %}
                     {% if user|has_perm:'view_master' %}<li class="nav-item"><a class="nav-link {% if '/masters/' in request.path %}active{% endif %}" href="{% url 'master-list' %}"><i class="bi bi-journal-bookmark"></i> التخصصات</a></li>{% endif %}
                     {% if user|has_perm:'view_course' %}<li class="nav-item"><a class="nav-link {% if '/courses/' in request.path %}active{% endif %}" href="{% url 'course-list' %}"><i class="bi bi-book"></i> الدورات</a></li>{% endif %}

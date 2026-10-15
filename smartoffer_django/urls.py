@@ -29,6 +29,7 @@ urlpatterns = [
     path('', include('notifications.urls')),
     path('', include('reports.urls')),
     path('', include('project_assistant.urls')),
+    path('', include('activities.urls')),
 ]
 
 if settings.DEBUG:

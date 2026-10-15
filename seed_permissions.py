@@ -176,6 +176,27 @@ PERMISSIONS_DATA = [
     ('add_report', 'إنشاء تقرير', 'reports', 'reportsnapshot', 'add'),
     ('change_report', 'تعديل تقرير', 'reports', 'reportsnapshot', 'change'),
     ('delete_report', 'حذف تقرير', 'reports', 'reportsnapshot', 'delete'),
+
+    # --- activities (الأنشطة) ---
+    ('view_activity', 'عرض الأنشطة', 'activities', 'activity', 'view'),
+    ('add_activity', 'إضافة نشاط', 'activities', 'activity', 'add'),
+    ('change_activity', 'تعديل نشاط', 'activities', 'activity', 'change'),
+    ('delete_activity', 'حذف نشاط', 'activities', 'activity', 'delete'),
+
+    ('view_financialanalysis', 'عرض التحليل المالي', 'activities', 'financialanalysis', 'view'),
+    ('add_financialanalysis', 'إضافة تحليل مالي', 'activities', 'financialanalysis', 'add'),
+    ('change_financialanalysis', 'تعديل تحليل مالي', 'activities', 'financialanalysis', 'change'),
+    ('delete_financialanalysis', 'حذف تحليل مالي', 'activities', 'financialanalysis', 'delete'),
+
+    ('view_activitycoordination', 'عرض التنسيق والجاهزية', 'activities', 'activitycoordination', 'view'),
+    ('add_activitycoordination', 'إضافة تنسيق وجاهزية', 'activities', 'activitycoordination', 'add'),
+    ('change_activitycoordination', 'تعديل تنسيق وجاهزية', 'activities', 'activitycoordination', 'change'),
+    ('delete_activitycoordination', 'حذف تنسيق وجاهزية', 'activities', 'activitycoordination', 'delete'),
+
+    ('view_activitylog', 'عرض سجل الأنشطة', 'activities', 'activitylog', 'view'),
+    ('add_activitylog', 'إضافة سجل نشاط', 'activities', 'activitylog', 'add'),
+    ('change_activitylog', 'تعديل سجل نشاط', 'activities', 'activitylog', 'change'),
+    ('delete_activitylog', 'حذف سجل نشاط', 'activities', 'activitylog', 'delete'),
 ]
 
 

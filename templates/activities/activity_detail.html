@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}{{ activity.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2><i class="bi bi-calendar2-event"></i> {{ activity.name }}</h2>
+        <p class="text-muted mb-0">
+            نموذج رقم {{ activity.form_number|default:'-' }} | رقم الطلب: {{ activity.request_number }} | الفرع: {{ activity.branch }}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'activity-pdf' activity.pk %}" class="btn btn-secondary"><i class="bi bi-file-earmark-pdf"></i> تنزيل PDF</a>
+        <a href="{% url 'activity-list' %}" class="btn btn-outline-primary"><i class="bi bi-arrow-right"></i> رجوع للقائمة</a>
+    </div>
+</div>
+
+{% if activity.rejection_reason and activity.status == 'rejected' %}
+<div class="alert alert-danger mt-3">
+    <strong><i class="bi bi-x-circle"></i> سبب رفض عقد النشاط:</strong> {{ activity.rejection_reason }}
+</div>
+{% endif %}
+
+<!-- مؤشر المراحل -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-around align-items-center flex-wrap gap-3">
+            <div class="text-center">
+                <div class="badge {{ activity.status_badge_class }} fs-6 p-2">1. عقد النشاط — {{ activity.get_status_display }}</div>
+            </div>
+            <i class="bi bi-arrow-left text-muted fs-5"></i>
+            <div class="text-center">
+                {% if financial %}
+                <div class="badge {{ financial.status_badge_class }} fs-6 p-2">2. التحليل المالي — {{ financial.get_status_display }}</div>
+                {% else %}
+                <div class="badge bg-secondary fs-6 p-2">2. التحليل المالي — غير متاح</div>
+                {% endif %}
+            </div>
+            <i class="bi bi-arrow-left text-muted fs-5"></i>
+            <div class="text-center">
+                {% if coordination %}
+                <div class="badge {{ coordination.status_badge_class }} fs-6 p-2">3. التنسيق والجاهزية — {{ coordination.get_status_display }}</div>
+                {% else %}
+                <div class="badge bg-secondary fs-6 p-2">3. التنسيق والجاهزية — غير متاح</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- المرحلة 1: عقد النشاط -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-text"></i> المرحلة 1: نموذج عقد النشاط</span>
+        <span class="badge {{ activity.status_badge_class }}">{{ activity.get_status_display }}</span>
+    </div>
+    <div class="card-body">
+        <h6 class="text-muted fw-bold">بيانات النشاط</h6>
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>التاريخ:</strong> {{ activity.form_date|date:'Y-m-d' }}</div>
+            <div class="col-md-4 mb-2"><strong>مكان الانعقاد:</strong> {{ activity.location }}</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ الانعقاد:</strong> {{ activity.event_date|date:'Y-m-d' }}</div>
+            <div class="col-md-4 mb-2"><strong>نوع النشاط:</strong> {{ activity.get_activity_type_display }}</div>
+            <div class="col-md-4 mb-2"><strong>الفئة المستهدفة:</strong> {{ activity.target_audience }}</div>
+            <div class="col-md-4 mb-2"><strong>الإقليم:</strong> {{ activity.get_region_display }}</div>
+            <div class="col-md-4 mb-2"><strong>نوع الاعتماد:</strong> {{ activity.get_accreditation_type_display }}</div>
+            <div class="col-md-4 mb-2"><strong>عدد الحضور المتوقع:</strong> {{ activity.expected_attendees }}</div>
+            <div class="col-md-4 mb-2"><strong>اسم المدرب:</strong> {{ activity.trainer_name }}</div>
+        </div>
+        <h6 class="text-muted fw-bold">بيانات الشريك</h6>
+        <div class="row mb-3">
+            {% if activity.no_partner %}
+            <div class="col-12 mb-2"><span class="badge bg-secondary">لا يوجد شريك</span></div>
+            {% else %}
+            <div class="col-md-4 mb-2"><strong>صفة الشريك:</strong> {{ activity.get_partner_kind_display|default:'-' }}</div>
+            <div class="col-md-4 mb-2"><strong>اسم الشريك:</strong> {{ activity.partner_name }}</div>
+            <div class="col-md-4 mb-2"><strong>نسبة الشريك من صافي الأرباح:</strong> {{ activity.partner_share_percent }}%</div>
+            {% endif %}
+            <div class="col-md-4 mb-2"><strong>اسم المفوض بالتوقيع:</strong> {{ activity.authorized_signatory }}</div>
+            <div class="col-md-4 mb-2"><strong>اسم منسق النشاط:</strong> {{ activity.coordinator_name }}</div>
+            <div class="col-md-4 mb-2"><strong>اسم الموقّع:</strong> {{ activity.signatory_name }}</div>
+            <div class="col-md-4 mb-2"><strong>الختم:</strong> {% if activity.sealed %}تم الختم{% else %}—{% endif %}</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ التوقيع:</strong> {{ activity.signature_date|date:'Y-m-d'|default:'—' }}</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if can_edit_activity and activity.is_editable %}
+            <a href="{% url 'activity-update' activity.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> تعديل العقد</a>
+            {% endif %}
+            <a href="{% url 'activity-pdf' activity.pk %}" class="btn btn-sm btn-secondary"><i class="bi bi-file-earmark-pdf"></i> تنزيل PDF</a>
+            {% include 'activities/includes/stage_actions.html' with stage_obj=activity stage='contract' can_edit=can_edit_activity can_approve=can_approve_activity %}
+        </div>
+    </div>
+</div>
+
+<!-- المرحلة 2: التحليل المالي -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-cash-coin"></i> المرحلة 2: التحليل المالي للنشاط</span>
+        {% if financial %}<span class="badge {{ financial.status_badge_class }}">{{ financial.get_status_display }}</span>{% endif %}
+    </div>
+    <div class="card-body">
+        {% if financial %}
+        {% if financial.rejection_reason and financial.status == 'rejected' %}
+        <div class="alert alert-danger"><strong>سبب الرفض:</strong> {{ financial.rejection_reason }}</div>
+        {% endif %}
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>رقم نموذج التحليل:</strong> {{ financial.form_number|default:'-' }}</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ التحليل:</strong> {{ financial.analysis_date|date:'Y-m-d' }}</div>
+            <div class="col-md-4 mb-2"><strong>عدد المتدربين:</strong> {{ financial.trainee_count }}</div>
+            <div class="col-md-4 mb-2"><strong>بدل التدريب لكل متدرب:</strong> {{ financial.fee_per_trainee }} دينار</div>
+        </div>
+        <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>البند</th>
+                        <th>المتوقع (دينار)</th>
+                        <th>الفعلي (دينار)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>رسوم المتدربين</td><td>{{ financial.expected_trainee_fees }}</td><td>{{ financial.actual_trainee_fees }}</td></tr>
+                    <tr><td>بدل الكهرباء</td><td>{{ financial.expected_electricity }}</td><td>{{ financial.actual_electricity }}</td></tr>
+                    <tr><td>بدل المياه</td><td>{{ financial.expected_water }}</td><td>{{ financial.actual_water }}</td></tr>
+                    <tr><td>بدل استخدام القاعة</td><td>{{ financial.expected_hall }}</td><td>{{ financial.actual_hall }}</td></tr>
+                    <tr><td>بدل الضيافة</td><td>{{ financial.expected_hospitality }}</td><td>{{ financial.actual_hospitality }}</td></tr>
+                    <tr><td>تكاليف الشهادات</td><td>{{ financial.expected_certificates }}</td><td>{{ financial.actual_certificates }}</td></tr>
+                    <tr><td>أجرة المدرب</td><td>{{ financial.expected_trainer_fee }}</td><td>{{ financial.actual_trainer_fee }}</td></tr>
+                    <tr class="fw-bold"><td>إجمالي التكاليف</td><td>{{ financial.expected_total_costs }}</td><td>{{ financial.actual_total_costs }}</td></tr>
+                    <tr class="fw-bold"><td>إجمالي الإيرادات</td><td>{{ financial.expected_total_revenue }}</td><td>{{ financial.actual_total_revenue }}</td></tr>
+                    <tr class="fw-bold {% if financial.expected_net_profit < 0 %}text-danger{% else %}text-success{% endif %}"><td>صافي الربح المتوقع</td><td colspan="2">{{ financial.expected_net_profit }}</td></tr>
+                    <tr class="fw-bold {% if financial.actual_net_profit < 0 %}text-danger{% else %}text-success{% endif %}"><td>صافي الربح الفعلي</td><td colspan="2">{{ financial.actual_net_profit }}</td></tr>
+                    <tr class="fw-bold"><td>مستحقات الشركة (متوقع / فعلي)</td><td>{{ financial.expected_company_share }}</td><td>{{ financial.actual_company_share }}</td></tr>
+                    <tr class="fw-bold"><td>مستحقات الشريك (متوقع / فعلي)</td><td>{{ financial.expected_partner_share }}</td><td>{{ financial.actual_partner_share }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>معد التحليل:</strong> {{ financial.prepared_by }} ({{ financial.preparer_job_title }})</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ توقيع المعد:</strong> {{ financial.preparer_signature_date|date:'Y-m-d'|default:'—' }}</div>
+            <div class="col-md-4 mb-2"><strong>المعتمد:</strong> {{ financial.approval_name|default:'—' }}{% if financial.approval_date %} — {{ financial.approval_date|date:'Y-m-d' }}{% endif %}</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if can_edit_financial and financial.is_editable %}
+            <a href="{% url 'financial-update' financial.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> تعديل التحليل</a>
+            {% endif %}
+            <a href="{% url 'financial-pdf' financial.pk %}" class="btn btn-sm btn-secondary"><i class="bi bi-file-earmark-pdf"></i> تنزيل PDF</a>
+            {% include 'activities/includes/stage_actions.html' with stage_obj=financial stage='financial' can_edit=can_edit_financial can_approve=can_approve_financial %}
+            {% if can_edit_financial and financial.is_editable %}
+            <a href="{% url 'financial-delete' financial.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> حذف التحليل</a>
+            {% endif %}
+        </div>
+        {% else %}
+        {% if activity.status == 'approved' %}
+        <p class="text-muted">لم يُنشأ التحليل المالي بعد. {% if can_edit_activity %}يمكنك الآن إنشاء نموذج التحليل المالي.{% endif %}</p>
+        {% if can_edit_activity %}
+        <a href="{% url 'financial-create' activity.pk %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إنشاء التحليل المالي</a>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-secondary mb-0"><i class="bi bi-lock"></i> غير متاح — يُتاح التحليل المالي بعد اعتماد عقد النشاط.</div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- المرحلة 3: التنسيق والجاهزية -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clipboard2-check"></i> المرحلة 3: نموذج تنسيق وجاهزية النشاط</span>
+        {% if coordination %}<span class="badge {{ coordination.status_badge_class }}">{{ coordination.get_status_display }}</span>{% endif %}
+    </div>
+    <div class="card-body">
+        {% if coordination %}
+        {% if coordination.rejection_reason and coordination.status == 'rejected' %}
+        <div class="alert alert-danger"><strong>سبب الرفض:</strong> {{ coordination.rejection_reason }}</div>
+        {% endif %}
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>رقم النموذج:</strong> {{ coordination.form_number|default:'-' }}</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ التنسيق:</strong> {{ coordination.coordination_date|date:'Y-m-d' }}</div>
+            <div class="col-md-4 mb-2"><strong>المحاضر:</strong> {{ coordination.lecturer_name }} ({{ coordination.lecturer_phone }})</div>
+            <div class="col-md-4 mb-2"><strong>عدد الحضور المتوقع:</strong> {{ coordination.expected_attendees }}</div>
+            <div class="col-md-4 mb-2"><strong>الضيافة:</strong> {% if coordination.hospitality_included %}مشمولة{% else %}غير مشمولة{% endif %}</div>
+            <div class="col-md-4 mb-2"><strong>منسق النشاط:</strong> {{ coordination.coordinator_name }}</div>
+            <div class="col-md-4 mb-2"><strong>وقت البداية:</strong> {{ coordination.start_time|time:'H:i' }}</div>
+            <div class="col-md-4 mb-2"><strong>وقت النهاية:</strong> {{ coordination.end_time|time:'H:i' }}</div>
+            <div class="col-md-4 mb-2"><strong>عدد المسجلين:</strong> {{ coordination.registered_count }}</div>
+            <div class="col-md-4 mb-2"><strong>عدد الحاضرين:</strong> {{ coordination.attended_count }}</div>
+            <div class="col-md-4 mb-2"><strong>عدد الغائبين:</strong> {{ coordination.absent_count }}</div>
+            <div class="col-md-4 mb-2"><strong>نسبة الحضور:</strong> {{ coordination.attendance_rate }}%</div>
+            <div class="col-md-4 mb-2"><strong>الموقّع:</strong> {{ coordination.signed_name|default:'—' }}</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ التوقيع:</strong> {{ coordination.signature_date|date:'Y-m-d'|default:'—' }}</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if can_edit_coordination and coordination.is_editable %}
+            <a href="{% url 'coordination-update' coordination.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> تعديل النموذج</a>
+            {% endif %}
+            <a href="{% url 'coordination-pdf' coordination.pk %}" class="btn btn-sm btn-secondary"><i class="bi bi-file-earmark-pdf"></i> تنزيل PDF</a>
+            {% include 'activities/includes/stage_actions.html' with stage_obj=coordination stage='coordination' can_edit=can_edit_coordination can_approve=can_approve_coordination %}
+            {% if can_edit_coordination and coordination.is_editable %}
+            <a href="{% url 'coordination-delete' coordination.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> حذف النموذج</a>
+            {% endif %}
+        </div>
+        {% else %}
+        {% if financial and financial.status == 'approved' %}
+        <p class="text-muted">لم يُنشأ نموذج التنسيق والجاهزية بعد. {% if can_edit_activity %}يمكنك الآن إنشاء النموذج.{% endif %}</p>
+        {% if can_edit_activity %}
+        <a href="{% url 'coordination-create' activity.pk %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إنشاء نموذج التنسيق والجاهزية</a>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-secondary mb-0"><i class="bi bi-lock"></i> غير متاح — يُتاح نموذج التنسيق والجاهزية بعد اعتماد التحليل المالي.</div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- سجل العمليات -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-clock-history"></i> سجل العمليات</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>التاريخ</th>
+                        <th>الموظف</th>
+                        <th>المرحلة</th>
+                        <th>الإجراء</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.created_at|date:'Y-m-d H:i' }}</td>
+                        <td>{{ log.person.get_full_name|default:'-' }}</td>
+                        <td>{{ log.get_stage_display }}</td>
+                        <td><span class="badge bg-info">{{ log.get_action_display }}</span></td>
+                        <td>{{ log.notes|default:'—' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">لا توجد عمليات مسجلة</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

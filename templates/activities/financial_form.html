@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}التحليل المالي — {{ activity.name }} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h2><i class="bi bi-cash-coin"></i> التحليل المالي للنشاط</h2>
+        <p class="text-muted mb-0">{{ activity.name }} — نموذج رقم {{ activity.form_number }} | مكان وتاريخ الانعقاد: {{ activity.location }} — {{ activity.event_date|date:'Y-m-d' }}</p>
+    </div>
+    <a href="{% url 'activity-detail' activity.pk %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع للنشاط</a>
+</div>
+
+{% if object and object.status == 'rejected' %}
+<div class="alert alert-danger mt-3">
+    <strong><i class="bi bi-x-circle"></i> تم رفض هذا النموذج.</strong>
+    {% if object.rejection_reason %}سبب الرفض: {{ object.rejection_reason }}{% endif %}
+</div>
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-info-circle"></i> البيانات الأساسية</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.form_number.id_for_label }}" class="form-label">{{ form.form_number.label }}</label>
+                    {{ form.form_number }}
+                    <div class="form-text text-muted small">يُرقم تلقائيًا عند الحفظ إذا تُرك فارغًا.</div>
+                    {% if form.form_number.errors %}<div class="text-danger small">{{ form.form_number.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.analysis_date.id_for_label }}" class="form-label">{{ form.analysis_date.label }} <span class="text-danger">*</span></label>
+                    {{ form.analysis_date }}
+                    {% if form.analysis_date.errors %}<div class="text-danger small">{{ form.analysis_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.trainee_count.id_for_label }}" class="form-label">{{ form.trainee_count.label }} <span class="text-danger">*</span></label>
+                    {{ form.trainee_count }}
+                    {% if form.trainee_count.errors %}<div class="text-danger small">{{ form.trainee_count.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.fee_per_trainee.id_for_label }}" class="form-label">{{ form.fee_per_trainee.label }} <span class="text-danger">*</span></label>
+                    {{ form.fee_per_trainee }}
+                    {% if form.fee_per_trainee.errors %}<div class="text-danger small">{{ form.fee_per_trainee.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.actual_trainee_fees.id_for_label }}" class="form-label">{{ form.actual_trainee_fees.label }} <span class="text-danger">*</span></label>
+                    {{ form.actual_trainee_fees }}
+                    {% if form.actual_trainee_fees.errors %}<div class="text-danger small">{{ form.actual_trainee_fees.errors }}</div>{% endif %}
+                </div>
+            </div>
+            <div class="alert alert-info small mb-0">
+                رسوم المتدربين المتوقعة تُحسب تلقائيًا = عدد المتدربين × بدل التدريب لكل متدرب.
+                {% if activity.no_partner %}لا يوجد شريك — مستحقات الشركة 100% من صافي الربح.{% else %}نسبة الشريك المعتمدة في العقد: {{ activity.partner_share_percent }}%.{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-wallet2"></i> التكاليف المتوقعة والفعلية (دينار)</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 40%;">البند</th>
+                            <th>المتوقع</th>
+                            <th>الفعلي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ form.expected_electricity.label }}</td>
+                            <td>{{ form.expected_electricity }}{% if form.expected_electricity.errors %}<div class="text-danger small">{{ form.expected_electricity.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_electricity }}{% if form.actual_electricity.errors %}<div class="text-danger small">{{ form.actual_electricity.errors }}</div>{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ form.expected_water.label }}</td>
+                            <td>{{ form.expected_water }}{% if form.expected_water.errors %}<div class="text-danger small">{{ form.expected_water.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_water }}{% if form.actual_water.errors %}<div class="text-danger small">{{ form.actual_water.errors }}</div>{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ form.expected_hall.label }}</td>
+                            <td>{{ form.expected_hall }}{% if form.expected_hall.errors %}<div class="text-danger small">{{ form.expected_hall.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_hall }}{% if form.actual_hall.errors %}<div class="text-danger small">{{ form.actual_hall.errors }}</div>{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ form.expected_hospitality.label }}</td>
+                            <td>{{ form.expected_hospitality }}{% if form.expected_hospitality.errors %}<div class="text-danger small">{{ form.expected_hospitality.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_hospitality }}{% if form.actual_hospitality.errors %}<div class="text-danger small">{{ form.actual_hospitality.errors }}</div>{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ form.expected_certificates.label }}</td>
+                            <td>{{ form.expected_certificates }}{% if form.expected_certificates.errors %}<div class="text-danger small">{{ form.expected_certificates.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_certificates }}{% if form.actual_certificates.errors %}<div class="text-danger small">{{ form.actual_certificates.errors }}</div>{% endif %}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ form.expected_trainer_fee.label }}</td>
+                            <td>{{ form.expected_trainer_fee }}{% if form.expected_trainer_fee.errors %}<div class="text-danger small">{{ form.expected_trainer_fee.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_trainer_fee }}{% if form.actual_trainer_fee.errors %}<div class="text-danger small">{{ form.actual_trainer_fee.errors }}</div>{% endif %}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-calculator"></i> الملخص المالي (دينار)</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <tbody>
+                        <tr><td>إجمالي الدخل المتوقع / الفعلي</td><td id="sum-rev-exp">—</td><td id="sum-rev-act">—</td></tr>
+                        <tr><td>إجمالي النفقات المتوقعة / الفعلية</td><td id="sum-cost-exp">—</td><td id="sum-cost-act">—</td></tr>
+                        <tr class="fw-bold"><td>صافي الربح المتوقع / الفعلي</td><td id="sum-net-exp">—</td><td id="sum-net-act">—</td></tr>
+                        <tr class="fw-bold"><td>مستحقات الشركة المتوقعة / الفعلية</td><td id="sum-comp-exp">—</td><td id="sum-comp-act">—</td></tr>
+                        <tr class="fw-bold"><td>مستحقات الشريك المتوقعة / الفعلية</td><td id="sum-part-exp">—</td><td id="sum-part-act">—</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="form-text text-muted small">الملخص استرشادي أثناء الإدخال، وتُحسب القيم النهائية وتحفظ تلقائيًا من الخادم.</div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-vector-pen"></i> معد التحليل والاعتماد</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.prepared_by.id_for_label }}" class="form-label">{{ form.prepared_by.label }} <span class="text-danger">*</span></label>
+                    {{ form.prepared_by }}
+                    {% if form.prepared_by.errors %}<div class="text-danger small">{{ form.prepared_by.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.preparer_job_title.id_for_label }}" class="form-label">{{ form.preparer_job_title.label }} <span class="text-danger">*</span></label>
+                    {{ form.preparer_job_title }}
+                    {% if form.preparer_job_title.errors %}<div class="text-danger small">{{ form.preparer_job_title.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.preparer_signature_date.id_for_label }}" class="form-label">{{ form.preparer_signature_date.label }}</label>
+                    {{ form.preparer_signature_date }}
+                    {% if form.preparer_signature_date.errors %}<div class="text-danger small">{{ form.preparer_signature_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.approval_name.id_for_label }}" class="form-label">{{ form.approval_name.label }}</label>
+                    {{ form.approval_name }}
+                    {% if form.approval_name.errors %}<div class="text-danger small">{{ form.approval_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.approval_date.id_for_label }}" class="form-label">{{ form.approval_date.label }}</label>
+                    {{ form.approval_date }}
+                    {% if form.approval_date.errors %}<div class="text-danger small">{{ form.approval_date.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        <button type="submit" name="submit_action" value="complete" class="btn btn-info"><i class="bi bi-clipboard-check"></i> حفظ كمكتمل</button>
+        <button type="submit" name="submit_action" value="submit" class="btn btn-primary"><i class="bi bi-send"></i> حفظ وإرسال للاعتماد</button>
+        <a href="{% url 'activity-detail' activity.pk %}" class="btn btn-secondary">إلغاء</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    const partnerPercent = {{ activity.effective_partner_percent|default:0 }};
+    function num(id) {
+        const el = document.getElementById(id);
+        const v = parseFloat(el && el.value);
+        return isNaN(v) ? 0 : v;
+    }
+    function fmt(v) {
+        return v.toFixed(2) + ' دينار';
+    }
+    function calc() {
+        const traineeCount = num('{{ form.trainee_count.id_for_label }}');
+        const fee = num('{{ form.fee_per_trainee.id_for_label }}');
+        const revExp = traineeCount * fee;
+        const revAct = num('{{ form.actual_trainee_fees.id_for_label }}');
+
+        const costExpFields = ['{{ form.expected_electricity.id_for_label }}', '{{ form.expected_water.id_for_label }}', '{{ form.expected_hall.id_for_label }}', '{{ form.expected_hospitality.id_for_label }}', '{{ form.expected_certificates.id_for_label }}', '{{ form.expected_trainer_fee.id_for_label }}'];
+        const costActFields = ['{{ form.actual_electricity.id_for_label }}', '{{ form.actual_water.id_for_label }}', '{{ form.actual_hall.id_for_label }}', '{{ form.actual_hospitality.id_for_label }}', '{{ form.actual_certificates.id_for_label }}', '{{ form.actual_trainer_fee.id_for_label }}'];
+        const costExp = costExpFields.reduce(function(s, id) { return s + num(id); }, 0);
+        const costAct = costActFields.reduce(function(s, id) { return s + num(id); }, 0);
+
+        const netExp = revExp - costExp;
+        const netAct = revAct - costAct;
+
+        function split(net) {
+            if (net <= 0) return [net, 0];
+            const partner = net * partnerPercent / 100;
+            return [net - partner, partner];
+        }
+        const compExp = split(netExp)[0], partExp = split(netExp)[1];
+        const compAct = split(netAct)[0], partAct = split(netAct)[1];
+
+        const map = {
+            'sum-rev-exp': revExp, 'sum-rev-act': revAct,
+            'sum-cost-exp': costExp, 'sum-cost-act': costAct,
+            'sum-net-exp': netExp, 'sum-net-act': netAct,
+            'sum-comp-exp': compExp, 'sum-comp-act': compAct,
+            'sum-part-exp': partExp, 'sum-part-act': partAct
+        };
+        Object.keys(map).forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = fmt(map[id]);
+        });
+    }
+    document.querySelectorAll('input[type=number]').forEach(function(el) {
+        el.addEventListener('input', calc);
+    });
+    calc();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}{% if object %}تعديل عقد النشاط{% else %}إنشاء نشاط جديد{% endif %} | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h2><i class="bi bi-calendar2-event"></i> {% if object %}تعديل عقد النشاط{% else %}إنشاء نشاط جديد{% endif %}</h2>
+        <p class="text-muted">المرحلة الأولى: نموذج عقد النشاط</p>
+    </div>
+    <a href="{% url 'activity-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع للقائمة</a>
+</div>
+
+{% if object and object.status == 'rejected' %}
+<div class="alert alert-danger mt-3">
+    <strong><i class="bi bi-x-circle"></i> تم رفض هذا النموذج.</strong>
+    {% if object.rejection_reason %}سبب الرفض: {{ object.rejection_reason }}{% endif %}
+</div>
+{% endif %}
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-info-circle"></i> بيانات النشاط</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.branch.id_for_label }}" class="form-label">{{ form.branch.label }} <span class="text-danger">*</span></label>
+                    {{ form.branch }}
+                    {% if form.branch.errors %}<div class="text-danger small">{{ form.branch.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.request_number.id_for_label }}" class="form-label">{{ form.request_number.label }} <span class="text-danger">*</span></label>
+                    {{ form.request_number }}
+                    {% if form.request_number.errors %}<div class="text-danger small">{{ form.request_number.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.form_number.id_for_label }}" class="form-label">{{ form.form_number.label }}</label>
+                    {{ form.form_number }}
+                    <div class="form-text text-muted small">يُرقم تلقائيًا عند الحفظ إذا تُرك فارغًا.</div>
+                    {% if form.form_number.errors %}<div class="text-danger small">{{ form.form_number.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.form_date.id_for_label }}" class="form-label">{{ form.form_date.label }} <span class="text-danger">*</span></label>
+                    {{ form.form_date }}
+                    {% if form.form_date.errors %}<div class="text-danger small">{{ form.form_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }} <span class="text-danger">*</span></label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.location.id_for_label }}" class="form-label">{{ form.location.label }} <span class="text-danger">*</span></label>
+                    {{ form.location }}
+                    {% if form.location.errors %}<div class="text-danger small">{{ form.location.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.event_date.id_for_label }}" class="form-label">{{ form.event_date.label }} <span class="text-danger">*</span></label>
+                    {{ form.event_date }}
+                    {% if form.event_date.errors %}<div class="text-danger small">{{ form.event_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.activity_type.id_for_label }}" class="form-label">{{ form.activity_type.label }} <span class="text-danger">*</span></label>
+                    {{ form.activity_type }}
+                    {% if form.activity_type.errors %}<div class="text-danger small">{{ form.activity_type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.target_audience.id_for_label }}" class="form-label">{{ form.target_audience.label }} <span class="text-danger">*</span></label>
+                    {{ form.target_audience }}
+                    {% if form.target_audience.errors %}<div class="text-danger small">{{ form.target_audience.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.region.id_for_label }}" class="form-label">{{ form.region.label }} <span class="text-danger">*</span></label>
+                    {{ form.region }}
+                    {% if form.region.errors %}<div class="text-danger small">{{ form.region.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.accreditation_type.id_for_label }}" class="form-label">{{ form.accreditation_type.label }} <span class="text-danger">*</span></label>
+                    {{ form.accreditation_type }}
+                    {% if form.accreditation_type.errors %}<div class="text-danger small">{{ form.accreditation_type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.expected_attendees.id_for_label }}" class="form-label">{{ form.expected_attendees.label }} <span class="text-danger">*</span></label>
+                    {{ form.expected_attendees }}
+                    {% if form.expected_attendees.errors %}<div class="text-danger small">{{ form.expected_attendees.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.trainer_name.id_for_label }}" class="form-label">{{ form.trainer_name.label }} <span class="text-danger">*</span></label>
+                    {{ form.trainer_name }}
+                    {% if form.trainer_name.errors %}<div class="text-danger small">{{ form.trainer_name.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-people"></i> بيانات الشريك</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="form-check">
+                        {{ form.no_partner }}
+                        <label for="{{ form.no_partner.id_for_label }}" class="form-check-label fw-semibold">{{ form.no_partner.label }}</label>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3 partner-field">
+                    <label for="{{ form.partner_kind.id_for_label }}" class="form-label">{{ form.partner_kind.label }}</label>
+                    {{ form.partner_kind }}
+                    {% if form.partner_kind.errors %}<div class="text-danger small">{{ form.partner_kind.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3 partner-field">
+                    <label for="{{ form.partner_name.id_for_label }}" class="form-label">{{ form.partner_name.label }} <span class="text-danger">*</span></label>
+                    {{ form.partner_name }}
+                    {% if form.partner_name.errors %}<div class="text-danger small">{{ form.partner_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3 partner-field">
+                    <label for="{{ form.partner_share_percent.id_for_label }}" class="form-label">{{ form.partner_share_percent.label }} <span class="text-danger">*</span></label>
+                    {{ form.partner_share_percent }}
+                    {% if form.partner_share_percent.errors %}<div class="text-danger small">{{ form.partner_share_percent.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.authorized_signatory.id_for_label }}" class="form-label">{{ form.authorized_signatory.label }} <span class="text-danger">*</span></label>
+                    {{ form.authorized_signatory }}
+                    {% if form.authorized_signatory.errors %}<div class="text-danger small">{{ form.authorized_signatory.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.coordinator_name.id_for_label }}" class="form-label">{{ form.coordinator_name.label }} <span class="text-danger">*</span></label>
+                    {{ form.coordinator_name }}
+                    {% if form.coordinator_name.errors %}<div class="text-danger small">{{ form.coordinator_name.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-vector-pen"></i> التوقيع والختم</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.signatory_name.id_for_label }}" class="form-label">{{ form.signatory_name.label }} <span class="text-danger">*</span></label>
+                    {{ form.signatory_name }}
+                    {% if form.signatory_name.errors %}<div class="text-danger small">{{ form.signatory_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        {{ form.sealed }}
+                        <label for="{{ form.sealed.id_for_label }}" class="form-check-label">{{ form.sealed.label }}</label>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.signature_date.id_for_label }}" class="form-label">{{ form.signature_date.label }} <span class="text-danger">*</span></label>
+                    {{ form.signature_date }}
+                    {% if form.signature_date.errors %}<div class="text-danger small">{{ form.signature_date.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+        <button type="submit" name="submit_action" value="complete" class="btn btn-info"><i class="bi bi-clipboard-check"></i> حفظ كمكتمل</button>
+        <button type="submit" name="submit_action" value="submit" class="btn btn-primary"><i class="bi bi-send"></i> حفظ وإرسال للاعتماد</button>
+        <a href="{% if object %}{% url 'activity-detail' object.pk %}{% else %}{% url 'activity-list' %}{% endif %}" class="btn btn-secondary">إلغاء</a>
+    </div>
+</form>
+
+<script>
+(function() {
+    const noPartner = document.getElementById('{{ form.no_partner.id_for_label }}');
+    if (!noPartner) return;
+    const partnerFields = document.querySelectorAll('.partner-field input, .partner-field select');
+    function togglePartnerFields() {
+        partnerFields.forEach(function(el) {
+            el.disabled = noPartner.checked;
+            el.closest('.partner-field').style.opacity = noPartner.checked ? '0.5' : '1';
+        });
+    }
+    noPartner.addEventListener('change', togglePartnerFields);
+    togglePartnerFields();
+})();
+</script>
+{% endblock %}

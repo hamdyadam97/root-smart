@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}تأكيد حذف التحليل المالي | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle"></i> تأكيد الحذف
+            </div>
+            <div class="card-body">
+                <p>هل أنت متأكد من حذف التحليل المالي للنشاط <strong>"{{ object.activity.name }}"</strong>؟</p>
+                <p class="text-muted">لا يمكن التراجع عن هذا الإجراء.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> حذف</button>
+                        <a href="{% url 'activity-detail' object.activity.pk %}" class="btn btn-secondary">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
