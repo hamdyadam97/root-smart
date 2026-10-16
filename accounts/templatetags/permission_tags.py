@@ -60,3 +60,11 @@ def has_any_perm(user, perm_codenames):
         if user.has_perm(codename.strip()):
             return True
     return False
+
+
+@register.filter
+def get_item(mapping, key):
+    """جلب قيمة من قاموس بمفتاح متغير — مع رجوع للمفتاح نفسه إذا غاب."""
+    if not mapping:
+        return key
+    return mapping.get(key, key)

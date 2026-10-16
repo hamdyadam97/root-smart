@@ -40,7 +40,7 @@ MODEL_NAMES_AR = {
     'reportsnapshot': 'لقطات التقارير',
     'appnotification': 'الإشعارات',
     'permission': 'الصلاحيات',
-    'activity': 'الأنشطة',
+    'activity': 'نشاط',
     'financialanalysis': 'التحليل المالي',
     'activitycoordination': 'التنسيق والجاهزية',
     'activitylog': 'سجل الأنشطة',

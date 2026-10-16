@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load permission_tags %}
 
 {% block title %}{% if object %}تعديل دور{% else %}إضافة دور{% endif %} | Smart Offer{% endblock %}
 
@@ -87,11 +88,11 @@ function toggleAction(action, checked) {
                     <tbody>
                         {% for app_label, models in grouped_permissions.items %}
                         <tr class="table-secondary">
-                            <td colspan="6" class="fw-bold">{{ app_label }}</td>
+                            <td colspan="6" class="fw-bold">{{ app_labels_ar|get_item:app_label }}</td>
                         </tr>
                         {% for model_name, permissions in models.items %}
                         <tr>
-                            <td class="fw-bold">{{ model_name }}</td>
+                            <td class="fw-bold">{{ model_names_ar|get_item:model_name }}</td>
                             {% for perm in permissions %}
                             <td class="text-center">
                                 <input type="checkbox"

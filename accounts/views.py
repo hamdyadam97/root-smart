@@ -375,12 +375,15 @@ class RoleListView(BranchPermissionMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from .models import Permission
+        from .utils import APP_LABELS_AR, MODEL_NAMES_AR
         from collections import defaultdict
         perms = Permission.objects.all().order_by('app_label', 'model_name', 'action')
         grouped = defaultdict(lambda: defaultdict(list))
         for p in perms:
             grouped[p.app_label][p.model_name].append(p)
         context['grouped_permissions'] = {app: dict(models) for app, models in grouped.items()}
+        context['app_labels_ar'] = APP_LABELS_AR
+        context['model_names_ar'] = MODEL_NAMES_AR
         return context
 
 
@@ -410,12 +413,15 @@ class RoleCreateView(BranchPermissionMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from .models import Permission
+        from .utils import APP_LABELS_AR, MODEL_NAMES_AR
         from collections import defaultdict
         perms = Permission.objects.all().order_by('app_label', 'model_name', 'action')
         grouped = defaultdict(lambda: defaultdict(list))
         for p in perms:
             grouped[p.app_label][p.model_name].append(p)
         context['grouped_permissions'] = {app: dict(models) for app, models in grouped.items()}
+        context['app_labels_ar'] = APP_LABELS_AR
+        context['model_names_ar'] = MODEL_NAMES_AR
         context['selected_permissions'] = []
         return context
 
@@ -442,12 +448,15 @@ class RoleUpdateView(BranchPermissionMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from .models import Permission
+        from .utils import APP_LABELS_AR, MODEL_NAMES_AR
         from collections import defaultdict
         perms = Permission.objects.all().order_by('app_label', 'model_name', 'action')
         grouped = defaultdict(lambda: defaultdict(list))
         for p in perms:
             grouped[p.app_label][p.model_name].append(p)
         context['grouped_permissions'] = {app: dict(models) for app, models in grouped.items()}
+        context['app_labels_ar'] = APP_LABELS_AR
+        context['model_names_ar'] = MODEL_NAMES_AR
         context['selected_permissions'] = list(self.object.permissions.values_list('id', flat=True))
         return context
 
