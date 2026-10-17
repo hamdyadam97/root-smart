@@ -10,9 +10,15 @@ from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
 from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
-from .forms import ActivityForm, FinancialAnalysisForm, ActivityCoordinationForm
-from .models import Activity, FinancialAnalysis, ActivityCoordination, ActivityLog, StageStatus
-from .pdf_utils import build_activity_pdf, build_financial_pdf, build_coordination_pdf
+from .forms import (
+    ActivityForm, FinancialAnalysisForm, ActivityCoordinationForm, FinalFinancialAnalysisForm,
+)
+from .models import (
+    Activity, FinancialAnalysis, ActivityCoordination, FinalFinancialAnalysis, ActivityLog, StageStatus,
+)
+from .pdf_utils import (
+    build_activity_pdf, build_financial_pdf, build_coordination_pdf, build_final_pdf,
+)
 
 
 def _log(activity, stage, action, user, notes=''):
@@ -120,8 +126,8 @@ class ActivityListView(BranchPermissionMixin, ListView):
     def get_queryset(self):
         qs = Activity.objects.select_related('branch', 'branch__company', 'created_by').all()
         qs = filter_by_branch(qs, self.request.user, 'branch', perm=self.required_perm)
-        # المرحلتان 2 و 3 علاقة OneToOne — يُحمّل كل منهما باستعلام واحد لكل صف
-        qs = qs.select_related('financial', 'coordination')
+        # المراحل اللاحقة علاقة OneToOne — تُحمّل باستعلام واحد لكل صف
+        qs = qs.select_related('financial', 'coordination', 'final_financial')
 
         search = self.request.GET.get('search', '').strip()
         if search:
@@ -165,6 +171,7 @@ class ActivityDetailView(BranchPermissionMixin, DetailView):
         user = self.request.user
         context['financial'] = FinancialAnalysis.objects.filter(activity=activity).first()
         context['coordination'] = ActivityCoordination.objects.filter(activity=activity).first()
+        context['final_financial'] = FinalFinancialAnalysis.objects.filter(activity=activity).first()
         context['logs'] = activity.logs.select_related('person')[:50]
         context['stage_statuses'] = StageStatus
         context['can_edit_activity'] = activity.can_user_edit(user)
@@ -175,6 +182,9 @@ class ActivityDetailView(BranchPermissionMixin, DetailView):
         if context['coordination']:
             context['can_edit_coordination'] = context['coordination'].can_user_edit(user)
             context['can_approve_coordination'] = context['coordination'].can_user_approve(user)
+        if context['final_financial']:
+            context['can_edit_final'] = context['final_financial'].can_user_edit(user)
+            context['can_approve_final'] = context['final_financial'].can_user_approve(user)
         return context
 
 
@@ -256,7 +266,8 @@ class ActivityDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView
             messages.error(request, 'لا يمكن حذف نموذج في حالته الحالية.')
             return redirect('activity-detail', pk=obj.pk)
         if (FinancialAnalysis.objects.filter(activity=obj).exists()
-                or ActivityCoordination.objects.filter(activity=obj).exists()):
+                or ActivityCoordination.objects.filter(activity=obj).exists()
+                or FinalFinancialAnalysis.objects.filter(activity=obj).exists()):
             messages.error(request, 'لا يمكن حذف النشاط بعد بدء المراحل اللاحقة له.')
             return redirect('activity-detail', pk=obj.pk)
         return super().dispatch(request, *args, **kwargs)
@@ -516,6 +527,125 @@ def coordination_transition(request, pk, action):
     return redirect('activity-detail', pk=coordination.activity_id)
 
 
+class FinalFinancialCreateView(CreateView):
+    model = FinalFinancialAnalysis
+    form_class = FinalFinancialAnalysisForm
+    template_name = 'activities/final_form.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.activity = _get_activity_or_denied(request.user, kwargs['activity_pk'])
+        coordination = ActivityCoordination.objects.filter(activity=self.activity).first()
+        if not coordination or coordination.status != StageStatus.APPROVED:
+            messages.error(request, 'التحليل المالي النهائي لا يُتاح إلا بعد اعتماد نموذج التنسيق والجاهزية.')
+            return redirect('activity-detail', pk=self.activity.pk)
+        if not self.activity.can_user_edit(request.user):
+            raise PermissionDenied('غير مسموح لك دخول هنا')
+        if FinalFinancialAnalysis.objects.filter(activity=self.activity).exists():
+            messages.error(request, 'يوجد تحليل مالي نهائي مسجل لهذا النشاط بالفعل.')
+            return redirect('activity-detail', pk=self.activity.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('activity-detail', kwargs={'pk': self.object.activity_id})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['activity'] = self.activity
+        return context
+
+    def form_valid(self, form):
+        form.instance.activity = self.activity
+        form.instance.created_by = self.request.user
+        form.instance.last_person = self.request.user
+        response = super().form_valid(form)
+        _apply_submit_action(self.request, form.instance, 'final')
+        _log(self.activity, 'final', 'create', self.request.user)
+        messages.success(self.request, 'تم إنشاء التحليل المالي النهائي بنجاح.')
+        return response
+
+
+class FinalFinancialUpdateView(UpdateView):
+    model = FinalFinancialAnalysis
+    form_class = FinalFinancialAnalysisForm
+    template_name = 'activities/final_form.html'
+    pk_url_kwarg = 'pk'
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if not obj.can_user_edit(request.user):
+            raise PermissionDenied('غير مسموح لك تعديل هذا التحليل.')
+        if not obj.is_editable():
+            messages.error(request, 'لا يمكن تعديل نموذج في حالته الحالية.')
+            return redirect('activity-detail', pk=obj.activity_id)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_object(self, queryset=None):
+        final = get_object_or_404(FinalFinancialAnalysis, pk=self.kwargs['pk'])
+        _get_activity_or_denied(self.request.user, final.activity_id)
+        return final
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_success_url(self):
+        return reverse('activity-detail', kwargs={'pk': self.object.activity_id})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['activity'] = self.object.activity
+        return context
+
+    def form_valid(self, form):
+        form.instance.last_person = self.request.user
+        response = super().form_valid(form)
+        _apply_submit_action(self.request, form.instance, 'final')
+        _log(form.instance.activity, 'final', 'update', self.request.user)
+        messages.success(self.request, 'تم تحديث التحليل المالي النهائي بنجاح.')
+        return response
+
+
+class FinalFinancialDeleteView(ProtectedDeleteMixin, DeleteView):
+    model = FinalFinancialAnalysis
+    template_name = 'activities/final_confirm_delete.html'
+
+    def get_object(self, queryset=None):
+        final = get_object_or_404(FinalFinancialAnalysis, pk=self.kwargs['pk'])
+        _get_activity_or_denied(self.request.user, final.activity_id)
+        if not final.can_user_edit(self.request.user):
+            raise PermissionDenied('غير مسموح لك حذف هذا التحليل.')
+        return final
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        self.success_url = f'/activities/{obj.activity_id}/'
+        if not obj.is_editable():
+            messages.error(request, 'لا يمكن حذف نموذج في حالته الحالية.')
+            return redirect('activity-detail', pk=obj.activity_id)
+        return super().dispatch(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        _log(obj.activity, 'final', 'delete', request.user)
+        messages.success(request, 'تم حذف التحليل المالي النهائي.')
+        return super().delete(request, *args, **kwargs)
+
+
+@login_required
+@require_POST
+def final_transition(request, pk, action):
+    final = get_object_or_404(FinalFinancialAnalysis, pk=pk)
+    _get_activity_or_denied(request.user, final.activity_id)
+    _do_transition(request, final, 'final', action)
+    return redirect('activity-detail', pk=final.activity_id)
+
+
 def _pdf_response(buffer, filename):
     response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -543,3 +673,11 @@ def coordination_pdf(request, pk):
     _get_activity_or_denied(request.user, coordination.activity_id)
     buffer = build_coordination_pdf(coordination)
     return _pdf_response(buffer, f'activity-coordination-{coordination.form_number or coordination.pk}.pdf')
+
+
+@login_required
+def final_pdf(request, pk):
+    final = get_object_or_404(FinalFinancialAnalysis, pk=pk)
+    _get_activity_or_denied(request.user, final.activity_id)
+    buffer = build_final_pdf(final)
+    return _pdf_response(buffer, f'activity-final-financial-{final.form_number or final.pk}.pdf')

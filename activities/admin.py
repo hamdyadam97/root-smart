@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import Activity, FinancialAnalysis, ActivityCoordination, ActivityLog
+from .models import (
+    Activity, FinancialAnalysis, ActivityCoordination, FinalFinancialAnalysis, ActivityLog,
+)
 
 
 @admin.register(Activity)
@@ -20,6 +22,13 @@ class FinancialAnalysisAdmin(admin.ModelAdmin):
 @admin.register(ActivityCoordination)
 class ActivityCoordinationAdmin(admin.ModelAdmin):
     list_display = ('form_number', 'activity', 'coordination_date', 'attendance_rate', 'status', 'created_by')
+    list_filter = ('status',)
+    search_fields = ('activity__name', 'form_number')
+
+
+@admin.register(FinalFinancialAnalysis)
+class FinalFinancialAnalysisAdmin(admin.ModelAdmin):
+    list_display = ('form_number', 'activity', 'net_profit', 'status', 'created_by')
     list_filter = ('status',)
     search_fields = ('activity__name', 'form_number')
 

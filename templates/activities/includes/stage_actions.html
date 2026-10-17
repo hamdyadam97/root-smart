@@ -1,22 +1,22 @@
 {% if can_edit and stage_obj.is_editable and stage_obj.status != 'rejected' %}
-<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'submit' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'submit' %}{% else %}{% url 'coordination-transition' stage_obj.pk 'submit' %}{% endif %}" class="d-inline">
+<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'submit' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'submit' %}{% elif stage == 'coordination' %}{% url 'coordination-transition' stage_obj.pk 'submit' %}{% else %}{% url 'final-transition' stage_obj.pk 'submit' %}{% endif %}" class="d-inline">
     {% csrf_token %}
     <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i> إرسال للاعتماد</button>
 </form>
 {% endif %}
 {% if can_approve and stage_obj.status == 'pending' %}
-<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'approve' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'approve' %}{% else %}{% url 'coordination-transition' stage_obj.pk 'approve' %}{% endif %}" class="d-inline">
+<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'approve' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'approve' %}{% elif stage == 'coordination' %}{% url 'coordination-transition' stage_obj.pk 'approve' %}{% else %}{% url 'final-transition' stage_obj.pk 'approve' %}{% endif %}" class="d-inline">
     {% csrf_token %}
     <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> اعتماد</button>
 </form>
-<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'reject' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'reject' %}{% else %}{% url 'coordination-transition' stage_obj.pk 'reject' %}{% endif %}" class="d-inline-flex align-items-center gap-1">
+<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'reject' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'reject' %}{% elif stage == 'coordination' %}{% url 'coordination-transition' stage_obj.pk 'reject' %}{% else %}{% url 'final-transition' stage_obj.pk 'reject' %}{% endif %}" class="d-inline-flex align-items-center gap-1">
     {% csrf_token %}
     <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="سبب الرفض" required style="max-width: 200px;">
     <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-x-lg"></i> رفض</button>
 </form>
 {% endif %}
 {% if can_edit and stage_obj.status == 'rejected' %}
-<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'reopen' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'reopen' %}{% else %}{% url 'coordination-transition' stage_obj.pk 'reopen' %}{% endif %}" class="d-inline">
+<form method="post" action="{% if stage == 'contract' %}{% url 'activity-transition' stage_obj.pk 'reopen' %}{% elif stage == 'financial' %}{% url 'financial-transition' stage_obj.pk 'reopen' %}{% elif stage == 'coordination' %}{% url 'coordination-transition' stage_obj.pk 'reopen' %}{% else %}{% url 'final-transition' stage_obj.pk 'reopen' %}{% endif %}" class="d-inline">
     {% csrf_token %}
     <button type="submit" class="btn btn-sm btn-warning"><i class="bi bi-arrow-counterclockwise"></i> إعادة فتح كمسودة</button>
 </form>

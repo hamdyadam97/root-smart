@@ -26,7 +26,8 @@ STATUS_BADGE_CLASSES = {
 class ActivityStageBase(models.Model):
     """حقول سير العمل المشتركة بين نماذج النشاط الثلاثة."""
 
-    change_perm = None  # يحدد في النماذج الفرعية، مثال: 'change_activity'
+    change_perm = None   # يحدد في النماذج الفرعية، مثال: 'change_activity'
+    approve_perm = None  # صلاحية الاعتماد — للمدير، مثال: 'approve_activity'
 
     status = models.CharField(
         max_length=20, choices=StageStatus.choices, default=StageStatus.DRAFT,
@@ -79,12 +80,12 @@ class ActivityStageBase(models.Model):
         return user.has_perm(self.change_perm, branch=self.branch)
 
     def can_user_approve(self, user):
-        """الاعتماد والرفض لمن يملك صلاحية تعديل النموذج على الفرع (المدير المعتمد)."""
+        """الاعتماد والرفض بصلاحية «اعتماد» خاصة بالمدير على الفرع."""
         if not user.is_authenticated:
             return False
         if user.is_executive():
             return True
-        return user.has_perm(self.change_perm, branch=self.branch)
+        return user.has_perm(self.approve_perm, branch=self.branch)
 
 
 class Activity(ActivityStageBase):
@@ -112,14 +113,17 @@ class Activity(ActivityStageBase):
     ]
 
     change_perm = 'change_activity'
+    approve_perm = 'approve_activity'
 
     branch = models.ForeignKey(
         'core.Branch', on_delete=models.PROTECT,
         related_name='activities', verbose_name='الفرع'
     )
-    request_number = models.CharField(max_length=50, verbose_name='رقم الطلب')
+    request_number = models.PositiveIntegerField(
+        null=True, blank=True, db_index=True, verbose_name='رقم الطلب'
+    )
     form_number = models.PositiveIntegerField(null=True, blank=True, db_index=True, verbose_name='رقم النموذج')
-    form_date = models.DateField(default=timezone.localdate, verbose_name='التاريخ')
+    form_date = models.DateField(default=timezone.localdate, verbose_name='تاريخ تقديم الطلب/النشاط')
     name = models.CharField(max_length=255, verbose_name='اسم النشاط')
     location = models.CharField(max_length=255, verbose_name='مكان الانعقاد')
     event_date = models.DateField(verbose_name='تاريخ الانعقاد')
@@ -145,7 +149,7 @@ class Activity(ActivityStageBase):
     )
     authorized_signatory = models.CharField(max_length=255, verbose_name='اسم المفوض بالتوقيع')
     coordinator_name = models.CharField(max_length=255, verbose_name='اسم منسق النشاط')
-    signatory_name = models.CharField(max_length=255, verbose_name='اسم الموقّع')
+    signatory_name = models.CharField(max_length=255, blank=True, verbose_name='اسم الموقّع')
     sealed = models.BooleanField(default=False, verbose_name='تم الختم')
     signature_date = models.DateField(null=True, blank=True, verbose_name='تاريخ التوقيع')
 
@@ -158,6 +162,11 @@ class Activity(ActivityStageBase):
         return f'{self.name} (نموذج رقم {self.form_number or "-"})'
 
     def save(self, *args, **kwargs):
+        if not self.request_number:
+            last = Activity.objects.filter(branch=self.branch).aggregate(
+                models.Max('request_number')
+            )['request_number__max']
+            self.request_number = (last or 0) + 1
         if not self.form_number:
             last = Activity.objects.filter(branch=self.branch).aggregate(
                 models.Max('form_number')
@@ -187,6 +196,7 @@ class FinancialAnalysis(ActivityStageBase):
     """التحليل المالي للنشاط — المرحلة الثانية (لا يُتاح إلا بعد اعتماد عقد النشاط)."""
 
     change_perm = 'change_financialanalysis'
+    approve_perm = 'approve_financialanalysis'
 
     activity = models.OneToOneField(
         Activity, on_delete=models.CASCADE, related_name='financial', verbose_name='النشاط'
@@ -294,6 +304,7 @@ class ActivityCoordination(ActivityStageBase):
     """نموذج تنسيق وجاهزية النشاط — المرحلة الثالثة (لا يُتاح إلا بعد اعتماد التحليل المالي)."""
 
     change_perm = 'change_activitycoordination'
+    approve_perm = 'approve_activitycoordination'
 
     activity = models.OneToOneField(
         Activity, on_delete=models.CASCADE, related_name='coordination', verbose_name='النشاط'
@@ -352,6 +363,70 @@ class ActivityCoordination(ActivityStageBase):
         super().save(*args, **kwargs)
 
 
+class FinalFinancialAnalysis(ActivityStageBase):
+    """التحليل المالي النهائي — المرحلة الرابعة (الفعلي فقط، لا يُتاح إلا بعد اعتماد التنسيق)."""
+
+    change_perm = 'change_finalfinancialanalysis'
+    approve_perm = 'approve_finalfinancialanalysis'
+
+    activity = models.OneToOneField(
+        Activity, on_delete=models.CASCADE, related_name='final_financial', verbose_name='النشاط'
+    )
+    form_number = models.PositiveIntegerField(null=True, blank=True, db_index=True, verbose_name='رقم النموذج')
+    analysis_date = models.DateField(default=timezone.localdate, verbose_name='تاريخ التحليل النهائي')
+    trainee_count = models.PositiveIntegerField(verbose_name='عدد المتدربين')
+    fee_per_trainee = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='بدل التدريب لكل متدرب (دينار)')
+
+    total_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='إجمالي الإيرادات الفعلية (دينار)')
+    actual_electricity = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل الكهرباء الفعلي (دينار)')
+    actual_water = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل المياه الفعلي (دينار)')
+    actual_hall = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل استخدام القاعة الفعلي (دينار)')
+    actual_hospitality = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل الضيافة الفعلي (دينار)')
+    actual_certificates = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='تكاليف الشهادات الفعلية (دينار)')
+    actual_trainer_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='أجرة المدرب الفعلية (دينار)')
+    total_costs = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='إجمالي التكاليف الفعلية (دينار)')
+    net_profit = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='صافي الربح الفعلي (دينار)')
+    company_share = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='مستحقات الشركة (دينار)')
+    partner_share = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='مستحقات الشريك (دينار)')
+
+    prepared_by = models.CharField(max_length=255, verbose_name='اسم معد التحليل')
+    approval_name = models.CharField(max_length=255, blank=True, verbose_name='اسم المعتمد')
+    approval_date = models.DateField(null=True, blank=True, verbose_name='تاريخ الاعتماد')
+
+    class Meta(ActivityStageBase.Meta):
+        verbose_name = 'تحليل مالي نهائي'
+        verbose_name_plural = 'التحليلات المالية النهائية'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'التحليل المالي النهائي - {self.activity.name}'
+
+    @property
+    def branch(self):
+        return self.activity.branch
+
+    def save(self, *args, **kwargs):
+        if not self.form_number:
+            last = FinalFinancialAnalysis.objects.filter(activity__branch=self.activity.branch).aggregate(
+                models.Max('form_number')
+            )['form_number__max']
+            self.form_number = (last or 0) + 1
+
+        self.total_revenue = FinancialAnalysis._q((self.trainee_count or 0) * (self.fee_per_trainee or 0))
+        self.total_costs = FinancialAnalysis._q(
+            self.actual_electricity + self.actual_water + self.actual_hall +
+            self.actual_hospitality + self.actual_certificates + self.actual_trainer_fee
+        )
+        self.net_profit = FinancialAnalysis._q(self.total_revenue - self.total_costs)
+
+        percent = self.activity.effective_partner_percent
+        company, partner = FinancialAnalysis._split_profit(self.net_profit, percent)
+        self.company_share = company
+        self.partner_share = partner
+
+        super().save(*args, **kwargs)
+
+
 class ActivityLog(models.Model):
     """سجل عمليات النشاط: إنشاء وتعديل واعتماد ورفض."""
 
@@ -359,6 +434,7 @@ class ActivityLog(models.Model):
         ('contract', 'عقد النشاط'),
         ('financial', 'التحليل المالي'),
         ('coordination', 'التنسيق والجاهزية'),
+        ('final', 'التحليل المالي النهائي'),
     ]
     ACTION_CHOICES = [
         ('create', 'إنشاء'),

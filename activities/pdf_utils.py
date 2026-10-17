@@ -626,6 +626,124 @@ def _approval_card(status, signer, date_str, styles):
     return card
 
 
+def _values_table(rows, styles, highlight_label):
+    """جدول بعمودين (البند | القيمة الفعلية) للتحليل المالي النهائي."""
+    data = [[Paragraph(ar('القيمة الفعلية'), styles['tbl_head']), Paragraph(ar('البند'), styles['tbl_head'])]]
+    style = [
+        ('GRID', (0, 0), (-1, -1), 0.5, BORDER_COLOR),
+        ('BACKGROUND', (0, 0), (-1, 0), NAVY),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+    ]
+    for idx, (label, value, strong) in enumerate(rows, start=1):
+        data.append([
+            Paragraph(_fmt(value), styles['tbl_num']),
+            Paragraph(ar(label), styles['tbl_cell_strong' if strong else 'tbl_cell']),
+        ])
+        if label == highlight_label:
+            style += [
+                ('BACKGROUND', (0, idx), (-1, idx), HIGHLIGHT_BG),
+                ('LINEABOVE', (0, idx), (-1, idx), 1, NAVY),
+                ('LINEBELOW', (0, idx), (-1, idx), 1, NAVY),
+            ]
+    table = Table(data, colWidths=[50 * mm, 130 * mm], repeatRows=1)
+    table.setStyle(TableStyle(style))
+    return table
+
+
+def build_final_pdf(final):
+    """التحليل المالي النهائي (المرحلة الرابعة) — الفعلي فقط."""
+    styles = _styles()
+    buffer = BytesIO()
+    activity = final.activity
+    company, branch = _org_of(activity)
+    doc, footer = _doc(buffer, f'التحليل المالي النهائي - {activity.name}', f'التحليل المالي النهائي رقم {final.form_number or "-"}')
+    story = _header_bar(company, branch, 'التحليل المالي النهائي للنشاط', styles, final.form_number, _date(final.analysis_date))
+
+    _section(story, 'المؤشرات المالية النهائية (دينار)', styles)
+    story.append(_cards_grid([
+        ('إجمالي الإيرادات الفعلية', money(final.total_revenue), NAVY),
+        ('إجمالي التكاليف الفعلية', money(final.total_costs), NAVY),
+        ('صافي الربح الفعلي', money(final.net_profit), _profit_color(final.net_profit)),
+        ('عدد المتدربين', final.trainee_count, NAVY),
+    ], styles, cols=4))
+    story.append(Spacer(1, 2 * mm))
+    story.append(_cards_grid([
+        ('بدل التدريب لكل متدرب', money(final.fee_per_trainee), None),
+        ('مكان الانعقاد', activity.location, None),
+        ('تاريخ الانعقاد', _date(activity.event_date), None),
+    ], styles))
+    story.append(Spacer(1, 5 * mm))
+
+    _section(story, 'التكاليف والإيرادات الفعلية (دينار)', styles)
+    story.append(Spacer(1, 2 * mm))
+    story.append(_values_table([
+        ('رسوم المتدربين (إيراد)', final.total_revenue, True),
+        ('بدل الكهرباء', final.actual_electricity, False),
+        ('بدل المياه', final.actual_water, False),
+        ('بدل استخدام القاعة', final.actual_hall, False),
+        ('بدل الضيافة', final.actual_hospitality, False),
+        ('تكاليف الشهادات', final.actual_certificates, False),
+        ('أجرة المدرب', final.actual_trainer_fee, False),
+        ('إجمالي التكاليف', final.total_costs, True),
+        ('صافي الربح', final.net_profit, True),
+    ], styles, highlight_label='صافي الربح'))
+    story.append(Spacer(1, 4 * mm))
+
+    if (final.net_profit or 0) < 0:
+        if final.total_revenue < final.total_costs:
+            reason = (
+                f'الإيرادات الفعلية ({_fmt(final.total_revenue)} دينار) أقل من إجمالي التكاليف '
+                f'الفعلية ({_fmt(final.total_costs)} دينار)'
+            )
+        else:
+            reason = 'الإيرادات الفعلية جاءت دون المتوقعة'
+        story.append(_note_box(
+            f'تنبيه: تحقق خسارة فعلية قدرها {money(abs(final.net_profit))} لأن {reason}.',
+            styles, bg=ALERT_BG, border=ALERT_BORDER,
+        ))
+        story.append(Spacer(1, 4 * mm))
+
+    _section(story, 'مستحقات الشركة والشريك (دينار)', styles)
+    story.append(_cards_grid([
+        ('مستحقات الشركة', money(final.company_share), None),
+        ('مستحقات الشريك', money(final.partner_share), None),
+        ('نسبة الشريك المعتمدة في العقد', f'{activity.effective_partner_percent}%', None),
+    ], styles))
+    story.append(Spacer(1, 4 * mm))
+    story.append(_note_box(
+        'ملاحظة: نسبة 0.20% المذكورة في النموذج الأصلي رسوم تُحتسب من صافي أرباح النشاط.',
+        styles,
+    ))
+    story.append(Spacer(1, 5 * mm))
+
+    _section(story, 'معد التحليل والاعتماد', styles)
+    story.append(Spacer(1, 2 * mm))
+    story.append(_cards_grid([
+        ('اسم معد التحليل', final.prepared_by, None),
+        ('اسم المعتمد', final.approval_name or '-', None),
+        ('تاريخ الاعتماد', _date(final.approval_date), None),
+    ], styles))
+    story.append(Spacer(1, 4 * mm))
+    approval_content = [
+        Paragraph(cv(final.approval_name or ''), styles['sig_name']),
+        Spacer(1, 6 * mm),
+        _signature_line(),
+    ]
+    story.append(_signature_boxes([
+        ('الحالة', _status_content(final.status, styles), _date(final.approval_date)),
+        ('التوقيع', approval_content, _date(final.approval_date)),
+        ('الختم', '', _date(final.approval_date)),
+    ], styles))
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    buffer.seek(0)
+    return buffer
+
+
 def build_coordination_pdf(coordination):
     """نموذج تنسيق وجاهزية النشاط (المرحلة الثالثة)."""
     styles = _styles()

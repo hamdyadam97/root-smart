@@ -43,6 +43,7 @@ MODEL_NAMES_AR = {
     'activity': 'نشاط',
     'financialanalysis': 'التحليل المالي',
     'activitycoordination': 'التنسيق والجاهزية',
+    'finalfinancialanalysis': 'التحليل المالي النهائي',
     'activitylog': 'سجل الأنشطة',
 }
 

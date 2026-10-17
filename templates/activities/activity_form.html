@@ -12,6 +12,16 @@
     <a href="{% url 'activity-list' %}" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع للقائمة</a>
 </div>
 
+<div class="alert alert-info mt-3 mb-0">
+    <i class="bi bi-person-badge"></i>
+    {% if object %}
+        منشئ النشاط: <strong>{{ object.created_by.get_full_name|default:object.created_by.email }}</strong>
+        | آخر تعديل: <strong>{{ object.last_person.get_full_name|default:'-' }}</strong>
+    {% else %}
+        سيسجل هذا النشاط باسمك: <strong>{{ user.get_full_name|default:user.email }}</strong>
+    {% endif %}
+</div>
+
 {% if object and object.status == 'rejected' %}
 <div class="alert alert-danger mt-3">
     <strong><i class="bi bi-x-circle"></i> تم رفض هذا النموذج.</strong>
@@ -36,8 +46,9 @@
                     {% if form.branch.errors %}<div class="text-danger small">{{ form.branch.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label for="{{ form.request_number.id_for_label }}" class="form-label">{{ form.request_number.label }} <span class="text-danger">*</span></label>
+                    <label for="{{ form.request_number.id_for_label }}" class="form-label">{{ form.request_number.label }}</label>
                     {{ form.request_number }}
+                    <div class="form-text text-muted small">يُرقم تلقائيًا عند الحفظ ولا يُدخل يدويًا.</div>
                     {% if form.request_number.errors %}<div class="text-danger small">{{ form.request_number.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-6 mb-3">
@@ -123,6 +134,7 @@
                 <div class="col-md-6 mb-3 partner-field">
                     <label for="{{ form.partner_share_percent.id_for_label }}" class="form-label">{{ form.partner_share_percent.label }} <span class="text-danger">*</span></label>
                     {{ form.partner_share_percent }}
+                    <div id="profit-split-hint" class="form-text small text-primary fw-semibold"></div>
                     {% if form.partner_share_percent.errors %}<div class="text-danger small">{{ form.partner_share_percent.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-6 mb-3">
@@ -139,33 +151,8 @@
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header"><i class="bi bi-vector-pen"></i> التوقيع والختم</div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label for="{{ form.signatory_name.id_for_label }}" class="form-label">{{ form.signatory_name.label }} <span class="text-danger">*</span></label>
-                    {{ form.signatory_name }}
-                    {% if form.signatory_name.errors %}<div class="text-danger small">{{ form.signatory_name.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4 mb-3 d-flex align-items-end">
-                    <div class="form-check mb-2">
-                        {{ form.sealed }}
-                        <label for="{{ form.sealed.id_for_label }}" class="form-check-label">{{ form.sealed.label }}</label>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label for="{{ form.signature_date.id_for_label }}" class="form-label">{{ form.signature_date.label }} <span class="text-danger">*</span></label>
-                    {{ form.signature_date }}
-                    {% if form.signature_date.errors %}<div class="text-danger small">{{ form.signature_date.errors }}</div>{% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
-        <button type="submit" name="submit_action" value="complete" class="btn btn-info"><i class="bi bi-clipboard-check"></i> حفظ كمكتمل</button>
         <button type="submit" name="submit_action" value="submit" class="btn btn-primary"><i class="bi bi-send"></i> حفظ وإرسال للاعتماد</button>
         <a href="{% if object %}{% url 'activity-detail' object.pk %}{% else %}{% url 'activity-list' %}{% endif %}" class="btn btn-secondary">إلغاء</a>
     </div>
@@ -181,8 +168,27 @@
             el.disabled = noPartner.checked;
             el.closest('.partner-field').style.opacity = noPartner.checked ? '0.5' : '1';
         });
+        updateProfitHint();
     }
     noPartner.addEventListener('change', togglePartnerFields);
+
+    // تفصيل توزيع الأرباح تحت نسبة الشريك
+    const percentInput = document.getElementById('{{ form.partner_share_percent.id_for_label }}');
+    const hint = document.getElementById('profit-split-hint');
+    function updateProfitHint() {
+        if (!hint) return;
+        if (noPartner.checked) {
+            hint.textContent = 'لا يوجد شريك — مستحقات الشركة 100% من صافي الربح.';
+            return;
+        }
+        const v = parseFloat(percentInput.value);
+        if (isNaN(v) || v < 0 || v > 100) {
+            hint.textContent = '';
+            return;
+        }
+        hint.textContent = 'تفصيل الأرباح من صافي الربح: الشريك ' + v.toFixed(2) + '% — الشركة ' + (100 - v).toFixed(2) + '%';
+    }
+    if (percentInput) percentInput.addEventListener('input', updateProfitHint);
     togglePartnerFields();
 })();
 </script>

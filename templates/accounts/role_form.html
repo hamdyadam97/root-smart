@@ -82,25 +82,34 @@ function toggleAction(action, checked) {
                                 <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('delete', true)"><i class="bi bi-check"></i></button>
                                 <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('delete', false)"><i class="bi bi-x"></i></button>
                             </th>
+                            <th class="text-center">
+                                اعتماد<br>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('approve', true)"><i class="bi bi-check"></i></button>
+                                <button type="button" class="btn btn-xs btn-outline-light py-0 px-1" onclick="toggleAction('approve', false)"><i class="bi bi-x"></i></button>
+                            </th>
                             <th class="text-center">الكل</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for app_label, models in grouped_permissions.items %}
                         <tr class="table-secondary">
-                            <td colspan="6" class="fw-bold">{{ app_labels_ar|get_item:app_label }}</td>
+                            <td colspan="7" class="fw-bold">{{ app_labels_ar|get_item:app_label|default:app_label }}</td>
                         </tr>
-                        {% for model_name, permissions in models.items %}
+                        {% for model_name, model_perms in models.items %}
                         <tr>
-                            <td class="fw-bold">{{ model_names_ar|get_item:model_name }}</td>
-                            {% for perm in permissions %}
+                            <td class="fw-bold">{{ model_names_ar|get_item:model_name|default:model_name }}</td>
+                            {% for action in perm_actions %}
                             <td class="text-center">
+                                {% with perm=model_perms|get_item:action %}
+                                {% if perm %}
                                 <input type="checkbox"
-                                       class="form-check-input perm-cb perm-{{ model_name }} perm-action-{{ perm.action }}"
+                                       class="form-check-input perm-cb perm-{{ model_name }} perm-action-{{ action }}"
                                        name="permissions"
                                        value="{{ perm.id }}"
                                        id="perm_{{ perm.id }}"
                                        {% if perm.id in selected_permissions %}checked{% endif %}>
+                                {% endif %}
+                                {% endwith %}
                             </td>
                             {% endfor %}
                             <td class="text-center">

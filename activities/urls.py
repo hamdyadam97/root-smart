@@ -22,4 +22,10 @@ urlpatterns = [
     path('activities/coordination/<int:pk>/delete/', views.CoordinationDeleteView.as_view(), name='coordination-delete'),
     path('activities/coordination/<int:pk>/transition/<str:action>/', views.coordination_transition, name='coordination-transition'),
     path('activities/coordination/<int:pk>/pdf/', views.coordination_pdf, name='coordination-pdf'),
+
+    path('activities/<int:activity_pk>/final/create/', views.FinalFinancialCreateView.as_view(), name='final-create'),
+    path('activities/final/<int:pk>/update/', views.FinalFinancialUpdateView.as_view(), name='final-update'),
+    path('activities/final/<int:pk>/delete/', views.FinalFinancialDeleteView.as_view(), name='final-delete'),
+    path('activities/final/<int:pk>/transition/<str:action>/', views.final_transition, name='final-transition'),
+    path('activities/final/<int:pk>/pdf/', views.final_pdf, name='final-pdf'),
 ]

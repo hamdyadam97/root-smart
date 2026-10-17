@@ -5,13 +5,18 @@ from django.urls import reverse
 
 from accounts.models import EmployeeRole, Permission, Person, Role
 from core.models import Branch, Company
-from .models import Activity, ActivityCoordination, ActivityLog, FinancialAnalysis, StageStatus
+from .models import (
+    Activity, ActivityCoordination, ActivityLog, FinancialAnalysis, FinalFinancialAnalysis, StageStatus,
+)
 
 
 ACTIVITY_PERMS = [
     'view_activity', 'add_activity', 'change_activity', 'delete_activity',
     'view_financialanalysis', 'add_financialanalysis', 'change_financialanalysis', 'delete_financialanalysis',
     'view_activitycoordination', 'add_activitycoordination', 'change_activitycoordination', 'delete_activitycoordination',
+    'view_finalfinancialanalysis', 'add_finalfinancialanalysis', 'change_finalfinancialanalysis', 'delete_finalfinancialanalysis',
+    # صلاحيات الاعتماد الخاصة بالمدير
+    'approve_activity', 'approve_financialanalysis', 'approve_activitycoordination', 'approve_finalfinancialanalysis',
 ]
 
 
@@ -57,7 +62,6 @@ class ActivityWorkflowTests(TestCase):
     def _contract_payload(self, **overrides):
         payload = {
             'branch': self.branch.pk,
-            'request_number': 'REQ-100',
             'form_date': '2025-02-01',
             'name': 'دورة إدارة المشاريع',
             'location': 'قاعة 1',
@@ -71,8 +75,6 @@ class ActivityWorkflowTests(TestCase):
             'no_partner': 'on',
             'authorized_signatory': 'المفوض الأول',
             'coordinator_name': 'منسق النشاط',
-            'signatory_name': 'الموقع',
-            'signature_date': '2025-02-01',
         }
         payload.update(overrides)
         return payload
@@ -136,10 +138,11 @@ class ActivityWorkflowTests(TestCase):
 
     # --- إنشاء العقد والمالك ---
 
-    def test_create_contract_sets_owner_and_auto_form_number(self):
+    def test_create_contract_sets_owner_and_auto_numbers(self):
         activity = self._create_contract()
         self.assertEqual(activity.created_by, self.employee)
         self.assertEqual(activity.form_number, 1)
+        self.assertEqual(activity.request_number, 1)  # يُرقم تلقائيًا
         self.assertEqual(activity.status, StageStatus.DRAFT)
         self.assertTrue(ActivityLog.objects.filter(activity=activity, stage='contract', action='create').exists())
 
@@ -387,3 +390,91 @@ class ActivityWorkflowTests(TestCase):
         self.assertIn('create', actions)
         self.assertIn('submit', actions)
         self.assertIn('approve', actions)
+
+    # --- المرحلة الرابعة: التحليل المالي النهائي ---
+
+    def _create_and_approve_coordination(self, activity):
+        response = self.employee_client.post(
+            reverse('coordination-create', args=[activity.pk]), self._coordination_payload()
+        )
+        self.assertEqual(response.status_code, 302)
+        coordination = ActivityCoordination.objects.get(activity=activity)
+        self.employee_client.post(reverse('coordination-transition', args=[coordination.pk, 'submit']))
+        self.manager_client.post(reverse('coordination-transition', args=[coordination.pk, 'approve']))
+        coordination.refresh_from_db()
+        self.assertEqual(coordination.status, StageStatus.APPROVED)
+        return coordination
+
+    def _final_payload(self, **overrides):
+        payload = {
+            'analysis_date': '2025-03-11',
+            'trainee_count': 20,
+            'fee_per_trainee': '100.00',
+            'actual_electricity': '60', 'actual_water': '20', 'actual_hall': '200',
+            'actual_hospitality': '100', 'actual_certificates': '80', 'actual_trainer_fee': '500',
+            'prepared_by': 'Emp Loyee',
+            'approval_name': 'د. عبدالله',
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_final_blocked_before_coordination_approval(self):
+        activity = self._create_contract()
+        self._approve_contract(activity)
+        response = self.employee_client.get(reverse('final-create', args=[activity.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(FinalFinancialAnalysis.objects.exists())
+
+    def test_final_workflow_and_calculations(self):
+        activity = self._create_contract()
+        self._approve_contract(activity)
+
+        # معد التحليل = المستخدم الحالي — يظهر اسمه تلقائيًا في النموذج
+        response = self.employee_client.get(reverse('financial-create', args=[activity.pk]))
+        self.assertContains(response, 'Loyee')
+
+        self._create_and_approve_financial(activity)
+        self._create_and_approve_coordination(activity)
+
+        response = self.employee_client.post(
+            reverse('final-create', args=[activity.pk]), self._final_payload()
+        )
+        self.assertEqual(response.status_code, 302)
+        final = FinalFinancialAnalysis.objects.get(activity=activity)
+        self.assertEqual(final.created_by, self.employee)
+        # إيرادات = 20 × 100 = 2000؛ تكاليف = 60+20+200+100+80+500 = 960
+        self.assertEqual(final.total_revenue, Decimal('2000.00'))
+        self.assertEqual(final.total_costs, Decimal('960.00'))
+        self.assertEqual(final.net_profit, Decimal('1040.00'))
+        # لا يوجد شريك — الشركة كامل الصافي
+        self.assertEqual(final.company_share, Decimal('1040.00'))
+        self.assertEqual(final.partner_share, Decimal('0.00'))
+
+        # الاعتماد بصلاحية «اعتماد» الخاصة بالمدير
+        self.employee_client.post(reverse('final-transition', args=[final.pk, 'submit']))
+        final.refresh_from_db()
+        self.assertEqual(final.status, StageStatus.PENDING)
+        self.manager_client.post(reverse('final-transition', args=[final.pk, 'approve']))
+        final.refresh_from_db()
+        self.assertEqual(final.status, StageStatus.APPROVED)
+
+        # PDF النهائي
+        response = self.employee_client.get(reverse('final-pdf', args=[final.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+    def test_final_with_partner_share(self):
+        activity = self._create_contract()
+        activity.no_partner = False
+        activity.partner_kind = 'organization'
+        activity.partner_name = 'مؤسسة التميز'
+        activity.partner_share_percent = Decimal('25.00')
+        activity.save()
+        self._approve_contract(activity)
+        self._create_and_approve_financial(activity)
+        self._create_and_approve_coordination(activity)
+        self.employee_client.post(reverse('final-create', args=[activity.pk]), self._final_payload())
+        final = FinalFinancialAnalysis.objects.get(activity=activity)
+        # صافي 1040 — شريك 25% = 260
+        self.assertEqual(final.partner_share, Decimal('260.00'))
+        self.assertEqual(final.company_share, Decimal('780.00'))

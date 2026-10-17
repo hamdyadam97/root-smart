@@ -90,6 +90,11 @@
                     {% else %}
                     <span class="badge bg-secondary" title="التنسيق والجاهزية — غير متاح">3</span>
                     {% endif %}
+                    {% if activity.final_financial %}
+                    <span class="badge {{ activity.final_financial.status_badge_class }}" title="التحليل المالي النهائي">4</span>
+                    {% else %}
+                    <span class="badge bg-secondary" title="التحليل المالي النهائي — غير متاح">4</span>
+                    {% endif %}
                 </td>
                 <td class="text-start">
                     <a href="{% url 'activity-detail' activity.pk %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>

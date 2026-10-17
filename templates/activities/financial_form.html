@@ -137,6 +137,7 @@
                 <div class="col-md-4 mb-3">
                     <label for="{{ form.prepared_by.id_for_label }}" class="form-label">{{ form.prepared_by.label }} <span class="text-danger">*</span></label>
                     {{ form.prepared_by }}
+                    <div class="form-text text-muted small">يُسجَّل تلقائيًا باسم المستخدم الحالي.</div>
                     {% if form.prepared_by.errors %}<div class="text-danger small">{{ form.prepared_by.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-4 mb-3">
@@ -165,7 +166,6 @@
 
     <div class="d-flex gap-2">
         <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
-        <button type="submit" name="submit_action" value="complete" class="btn btn-info"><i class="bi bi-clipboard-check"></i> حفظ كمكتمل</button>
         <button type="submit" name="submit_action" value="submit" class="btn btn-primary"><i class="bi bi-send"></i> حفظ وإرسال للاعتماد</button>
         <a href="{% url 'activity-detail' activity.pk %}" class="btn btn-secondary">إلغاء</a>
     </div>

@@ -26,11 +26,11 @@
 <!-- مؤشر المراحل -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="d-flex justify-content-around align-items-center flex-wrap gap-3">
+        <div class="d-flex justify-content-around align-items-center flex-wrap gap-2">
             <div class="text-center">
                 <div class="badge {{ activity.status_badge_class }} fs-6 p-2">1. عقد النشاط — {{ activity.get_status_display }}</div>
             </div>
-            <i class="bi bi-arrow-left text-muted fs-5"></i>
+            <i class="bi bi-arrow-left text-muted"></i>
             <div class="text-center">
                 {% if financial %}
                 <div class="badge {{ financial.status_badge_class }} fs-6 p-2">2. التحليل المالي — {{ financial.get_status_display }}</div>
@@ -38,12 +38,20 @@
                 <div class="badge bg-secondary fs-6 p-2">2. التحليل المالي — غير متاح</div>
                 {% endif %}
             </div>
-            <i class="bi bi-arrow-left text-muted fs-5"></i>
+            <i class="bi bi-arrow-left text-muted"></i>
             <div class="text-center">
                 {% if coordination %}
                 <div class="badge {{ coordination.status_badge_class }} fs-6 p-2">3. التنسيق والجاهزية — {{ coordination.get_status_display }}</div>
                 {% else %}
                 <div class="badge bg-secondary fs-6 p-2">3. التنسيق والجاهزية — غير متاح</div>
+                {% endif %}
+            </div>
+            <i class="bi bi-arrow-left text-muted"></i>
+            <div class="text-center">
+                {% if final_financial %}
+                <div class="badge {{ final_financial.status_badge_class }} fs-6 p-2">4. التحليل النهائي — {{ final_financial.get_status_display }}</div>
+                {% else %}
+                <div class="badge bg-secondary fs-6 p-2">4. التحليل النهائي — غير متاح</div>
                 {% endif %}
             </div>
         </div>
@@ -80,9 +88,6 @@
             {% endif %}
             <div class="col-md-4 mb-2"><strong>اسم المفوض بالتوقيع:</strong> {{ activity.authorized_signatory }}</div>
             <div class="col-md-4 mb-2"><strong>اسم منسق النشاط:</strong> {{ activity.coordinator_name }}</div>
-            <div class="col-md-4 mb-2"><strong>اسم الموقّع:</strong> {{ activity.signatory_name }}</div>
-            <div class="col-md-4 mb-2"><strong>الختم:</strong> {% if activity.sealed %}تم الختم{% else %}—{% endif %}</div>
-            <div class="col-md-4 mb-2"><strong>تاريخ التوقيع:</strong> {{ activity.signature_date|date:'Y-m-d'|default:'—' }}</div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
             {% if can_edit_activity and activity.is_editable %}
@@ -210,6 +215,51 @@
         {% endif %}
         {% else %}
         <div class="alert alert-secondary mb-0"><i class="bi bi-lock"></i> غير متاح — يُتاح نموذج التنسيق والجاهزية بعد اعتماد التحليل المالي.</div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- المرحلة 4: التحليل المالي النهائي -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-bar-graph"></i> المرحلة 4: التحليل المالي النهائي (الفعلي)</span>
+        {% if final_financial %}<span class="badge {{ final_financial.status_badge_class }}">{{ final_financial.get_status_display }}</span>{% endif %}
+    </div>
+    <div class="card-body">
+        {% if final_financial %}
+        {% if final_financial.rejection_reason and final_financial.status == 'rejected' %}
+        <div class="alert alert-danger"><strong>سبب الرفض:</strong> {{ final_financial.rejection_reason }}</div>
+        {% endif %}
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>رقم النموذج:</strong> {{ final_financial.form_number|default:'-' }}</div>
+            <div class="col-md-4 mb-2"><strong>تاريخ التحليل:</strong> {{ final_financial.analysis_date|date:'Y-m-d' }}</div>
+            <div class="col-md-4 mb-2"><strong>عدد المتدربين:</strong> {{ final_financial.trainee_count }}</div>
+            <div class="col-md-4 mb-2"><strong>إجمالي الإيرادات الفعلية:</strong> {{ final_financial.total_revenue }} دينار</div>
+            <div class="col-md-4 mb-2"><strong>إجمالي التكاليف الفعلية:</strong> {{ final_financial.total_costs }} دينار</div>
+            <div class="col-md-4 mb-2"><strong>صافي الربح الفعلي:</strong> <span class="{% if final_financial.net_profit < 0 %}text-danger{% else %}text-success{% endif %} fw-bold">{{ final_financial.net_profit }} دينار</span></div>
+            <div class="col-md-4 mb-2"><strong>مستحقات الشركة:</strong> {{ final_financial.company_share }} دينار</div>
+            <div class="col-md-4 mb-2"><strong>مستحقات الشريك:</strong> {{ final_financial.partner_share }} دينار</div>
+            <div class="col-md-4 mb-2"><strong>معد التحليل:</strong> {{ final_financial.prepared_by }}</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if can_edit_final and final_financial.is_editable %}
+            <a href="{% url 'final-update' final_financial.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i> تعديل التحليل</a>
+            {% endif %}
+            <a href="{% url 'final-pdf' final_financial.pk %}" class="btn btn-sm btn-secondary"><i class="bi bi-file-earmark-pdf"></i> تنزيل PDF</a>
+            {% include 'activities/includes/stage_actions.html' with stage_obj=final_financial stage='final' can_edit=can_edit_final can_approve=can_approve_final %}
+            {% if can_edit_final and final_financial.is_editable %}
+            <a href="{% url 'final-delete' final_financial.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i> حذف التحليل</a>
+            {% endif %}
+        </div>
+        {% else %}
+        {% if coordination and coordination.status == 'approved' %}
+        <p class="text-muted">لم يُنشأ التحليل المالي النهائي بعد. {% if can_edit_activity %}يمكنك الآن إنشاءه ببيانات ما بعد التنفيذ.{% endif %}</p>
+        {% if can_edit_activity %}
+        <a href="{% url 'final-create' activity.pk %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إنشاء التحليل المالي النهائي</a>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-secondary mb-0"><i class="bi bi-lock"></i> غير متاح — يُتاح التحليل المالي النهائي بعد اعتماد نموذج التنسيق والجاهزية.</div>
         {% endif %}
         {% endif %}
     </div>

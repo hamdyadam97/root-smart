@@ -197,6 +197,17 @@ PERMISSIONS_DATA = [
     ('add_activitylog', 'إضافة سجل نشاط', 'activities', 'activitylog', 'add'),
     ('change_activitylog', 'تعديل سجل نشاط', 'activities', 'activitylog', 'change'),
     ('delete_activitylog', 'حذف سجل نشاط', 'activities', 'activitylog', 'delete'),
+
+    ('view_finalfinancialanalysis', 'عرض التحليل المالي النهائي', 'activities', 'finalfinancialanalysis', 'view'),
+    ('add_finalfinancialanalysis', 'إضافة تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'add'),
+    ('change_finalfinancialanalysis', 'تعديل تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'change'),
+    ('delete_finalfinancialanalysis', 'حذف تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'delete'),
+
+    # --- اعتماد مراحل الأنشطة (للمدير) ---
+    ('approve_activity', 'اعتماد نشاط', 'activities', 'activity', 'approve'),
+    ('approve_financialanalysis', 'اعتماد تحليل مالي', 'activities', 'financialanalysis', 'approve'),
+    ('approve_activitycoordination', 'اعتماد تنسيق وجاهزية', 'activities', 'activitycoordination', 'approve'),
+    ('approve_finalfinancialanalysis', 'اعتماد تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'approve'),
 ]
 
 

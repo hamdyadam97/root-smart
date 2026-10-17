@@ -64,7 +64,7 @@ def has_any_perm(user, perm_codenames):
 
 @register.filter
 def get_item(mapping, key):
-    """جلب قيمة من قاموس بمفتاح متغير — مع رجوع للمفتاح نفسه إذا غاب."""
+    """جلب قيمة من قاموس بمفتاح متغير — None إذا غاب المفتاح."""
     if not mapping:
-        return key
-    return mapping.get(key, key)
+        return None
+    return mapping.get(key)

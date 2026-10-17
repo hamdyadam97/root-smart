@@ -3,7 +3,7 @@ from decimal import Decimal
 from django import forms
 
 from core.models import Branch
-from .models import Activity, FinancialAnalysis, ActivityCoordination
+from .models import Activity, FinancialAnalysis, ActivityCoordination, FinalFinancialAnalysis
 
 FORM_CONTROL = 'form-control'
 FORM_SELECT = 'form-select'
@@ -24,12 +24,11 @@ class ActivityForm(forms.ModelForm):
             'name', 'location', 'event_date', 'activity_type', 'target_audience',
             'region', 'accreditation_type', 'expected_attendees', 'trainer_name',
             'no_partner', 'partner_kind', 'partner_name', 'partner_share_percent',
-            'authorized_signatory', 'coordinator_name', 'signatory_name', 'sealed',
-            'signature_date',
+            'authorized_signatory', 'coordinator_name',
         ]
         widgets = {
             'branch': forms.Select(attrs={'class': FORM_SELECT}),
-            'request_number': forms.TextInput(attrs={'class': FORM_CONTROL}),
+            'request_number': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 1}),
             'form_number': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 1}),
             'form_date': forms.DateInput(attrs={'class': FORM_CONTROL, 'type': 'date'}),
             'name': forms.TextInput(attrs={'class': FORM_CONTROL}),
@@ -47,18 +46,15 @@ class ActivityForm(forms.ModelForm):
             'partner_share_percent': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'max': 100, 'step': '0.01'}),
             'authorized_signatory': forms.TextInput(attrs={'class': FORM_CONTROL}),
             'coordinator_name': forms.TextInput(attrs={'class': FORM_CONTROL}),
-            'signatory_name': forms.TextInput(attrs={'class': FORM_CONTROL}),
-            'sealed': forms.CheckboxInput(attrs={'class': FORM_CHECK}),
-            'signature_date': forms.DateInput(attrs={'class': FORM_CONTROL, 'type': 'date'}),
         }
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         if user is not None:
             self.fields['branch'].queryset = _accessible_branches(user)
-        if self.instance and self.instance.pk and self.instance.form_number:
-            # رقم النموذج يُولّد تلقائيًا ولا يُعدّل يدويًا بعد الإنشاء
-            self.fields['form_number'].disabled = True
+        # رقم الطلب ورقم النموذج يُرقمان تلقائيًا ولا يُدخلهما المستخدم
+        self.fields['request_number'].disabled = True
+        self.fields['form_number'].disabled = True
         # حقول الشريك تُقيَّم في clean() وفق خيار "لا يوجد شريك"
         self.fields['partner_kind'].required = False
         self.fields['partner_name'].required = False
@@ -121,6 +117,49 @@ class FinancialAnalysisForm(forms.ModelForm):
             self.fields['form_number'].disabled = True
         if not self.instance.pk and self.instance.activity_id:
             self.initial.setdefault('trainee_count', self.instance.activity.expected_attendees)
+        # معد التحليل هو المستخدم الحالي — يظهر اسمه تلقائيًا ولا يُعدَّل
+        if user is not None:
+            self.initial.setdefault('prepared_by', user.get_full_name() or user.email)
+        self.fields['prepared_by'].widget.attrs['readonly'] = True
+
+
+class FinalFinancialAnalysisForm(forms.ModelForm):
+    class Meta:
+        model = FinalFinancialAnalysis
+        fields = [
+            'form_number', 'analysis_date',
+            'trainee_count', 'fee_per_trainee',
+            'actual_electricity', 'actual_water', 'actual_hall',
+            'actual_hospitality', 'actual_certificates', 'actual_trainer_fee',
+            'prepared_by', 'approval_name', 'approval_date',
+        ]
+        widgets = {
+            'form_number': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 1}),
+            'analysis_date': forms.DateInput(attrs={'class': FORM_CONTROL, 'type': 'date'}),
+            'trainee_count': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0}),
+            'fee_per_trainee': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_electricity': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_water': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_hall': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_hospitality': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_certificates': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_trainer_fee': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'prepared_by': forms.TextInput(attrs={'class': FORM_CONTROL}),
+            'approval_name': forms.TextInput(attrs={'class': FORM_CONTROL}),
+            'approval_date': forms.DateInput(attrs={'class': FORM_CONTROL, 'type': 'date'}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.form_number:
+            self.fields['form_number'].disabled = True
+        if not self.instance.pk and self.instance.activity_id:
+            coordination = ActivityCoordination.objects.filter(activity=self.instance.activity).first()
+            self.initial.setdefault('trainee_count', coordination.attended_count if coordination else self.instance.activity.expected_attendees)
+        # معد التحليل هو المستخدم الحالي — يظهر اسمه تلقائيًا ولا يُعدَّل
+        if user is not None:
+            self.initial.setdefault('prepared_by', user.get_full_name() or user.email)
+        self.fields['prepared_by'].widget.attrs['readonly'] = True
 
 
 class ActivityCoordinationForm(forms.ModelForm):

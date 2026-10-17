@@ -15,6 +15,7 @@ class Permission(models.Model):
         ('add', 'إضافة'),
         ('change', 'تعديل'),
         ('delete', 'حذف'),
+        ('approve', 'اعتماد'),
     ]
 
     codename = models.CharField(max_length=100, unique=True, verbose_name='الكود')
