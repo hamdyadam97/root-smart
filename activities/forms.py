@@ -24,6 +24,7 @@ class ActivityForm(forms.ModelForm):
             'name', 'location', 'event_date', 'activity_type', 'target_audience',
             'region', 'accreditation_type', 'expected_attendees', 'trainer_name',
             'no_partner', 'partner_kind', 'partner_name', 'partner_share_percent',
+            'partner_contract_specs',
             'authorized_signatory', 'coordinator_name',
         ]
         widgets = {
@@ -44,6 +45,7 @@ class ActivityForm(forms.ModelForm):
             'partner_kind': forms.Select(attrs={'class': FORM_SELECT}),
             'partner_name': forms.TextInput(attrs={'class': FORM_CONTROL}),
             'partner_share_percent': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'max': 100, 'step': '0.01'}),
+            'partner_contract_specs': forms.Textarea(attrs={'class': FORM_CONTROL, 'rows': 3}),
             'authorized_signatory': forms.TextInput(attrs={'class': FORM_CONTROL}),
             'coordinator_name': forms.TextInput(attrs={'class': FORM_CONTROL}),
         }
@@ -66,6 +68,7 @@ class ActivityForm(forms.ModelForm):
             cleaned['partner_kind'] = ''
             cleaned['partner_name'] = ''
             cleaned['partner_share_percent'] = Decimal('0.00')
+            cleaned['partner_contract_specs'] = ''
         elif not cleaned.get('partner_share_percent'):
             self.add_error('partner_share_percent', 'أدخل نسبة الشريك أو المنسق من صافي الأرباح.')
         return cleaned
@@ -81,6 +84,7 @@ class FinancialAnalysisForm(forms.ModelForm):
             'expected_water', 'actual_water',
             'expected_hall', 'actual_hall',
             'expected_hospitality', 'actual_hospitality',
+            'expected_transport', 'actual_transport',
             'expected_certificates', 'actual_certificates',
             'expected_trainer_fee', 'actual_trainer_fee',
             'prepared_by', 'preparer_job_title', 'preparer_signature_date',
@@ -100,6 +104,8 @@ class FinancialAnalysisForm(forms.ModelForm):
             'actual_hall': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'expected_hospitality': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'actual_hospitality': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'expected_transport': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_transport': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'expected_certificates': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'actual_certificates': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'expected_trainer_fee': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
@@ -130,7 +136,7 @@ class FinalFinancialAnalysisForm(forms.ModelForm):
             'form_number', 'analysis_date',
             'trainee_count', 'fee_per_trainee',
             'actual_electricity', 'actual_water', 'actual_hall',
-            'actual_hospitality', 'actual_certificates', 'actual_trainer_fee',
+            'actual_hospitality', 'actual_transport', 'actual_certificates', 'actual_trainer_fee',
             'prepared_by', 'approval_name', 'approval_date',
         ]
         widgets = {
@@ -142,6 +148,7 @@ class FinalFinancialAnalysisForm(forms.ModelForm):
             'actual_water': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'actual_hall': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'actual_hospitality': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
+            'actual_transport': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'actual_certificates': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'actual_trainer_fee': forms.NumberInput(attrs={'class': FORM_CONTROL, 'min': 0, 'step': '0.01'}),
             'prepared_by': forms.TextInput(attrs={'class': FORM_CONTROL}),

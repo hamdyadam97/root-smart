@@ -137,6 +137,11 @@
                     <div id="profit-split-hint" class="form-text small text-primary fw-semibold"></div>
                     {% if form.partner_share_percent.errors %}<div class="text-danger small">{{ form.partner_share_percent.errors }}</div>{% endif %}
                 </div>
+                <div class="col-12 mb-3 partner-field">
+                    <label for="{{ form.partner_contract_specs.id_for_label }}" class="form-label">{{ form.partner_contract_specs.label }}</label>
+                    {{ form.partner_contract_specs }}
+                    {% if form.partner_contract_specs.errors %}<div class="text-danger small">{{ form.partner_contract_specs.errors }}</div>{% endif %}
+                </div>
                 <div class="col-md-6 mb-3">
                     <label for="{{ form.authorized_signatory.id_for_label }}" class="form-label">{{ form.authorized_signatory.label }} <span class="text-danger">*</span></label>
                     {{ form.authorized_signatory }}
@@ -162,7 +167,7 @@
 (function() {
     const noPartner = document.getElementById('{{ form.no_partner.id_for_label }}');
     if (!noPartner) return;
-    const partnerFields = document.querySelectorAll('.partner-field input, .partner-field select');
+    const partnerFields = document.querySelectorAll('.partner-field input, .partner-field select, .partner-field textarea');
     function togglePartnerFields() {
         partnerFields.forEach(function(el) {
             el.disabled = noPartner.checked;

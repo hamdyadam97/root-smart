@@ -102,6 +102,7 @@ class ActivityWorkflowTests(TestCase):
             'expected_water': '20', 'actual_water': '20',
             'expected_hall': '200', 'actual_hall': '200',
             'expected_hospitality': '150', 'actual_hospitality': '100',
+            'expected_transport': '40', 'actual_transport': '45',
             'expected_certificates': '75', 'actual_certificates': '80',
             'expected_trainer_fee': '500', 'actual_trainer_fee': '500',
             'prepared_by': 'محلل مالي',
@@ -290,21 +291,21 @@ class ActivityWorkflowTests(TestCase):
         self.assertEqual(financial.expected_total_revenue, Decimal('2500.00'))
         self.assertEqual(financial.actual_total_revenue, Decimal('2600.00'))
 
-        # التكاليف المتوقعة = 50+20+200+150+75+500 = 995
-        self.assertEqual(financial.expected_total_costs, Decimal('995.00'))
-        # التكاليف الفعلية = 60+20+200+100+80+500 = 960
-        self.assertEqual(financial.actual_total_costs, Decimal('960.00'))
+        # التكاليف المتوقعة = 50+20+200+150+40+75+500 = 1035
+        self.assertEqual(financial.expected_total_costs, Decimal('1035.00'))
+        # التكاليف الفعلية = 60+20+200+100+45+80+500 = 1005
+        self.assertEqual(financial.actual_total_costs, Decimal('1005.00'))
 
-        # صافي الربح المتوقع = 2500 - 995 = 1505
-        self.assertEqual(financial.expected_net_profit, Decimal('1505.00'))
-        # شريك 25%: 1505 × 0.25 = 376.25
-        self.assertEqual(financial.expected_partner_share, Decimal('376.25'))
-        self.assertEqual(financial.expected_company_share, Decimal('1128.75'))
+        # صافي الربح المتوقع = 2500 - 1035 = 1465
+        self.assertEqual(financial.expected_net_profit, Decimal('1465.00'))
+        # شريك 25%: 1465 × 0.25 = 366.25
+        self.assertEqual(financial.expected_partner_share, Decimal('366.25'))
+        self.assertEqual(financial.expected_company_share, Decimal('1098.75'))
 
-        # صافي الربح الفعلي = 2600 - 960 = 1640
-        self.assertEqual(financial.actual_net_profit, Decimal('1640.00'))
-        self.assertEqual(financial.actual_partner_share, Decimal('410.00'))
-        self.assertEqual(financial.actual_company_share, Decimal('1230.00'))
+        # صافي الربح الفعلي = 2600 - 1005 = 1595
+        self.assertEqual(financial.actual_net_profit, Decimal('1595.00'))
+        self.assertEqual(financial.actual_partner_share, Decimal('398.75'))
+        self.assertEqual(financial.actual_company_share, Decimal('1196.25'))
 
     def test_financial_no_partner_gives_company_full_share(self):
         activity = self._create_contract()  # no_partner=True
@@ -411,7 +412,7 @@ class ActivityWorkflowTests(TestCase):
             'trainee_count': 20,
             'fee_per_trainee': '100.00',
             'actual_electricity': '60', 'actual_water': '20', 'actual_hall': '200',
-            'actual_hospitality': '100', 'actual_certificates': '80', 'actual_trainer_fee': '500',
+            'actual_hospitality': '100', 'actual_transport': '45', 'actual_certificates': '80', 'actual_trainer_fee': '500',
             'prepared_by': 'Emp Loyee',
             'approval_name': 'د. عبدالله',
         }
@@ -442,12 +443,12 @@ class ActivityWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         final = FinalFinancialAnalysis.objects.get(activity=activity)
         self.assertEqual(final.created_by, self.employee)
-        # إيرادات = 20 × 100 = 2000؛ تكاليف = 60+20+200+100+80+500 = 960
+        # إيرادات = 20 × 100 = 2000؛ تكاليف = 60+20+200+100+45+80+500 = 1005
         self.assertEqual(final.total_revenue, Decimal('2000.00'))
-        self.assertEqual(final.total_costs, Decimal('960.00'))
-        self.assertEqual(final.net_profit, Decimal('1040.00'))
+        self.assertEqual(final.total_costs, Decimal('1005.00'))
+        self.assertEqual(final.net_profit, Decimal('995.00'))
         # لا يوجد شريك — الشركة كامل الصافي
-        self.assertEqual(final.company_share, Decimal('1040.00'))
+        self.assertEqual(final.company_share, Decimal('995.00'))
         self.assertEqual(final.partner_share, Decimal('0.00'))
 
         # الاعتماد بصلاحية «اعتماد» الخاصة بالمدير
@@ -475,6 +476,6 @@ class ActivityWorkflowTests(TestCase):
         self._create_and_approve_coordination(activity)
         self.employee_client.post(reverse('final-create', args=[activity.pk]), self._final_payload())
         final = FinalFinancialAnalysis.objects.get(activity=activity)
-        # صافي 1040 — شريك 25% = 260
-        self.assertEqual(final.partner_share, Decimal('260.00'))
-        self.assertEqual(final.company_share, Decimal('780.00'))
+        # صافي 995 — شريك 25% = 248.75
+        self.assertEqual(final.partner_share, Decimal('248.75'))
+        self.assertEqual(final.company_share, Decimal('746.25'))

@@ -147,6 +147,9 @@ class Activity(ActivityStageBase):
         max_digits=5, decimal_places=2, default=Decimal('0.00'),
         verbose_name='نسبة الشريك أو المنسق من صافي الأرباح (%)'
     )
+    partner_contract_specs = models.TextField(
+        blank=True, verbose_name='مواصفات العقد مع الشريك'
+    )
     authorized_signatory = models.CharField(max_length=255, verbose_name='اسم المفوض بالتوقيع')
     coordinator_name = models.CharField(max_length=255, verbose_name='اسم منسق النشاط')
     signatory_name = models.CharField(max_length=255, blank=True, verbose_name='اسم الموقّع')
@@ -219,6 +222,8 @@ class FinancialAnalysis(ActivityStageBase):
     actual_hall = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل استخدام القاعة الفعلي (دينار)')
     expected_hospitality = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل الضيافة المتوقع (دينار)')
     actual_hospitality = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل الضيافة الفعلي (دينار)')
+    expected_transport = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل المواصلات المتوقع (دينار)')
+    actual_transport = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل المواصلات الفعلي (دينار)')
     expected_certificates = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='تكاليف الشهادات المتوقعة (دينار)')
     actual_certificates = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='تكاليف الشهادات الفعلية (دينار)')
     expected_trainer_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='أجرة المدرب المتوقعة (دينار)')
@@ -277,11 +282,13 @@ class FinancialAnalysis(ActivityStageBase):
 
         expected_costs = (
             self.expected_electricity + self.expected_water + self.expected_hall +
-            self.expected_hospitality + self.expected_certificates + self.expected_trainer_fee
+            self.expected_hospitality + self.expected_transport + self.expected_certificates +
+            self.expected_trainer_fee
         )
         actual_costs = (
             self.actual_electricity + self.actual_water + self.actual_hall +
-            self.actual_hospitality + self.actual_certificates + self.actual_trainer_fee
+            self.actual_hospitality + self.actual_transport + self.actual_certificates +
+            self.actual_trainer_fee
         )
         self.expected_total_costs = self._q(expected_costs)
         self.actual_total_costs = self._q(actual_costs)
@@ -382,6 +389,7 @@ class FinalFinancialAnalysis(ActivityStageBase):
     actual_water = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل المياه الفعلي (دينار)')
     actual_hall = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل استخدام القاعة الفعلي (دينار)')
     actual_hospitality = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل الضيافة الفعلي (دينار)')
+    actual_transport = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='بدل المواصلات الفعلي (دينار)')
     actual_certificates = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='تكاليف الشهادات الفعلية (دينار)')
     actual_trainer_fee = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='أجرة المدرب الفعلية (دينار)')
     total_costs = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), verbose_name='إجمالي التكاليف الفعلية (دينار)')
@@ -415,7 +423,8 @@ class FinalFinancialAnalysis(ActivityStageBase):
         self.total_revenue = FinancialAnalysis._q((self.trainee_count or 0) * (self.fee_per_trainee or 0))
         self.total_costs = FinancialAnalysis._q(
             self.actual_electricity + self.actual_water + self.actual_hall +
-            self.actual_hospitality + self.actual_certificates + self.actual_trainer_fee
+            self.actual_hospitality + self.actual_transport + self.actual_certificates +
+            self.actual_trainer_fee
         )
         self.net_profit = FinancialAnalysis._q(self.total_revenue - self.total_costs)
 

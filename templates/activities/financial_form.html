@@ -97,6 +97,11 @@
                             <td>{{ form.actual_hospitality }}{% if form.actual_hospitality.errors %}<div class="text-danger small">{{ form.actual_hospitality.errors }}</div>{% endif %}</td>
                         </tr>
                         <tr>
+                            <td>{{ form.expected_transport.label }}</td>
+                            <td>{{ form.expected_transport }}{% if form.expected_transport.errors %}<div class="text-danger small">{{ form.expected_transport.errors }}</div>{% endif %}</td>
+                            <td>{{ form.actual_transport }}{% if form.actual_transport.errors %}<div class="text-danger small">{{ form.actual_transport.errors }}</div>{% endif %}</td>
+                        </tr>
+                        <tr>
                             <td>{{ form.expected_certificates.label }}</td>
                             <td>{{ form.expected_certificates }}{% if form.expected_certificates.errors %}<div class="text-danger small">{{ form.expected_certificates.errors }}</div>{% endif %}</td>
                             <td>{{ form.actual_certificates }}{% if form.actual_certificates.errors %}<div class="text-danger small">{{ form.actual_certificates.errors }}</div>{% endif %}</td>
@@ -188,8 +193,8 @@
         const revExp = traineeCount * fee;
         const revAct = num('{{ form.actual_trainee_fees.id_for_label }}');
 
-        const costExpFields = ['{{ form.expected_electricity.id_for_label }}', '{{ form.expected_water.id_for_label }}', '{{ form.expected_hall.id_for_label }}', '{{ form.expected_hospitality.id_for_label }}', '{{ form.expected_certificates.id_for_label }}', '{{ form.expected_trainer_fee.id_for_label }}'];
-        const costActFields = ['{{ form.actual_electricity.id_for_label }}', '{{ form.actual_water.id_for_label }}', '{{ form.actual_hall.id_for_label }}', '{{ form.actual_hospitality.id_for_label }}', '{{ form.actual_certificates.id_for_label }}', '{{ form.actual_trainer_fee.id_for_label }}'];
+        const costExpFields = ['{{ form.expected_electricity.id_for_label }}', '{{ form.expected_water.id_for_label }}', '{{ form.expected_hall.id_for_label }}', '{{ form.expected_hospitality.id_for_label }}', '{{ form.expected_transport.id_for_label }}', '{{ form.expected_certificates.id_for_label }}', '{{ form.expected_trainer_fee.id_for_label }}'];
+        const costActFields = ['{{ form.actual_electricity.id_for_label }}', '{{ form.actual_water.id_for_label }}', '{{ form.actual_hall.id_for_label }}', '{{ form.actual_hospitality.id_for_label }}', '{{ form.actual_transport.id_for_label }}', '{{ form.actual_certificates.id_for_label }}', '{{ form.actual_trainer_fee.id_for_label }}'];
         const costExp = costExpFields.reduce(function(s, id) { return s + num(id); }, 0);
         const costAct = costActFields.reduce(function(s, id) { return s + num(id); }, 0);
 

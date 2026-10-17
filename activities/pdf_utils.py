@@ -491,6 +491,8 @@ def build_activity_pdf(activity):
             ('اسم المفوض بالتوقيع', activity.authorized_signatory, None),
             ('اسم منسق النشاط', activity.coordinator_name, None),
         ]
+        if activity.partner_contract_specs:
+            partner_cards.append(('مواصفات العقد مع الشريك', activity.partner_contract_specs, None))
     story.append(_cards_grid(partner_cards, styles))
     story.append(Spacer(1, 5 * mm))
 
@@ -544,6 +546,7 @@ def build_financial_pdf(analysis):
         ('بدل المياه', analysis.expected_water, analysis.actual_water, False),
         ('بدل استخدام القاعة', analysis.expected_hall, analysis.actual_hall, False),
         ('بدل الضيافة', analysis.expected_hospitality, analysis.actual_hospitality, False),
+        ('بدل المواصلات', analysis.expected_transport, analysis.actual_transport, False),
         ('تكاليف الشهادات', analysis.expected_certificates, analysis.actual_certificates, False),
         ('أجرة المدرب', analysis.expected_trainer_fee, analysis.actual_trainer_fee, False),
         ('إجمالي التكاليف', analysis.expected_total_costs, analysis.actual_total_costs, True),
@@ -686,6 +689,7 @@ def build_final_pdf(final):
         ('بدل المياه', final.actual_water, False),
         ('بدل استخدام القاعة', final.actual_hall, False),
         ('بدل الضيافة', final.actual_hospitality, False),
+        ('بدل المواصلات', final.actual_transport, False),
         ('تكاليف الشهادات', final.actual_certificates, False),
         ('أجرة المدرب', final.actual_trainer_fee, False),
         ('إجمالي التكاليف', final.total_costs, True),

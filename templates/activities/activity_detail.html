@@ -85,6 +85,7 @@
             <div class="col-md-4 mb-2"><strong>صفة الشريك:</strong> {{ activity.get_partner_kind_display|default:'-' }}</div>
             <div class="col-md-4 mb-2"><strong>اسم الشريك:</strong> {{ activity.partner_name }}</div>
             <div class="col-md-4 mb-2"><strong>نسبة الشريك من صافي الأرباح:</strong> {{ activity.partner_share_percent }}%</div>
+            <div class="col-12 mb-2"><strong>مواصفات العقد مع الشريك:</strong> {{ activity.partner_contract_specs|linebreaksbr|default:'—' }}</div>
             {% endif %}
             <div class="col-md-4 mb-2"><strong>اسم المفوض بالتوقيع:</strong> {{ activity.authorized_signatory }}</div>
             <div class="col-md-4 mb-2"><strong>اسم منسق النشاط:</strong> {{ activity.coordinator_name }}</div>
@@ -131,6 +132,7 @@
                     <tr><td>بدل المياه</td><td>{{ financial.expected_water }}</td><td>{{ financial.actual_water }}</td></tr>
                     <tr><td>بدل استخدام القاعة</td><td>{{ financial.expected_hall }}</td><td>{{ financial.actual_hall }}</td></tr>
                     <tr><td>بدل الضيافة</td><td>{{ financial.expected_hospitality }}</td><td>{{ financial.actual_hospitality }}</td></tr>
+                    <tr><td>بدل المواصلات</td><td>{{ financial.expected_transport }}</td><td>{{ financial.actual_transport }}</td></tr>
                     <tr><td>تكاليف الشهادات</td><td>{{ financial.expected_certificates }}</td><td>{{ financial.actual_certificates }}</td></tr>
                     <tr><td>أجرة المدرب</td><td>{{ financial.expected_trainer_fee }}</td><td>{{ financial.actual_trainer_fee }}</td></tr>
                     <tr class="fw-bold"><td>إجمالي التكاليف</td><td>{{ financial.expected_total_costs }}</td><td>{{ financial.actual_total_costs }}</td></tr>
