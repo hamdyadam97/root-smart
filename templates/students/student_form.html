@@ -103,6 +103,15 @@
                     {{ form.preferred_contact }}
                     {% if form.preferred_contact.errors %}<div class="text-danger small">{{ form.preferred_contact.errors }}</div>{% endif %}
                 </div>
+                <div class="col-12 mb-3">
+                    <label for="{{ form.activities.id_for_label }}" class="form-label">{{ form.activities.label }}</label>
+                    {{ form.activities }}
+                    {% if form.activities.errors %}<div class="text-danger small">{{ form.activities.errors }}</div>{% endif %}
+                    <div class="form-text">اختر نشاطاً واحداً أو أكثر (اضغط Ctrl أثناء الاختيار لتحديد أكثر من نشاط).</div>
+                    {% if not form.activities.field.queryset %}
+                    <div class="form-text text-warning">لا توجد أنشطة متاحة لحسابك — تحتاج صلاحية عرض الأنشطة على الفرع.</div>
+                    {% endif %}
+                </div>
             </div>
             <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
         </form>

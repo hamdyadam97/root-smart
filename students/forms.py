@@ -1,5 +1,6 @@
 from django import forms
 from .models import Contact, Student
+from activities.models import Activity
 
 
 class StudentForm(forms.ModelForm):
@@ -14,6 +15,7 @@ class StudentForm(forms.ModelForm):
                 self.fields['branch'].queryset = Branch.objects.filter(pk__in=[b.pk for b in allowed]).order_by('code', 'name')
         else:
             self.fields['branch'].queryset = Branch.objects.all().order_by('code', 'name')
+        self._set_activities_queryset(user)
         if self.instance and self.instance.pk:
             contact = self.instance.contact
             self.fields['first_name'].initial = contact.first_name
@@ -31,6 +33,21 @@ class StudentForm(forms.ModelForm):
             self.fields['birth_location'].initial = contact.birth_location
             self.fields['qualification'].initial = contact.qualification
             self.fields['photo'].initial = contact.photo
+            from activities.models import ActivityEnrollment
+            self.fields['activities'].initial = ActivityEnrollment.objects.filter(
+                student=self.instance
+            ).values_list('activity_id', flat=True)
+
+    def _set_activities_queryset(self, user):
+        """أنشطة يمكن إسناد الطالب إليها — حسب صلاحية عرض الأنشطة للمستخدم."""
+        qs = Activity.objects.select_related('branch').order_by('-event_date', '-created_at')
+        if user is not None and not user.is_executive():
+            allowed = [b.pk for b in user.get_branches_for_perm('view_activity')]
+            qs = qs.filter(branch__pk__in=allowed)
+        self.fields['activities'].queryset = qs
+        self.fields['activities'].label_from_instance = (
+            lambda a: f'{a.name} — {a.branch} ({a.event_date})'
+        )
 
     # Contact fields
     first_name = forms.CharField(
@@ -92,6 +109,10 @@ class StudentForm(forms.ModelForm):
     photo = forms.ImageField(
         required=False, label='الصورة',
         widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
+    )
+    activities = forms.ModelMultipleChoiceField(
+        queryset=Activity.objects.none(), required=False, label='الأنشطة',
+        widget=forms.SelectMultiple(attrs={'class': 'form-select', 'size': '6'})
     )
 
     class Meta:

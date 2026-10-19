@@ -25,6 +25,9 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-pane" type="button" role="tab">الإعدادات</button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activities-tab" data-bs-toggle="tab" data-bs-target="#activities-pane" type="button" role="tab">الأنشطة</button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="studentTabContent">
@@ -128,6 +131,18 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="tab-pane fade" id="activities-pane" role="tabpanel">
+                            <label class="form-label">الأنشطة <small class="text-muted">(اختر واحداً أو أكثر — اضغط Ctrl للتحديد المتعدد)</small></label>
+                            <select name="activities" id="s_activities" class="form-select" multiple size="9">
+                                {% for activity in activity_options %}
+                                <option value="{{ activity.id }}">{{ activity.name }} — {{ activity.branch }} ({{ activity.event_date|date:'Y-m-d' }})</option>
+                                {% endfor %}
+                            </select>
+                            {% if not activity_options %}
+                            <small class="text-muted">لا توجد أنشطة متاحة لحسابك — تحتاج صلاحية عرض الأنشطة على الفرع.</small>
+                            {% endif %}
+                        </div>
                     </div>
                 </form>
             </div>
@@ -152,6 +167,26 @@
     const btnText = document.getElementById('studentBtnText');
     const alertBox = document.getElementById('studentAlert');
     const modalTitle = document.getElementById('studentModalTitle');
+    const activitiesSelect = document.getElementById('s_activities');
+
+    function clearActivities() {
+        if (!activitiesSelect) return;
+        for (const opt of activitiesSelect.options) opt.selected = false;
+    }
+
+    function loadStudentActivities(id) {
+        if (!activitiesSelect) return;
+        clearActivities();
+        fetch('/students/ajax/' + id + '/activities/')
+            .then(r => r.json())
+            .then(data => {
+                const ids = (data.activity_ids || []).map(Number);
+                for (const opt of activitiesSelect.options) {
+                    opt.selected = ids.includes(Number(opt.value));
+                }
+            })
+            .catch(() => {});
+    }
 
     function showAlert(message, type) {
         alertBox.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
@@ -189,10 +224,12 @@
             document.getElementById('s_branch').value = branchId || '';
             document.getElementById('s_level').value = level || 'مبتدئ';
             document.getElementById('s_preferred_contact').value = preferredContact || 'whatsapp';
+            loadStudentActivities(id);
             modalTitle.innerHTML = '<i class="bi bi-pencil-square text-primary me-2"></i> تعديل طالب';
         } else {
             studentId.value = '';
             document.getElementById('s_branch').value = '';
+            clearActivities();
             modalTitle.innerHTML = '<i class="bi bi-person-plus text-primary me-2"></i> طالب جديد';
         }
         new bootstrap.Modal(studentModal).show();

@@ -13,6 +13,33 @@ from .models import Contact, Student
 from .forms import StudentForm
 
 
+def _activity_options(user):
+    """الأنشطة المتاحة لاختيارها في نماذج الطالب — حسب صلاحية العرض."""
+    from activities.models import Activity
+    qs = Activity.objects.select_related('branch').order_by('-event_date', '-created_at')
+    if not user.is_executive():
+        allowed = [b.pk for b in user.get_branches_for_perm('view_activity')]
+        qs = qs.filter(branch__pk__in=allowed)
+    return qs
+
+
+def _sync_student_activities(student, form, user):
+    """مزامنة اشتراكات الطالب في الأنشطة المحددة بنموذج الطالب.
+    لا تلمس الاشتراكات خارج نطاق الأنشطة المتاحة في النموذج."""
+    from activities.models import ActivityEnrollment
+    activities = form.cleaned_data.get('activities')
+    if activities is None:
+        return
+    allowed_qs = form.fields['activities'].queryset
+    student.activity_enrollments.filter(
+        activity__in=allowed_qs
+    ).exclude(activity__in=activities).delete()
+    for activity in activities:
+        ActivityEnrollment.objects.get_or_create(
+            activity=activity, student=student, defaults={'created_by': user}
+        )
+
+
 def _apply_student_filters(queryset, params):
     """Apply shared filter logic for Student list and export."""
     search = params.get('search')
@@ -53,6 +80,7 @@ class StudentListView(BranchPermissionMixin, ListView):
             context['branches'] = Branch.objects.all().order_by('code', 'name')
         else:
             context['branches'] = Branch.objects.filter(pk__in=allowed_ids).order_by('code', 'name')
+        context['activity_options'] = _activity_options(self.request.user)
         return context
 
 
@@ -81,6 +109,7 @@ class StudentDetailView(BranchPermissionMixin, DetailView):
             activity_branch_ids = [b.pk for b in self.request.user.get_branches_for_perm('view_activity')]
             enrollments = enrollments.filter(activity__branch__pk__in=activity_branch_ids)
         context['activity_enrollments'] = enrollments
+        context['activity_options'] = _activity_options(self.request.user)
         return context
 
 
@@ -117,7 +146,9 @@ class StudentCreateView(BranchPermissionMixin, CreateView):
         }
         contact = Contact.objects.create(**contact_data)
         form.instance.contact = contact
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        _sync_student_activities(self.object, form, self.request.user)
+        return response
 
 
 class StudentUpdateView(BranchPermissionMixin, UpdateView):
@@ -153,7 +184,9 @@ class StudentUpdateView(BranchPermissionMixin, UpdateView):
         contact.qualification = form.cleaned_data['qualification']
         contact.photo = form.cleaned_data['photo']
         contact.save()
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        _sync_student_activities(self.object, form, self.request.user)
+        return response
 
 
 class StudentDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView):
@@ -196,6 +229,7 @@ def student_create_ajax(request):
             level=form.cleaned_data['level'],
             preferred_contact=form.cleaned_data['preferred_contact']
         )
+        _sync_student_activities(student, form, request.user)
         return JsonResponse({'success': True, 'message': 'تم إنشاء الطالب بنجاح', 'id': student.id, 'slug': student.slug})
     return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
@@ -228,8 +262,20 @@ def student_update_ajax(request, pk):
         student.level = form.cleaned_data['level']
         student.preferred_contact = form.cleaned_data['preferred_contact']
         student.save()
+        _sync_student_activities(student, form, request.user)
         return JsonResponse({'success': True, 'message': 'تم تحديث الطالب بنجاح'})
     return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+
+@login_required
+def student_activities_ajax(request, pk):
+    """أنشطة الطالب الحالية (JSON) — لملء الاختيارات عند تعديل الطالب من المودال."""
+    from activities.models import ActivityEnrollment
+    student = get_object_or_404(Student, pk=pk)
+    if not request.user.has_perm('view_student', branch=student.branch):
+        return JsonResponse({'error': 'غير مسموح لك دخول هنا'}, status=403)
+    ids = list(ActivityEnrollment.objects.filter(student=student).values_list('activity_id', flat=True))
+    return JsonResponse({'activity_ids': ids})
 
 
 # ============================================================
