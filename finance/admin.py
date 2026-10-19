@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Payment, PaymentOut, Deposit, Withdraw, BillBuyType, BillBuy, Offer, Call
+from .models import (
+    Payment, PaymentOut, Deposit, Withdraw, BillBuyType, BillBuy, Offer, Call,
+    DisbursementRequest, DisbursementDetail,
+)
 
 
 @admin.register(Payment)
@@ -58,3 +61,16 @@ class OfferAdmin(admin.ModelAdmin):
 class CallAdmin(admin.ModelAdmin):
     list_display = ['offer', 'person', 'call_type', 'duration', 'created_at']
     list_filter = ['call_type', 'created_at']
+
+
+class DisbursementDetailInline(admin.TabularInline):
+    model = DisbursementDetail
+    extra = 1
+
+
+@admin.register(DisbursementRequest)
+class DisbursementRequestAdmin(admin.ModelAdmin):
+    list_display = ['request_number', 'entity_name', 'amount_number', 'payment_method', 'requester_name', 'status', 'date']
+    list_filter = ['status', 'payment_method', 'date']
+    search_fields = ['request_number', 'entity_name', 'requester_name']
+    inlines = [DisbursementDetailInline]

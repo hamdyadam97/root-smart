@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}تعديل إذن صرف{% else %}إذن صرف جديد{% endif %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{% if object %}<i class="bi bi-pencil"></i> تعديل إذن صرف رقم {{ object.request_number }}{% else %}<i class="bi bi-plus-lg"></i> إذن صرف جديد{% endif %}</h2>
+    <a href="{% if object %}{% url 'disbursement-detail' object.pk %}{% else %}{% url 'disbursement-list' %}{% endif %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- بيانات الطلب -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-file-text"></i> بيانات إذن الصرف</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.entity_name.id_for_label }}" class="form-label">{{ form.entity_name.label }} <span class="text-danger">*</span></label>
+                    {{ form.entity_name }}
+                    {% if form.entity_name.errors %}<div class="text-danger small">{{ form.entity_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.subject.id_for_label }}" class="form-label">{{ form.subject.label }}</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}<div class="text-danger small">{{ form.subject.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }}</label>
+                    {{ form.date }}
+                    {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.payment_method.id_for_label }}" class="form-label">{{ form.payment_method.label }}</label>
+                    {{ form.payment_method }}
+                    {% if form.payment_method.errors %}<div class="text-danger small">{{ form.payment_method.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.amount_number.id_for_label }}" class="form-label">{{ form.amount_number.label }} <span class="text-danger">*</span></label>
+                    {{ form.amount_number }}
+                    {% if form.amount_number.errors %}<div class="text-danger small">{{ form.amount_number.errors }}</div>{% endif %}
+                    <div class="form-text">يُجمع تلقائياً من تفصيلات المبالغ بالأسفل، ويمكن تعديله يدوياً.</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.amount_string.id_for_label }}" class="form-label">{{ form.amount_string.label }}</label>
+                    {{ form.amount_string }}
+                    {% if form.amount_string.errors %}<div class="text-danger small">{{ form.amount_string.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.reason.id_for_label }}" class="form-label">{{ form.reason.label }} <span class="text-danger">*</span></label>
+                    {{ form.reason }}
+                    {% if form.reason.errors %}<div class="text-danger small">{{ form.reason.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="{{ form.purpose.id_for_label }}" class="form-label">{{ form.purpose.label }} <span class="text-danger">*</span></label>
+                    {{ form.purpose }}
+                    {% if form.purpose.errors %}<div class="text-danger small">{{ form.purpose.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تفصيلات المبالغ -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul"></i> تفصيلات المبالغ — يمكن أن يحتوي إذن الصرف على أكثر من مبلغ</span>
+            <button type="button" id="addDetailBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> إضافة مبلغ</button>
+        </div>
+        <div class="card-body">
+            {{ details.management_form }}
+            {% if details.non_form_errors %}<div class="alert alert-danger">{{ details.non_form_errors }}</div>{% endif %}
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" id="detailsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>البيان</th>
+                            <th style="width: 220px;">المبلغ (دينار)</th>
+                            <th style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail_form in details.forms %}
+                        <tr class="detail-row">
+                            <td>
+                                {{ detail_form.id }}
+                                <span style="display:none;">{{ detail_form.DELETE }}</span>
+                                {{ detail_form.description }}
+                                {% if detail_form.description.errors %}<div class="text-danger small">{{ detail_form.description.errors }}</div>{% endif %}
+                            </td>
+                            <td>
+                                {{ detail_form.amount }}
+                                {% if detail_form.amount.errors %}<div class="text-danger small">{{ detail_form.amount.errors }}</div>{% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- قالب الصف الفارغ لإضافة صفوف جديدة -->
+            <div style="display:none;">
+                <table>
+                    <tbody>
+                        <tr class="detail-row" id="emptyDetailRow">
+                            <td>
+                                {{ details.empty_form.id }}
+                                <span style="display:none;">{{ details.empty_form.DELETE }}</span>
+                                {{ details.empty_form.description }}
+                            </td>
+                            <td>{{ details.empty_form.amount }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- طالب الصرف -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-person"></i> طالب الصرف</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.requester_name.id_for_label }}" class="form-label">{{ form.requester_name.label }} <span class="text-danger">*</span></label>
+                    {{ form.requester_name }}
+                    {% if form.requester_name.errors %}<div class="text-danger small">{{ form.requester_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.requester_job_title.id_for_label }}" class="form-label">{{ form.requester_job_title.label }} <span class="text-danger">*</span></label>
+                    {{ form.requester_job_title }}
+                    {% if form.requester_job_title.errors %}<div class="text-danger small">{{ form.requester_job_title.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.requester_signed_name.id_for_label }}" class="form-label">{{ form.requester_signed_name.label }}</label>
+                    {{ form.requester_signed_name }}
+                    {% if form.requester_signed_name.errors %}<div class="text-danger small">{{ form.requester_signed_name.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- اعتماد المسؤول المباشر -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-person-check"></i> اعتماد المسؤول المباشر</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.supervisor_name.id_for_label }}" class="form-label">{{ form.supervisor_name.label }}</label>
+                    {{ form.supervisor_name }}
+                    {% if form.supervisor_name.errors %}<div class="text-danger small">{{ form.supervisor_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.supervisor_signed_name.id_for_label }}" class="form-label">{{ form.supervisor_signed_name.label }}</label>
+                    {{ form.supervisor_signed_name }}
+                    {% if form.supervisor_signed_name.errors %}<div class="text-danger small">{{ form.supervisor_signed_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.supervisor_signature_date.id_for_label }}" class="form-label">{{ form.supervisor_signature_date.label }}</label>
+                    {{ form.supervisor_signature_date }}
+                    {% if form.supervisor_signature_date.errors %}<div class="text-danger small">{{ form.supervisor_signature_date.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تنفيذ الصرف -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-cash"></i> تنفيذ الصرف</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.disbursed_date.id_for_label }}" class="form-label">{{ form.disbursed_date.label }}</label>
+                    {{ form.disbursed_date }}
+                    {% if form.disbursed_date.errors %}<div class="text-danger small">{{ form.disbursed_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.disbursed_by_name.id_for_label }}" class="form-label">{{ form.disbursed_by_name.label }}</label>
+                    {{ form.disbursed_by_name }}
+                    {% if form.disbursed_by_name.errors %}<div class="text-danger small">{{ form.disbursed_by_name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="{{ form.disbursed_signed_name.id_for_label }}" class="form-label">{{ form.disbursed_signed_name.label }}</label>
+                    {{ form.disbursed_signed_name }}
+                    {% if form.disbursed_signed_name.errors %}<div class="text-danger small">{{ form.disbursed_signed_name.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ملاحظات -->
+    <div class="card mb-4">
+        <div class="card-header"><i class="bi bi-sticky"></i> ملاحظات</div>
+        <div class="card-body">
+            {{ form.notes }}
+            {% if form.notes.errors %}<div class="text-danger small">{{ form.notes.errors }}</div>{% endif %}
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> حفظ</button>
+    <a href="{% if object %}{% url 'disbursement-detail' object.pk %}{% else %}{% url 'disbursement-list' %}{% endif %}" class="btn btn-secondary">إلغاء</a>
+</form>
+
+<script>
+(function() {
+    var totalFormsInput = document.getElementById('id_details-TOTAL_FORMS');
+    var tbody = document.querySelector('#detailsTable tbody');
+    var emptyRow = document.getElementById('emptyDetailRow');
+    var amountTotalInput = document.getElementById('id_amount_number');
+
+    function getTotalForms() {
+        return parseInt(totalFormsInput.value, 10) || 0;
+    }
+
+    document.getElementById('addDetailBtn').addEventListener('click', function() {
+        var count = getTotalForms();
+        var newRow = emptyRow.cloneNode(true);
+        newRow.removeAttribute('id');
+        newRow.innerHTML = newRow.innerHTML.replace(/__prefix__/g, count);
+        tbody.appendChild(newRow);
+        totalFormsInput.value = count + 1;
+    });
+
+    tbody.addEventListener('click', function(e) {
+        var btn = e.target.closest('.remove-row');
+        if (!btn) return;
+        var row = btn.closest('tr');
+        var del = row.querySelector('input[name$="-DELETE"]');
+        if (del) del.checked = true;
+        row.style.display = 'none';
+        updateTotal();
+    });
+
+    function updateTotal() {
+        if (!amountTotalInput) return;
+        var sum = 0;
+        tbody.querySelectorAll('.detail-row').forEach(function(row) {
+            if (row.style.display === 'none') return;
+            var del = row.querySelector('input[name$="-DELETE"]');
+            if (del && del.checked) return;
+            var amt = row.querySelector('.detail-amount');
+            if (amt && amt.value) sum += parseFloat(amt.value) || 0;
+        });
+        amountTotalInput.value = sum.toFixed(2);
+    }
+
+    tbody.addEventListener('input', function(e) {
+        if (e.target.classList.contains('detail-amount')) updateTotal();
+    });
+})();
+</script>
+{% endblock %}

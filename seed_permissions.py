@@ -117,6 +117,12 @@ PERMISSIONS_DATA = [
     ('change_call', 'تعديل مكالمة', 'finance', 'call', 'change'),
     ('delete_call', 'حذف مكالمة', 'finance', 'call', 'delete'),
 
+    ('view_disbursementrequest', 'عرض أذونات الصرف', 'finance', 'disbursementrequest', 'view'),
+    ('add_disbursementrequest', 'إضافة إذن صرف', 'finance', 'disbursementrequest', 'add'),
+    ('change_disbursementrequest', 'تعديل إذن صرف', 'finance', 'disbursementrequest', 'change'),
+    ('delete_disbursementrequest', 'حذف إذن صرف', 'finance', 'disbursementrequest', 'delete'),
+    ('approve_disbursementrequest', 'اعتماد إذن صرف', 'finance', 'disbursementrequest', 'approve'),
+
     # --- registrations ---
     ('view_registration', 'عرض التسجيلات', 'registrations', 'account', 'view'),
     ('add_registration', 'إضافة تسجيل', 'registrations', 'account', 'add'),

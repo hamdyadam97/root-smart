@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load permission_tags %}
+
+{% block title %}إذن صرف {{ disbursement.request_number }}{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h2><i class="bi bi-cash-coin"></i> إذن صرف رقم {{ disbursement.request_number }}</h2>
+        <p class="text-muted mb-0">الموضوع: {{ disbursement.subject }} | الجهة: {{ disbursement.entity_name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if can_edit and disbursement.is_editable %}
+        <a href="{% url 'disbursement-update' disbursement.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'disbursement-delete' disbursement.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i> مسح</a>
+        {% endif %}
+        <a href="{% url 'disbursement-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع للقائمة</a>
+    </div>
+</div>
+
+{% if disbursement.rejection_reason and disbursement.status == 'rejected' %}
+<div class="alert alert-danger mt-3">
+    <strong><i class="bi bi-x-circle"></i> سبب الرفض:</strong> {{ disbursement.rejection_reason }}
+</div>
+{% endif %}
+
+<!-- حالة الاعتماد -->
+<div class="card mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="badge {{ disbursement.status_badge_class }} fs-6 p-2">{{ disbursement.get_status_display }}</span>
+            {% if disbursement.approved_by %}
+            <span class="text-muted ms-2">اعتمدها {{ disbursement.approved_by.get_full_name|default:disbursement.approved_by }} بتاريخ {{ disbursement.approved_at|date:'Y-m-d H:i' }}</span>
+            {% endif %}
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if can_edit and disbursement.is_editable and disbursement.status != 'rejected' %}
+            <form method="post" action="{% url 'disbursement-transition' disbursement.pk 'submit' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-send"></i> إرسال للاعتماد</button>
+            </form>
+            {% endif %}
+            {% if can_approve and disbursement.status == 'pending' %}
+            <form method="post" action="{% url 'disbursement-transition' disbursement.pk 'approve' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> اعتماد</button>
+            </form>
+            <form method="post" action="{% url 'disbursement-transition' disbursement.pk 'reject' %}" class="d-inline-flex align-items-center gap-1">
+                {% csrf_token %}
+                <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="سبب الرفض" required style="max-width: 200px;">
+                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-x-lg"></i> رفض</button>
+            </form>
+            {% endif %}
+            {% if can_edit and disbursement.status == 'rejected' %}
+            <form method="post" action="{% url 'disbursement-transition' disbursement.pk 'reopen' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-warning"><i class="bi bi-arrow-counterclockwise"></i> إعادة فتح كمسودة</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- بيانات الطلب -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-file-text"></i> بيانات إذن الصرف</div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>رقم الطلب:</strong> {{ disbursement.request_number }}</div>
+            <div class="col-md-4 mb-2"><strong>التاريخ:</strong> {{ disbursement.date|date:'Y-m-d H:i' }}</div>
+            <div class="col-md-4 mb-2"><strong>اسم الجهة:</strong> {{ disbursement.entity_name }}</div>
+            <div class="col-md-4 mb-2"><strong>الموضوع:</strong> {{ disbursement.subject }}</div>
+            <div class="col-md-4 mb-2"><strong>طريقة الصرف:</strong> {{ disbursement.get_payment_method_display }}</div>
+            <div class="col-md-4 mb-2"><strong>المبلغ رقماً:</strong> {{ disbursement.amount_number }} دينار أردني</div>
+            <div class="col-12 mb-2"><strong>المبلغ كتابةً:</strong> {{ disbursement.amount_string|default:'—' }}</div>
+            <div class="col-12 mb-2"><strong>سبب طلب المبلغ:</strong> {{ disbursement.reason|linebreaksbr }}</div>
+            <div class="col-12 mb-2"><strong>الغرض من الطلب:</strong> {{ disbursement.purpose|linebreaksbr }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- تفصيلات المبالغ -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-list-ul"></i> تفصيلات المبالغ</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>البيان</th>
+                        <th>المبلغ (دينار)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in disbursement.details.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ detail.description }}</td>
+                        <td>{{ detail.amount }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center text-muted">لا توجد تفصيلات مبالغ</td></tr>
+                    {% endfor %}
+                </tbody>
+                {% if disbursement.details.all %}
+                <tfoot>
+                    <tr class="fw-bold">
+                        <td colspan="2">الإجمالي</td>
+                        <td>{{ disbursement.details_total }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- التوقيعات والاعتمادات -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-vector-pen"></i> التوقيعات والاعتمادات</div>
+    <div class="card-body">
+        <h6 class="text-muted fw-bold">طالب الصرف</h6>
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>الاسم:</strong> {{ disbursement.requester_name }}</div>
+            <div class="col-md-4 mb-2"><strong>المسمى الوظيفي:</strong> {{ disbursement.requester_job_title }}</div>
+            <div class="col-md-4 mb-2"><strong>التوقيع:</strong> {{ disbursement.requester_signed_name|default:'—' }}</div>
+        </div>
+        <h6 class="text-muted fw-bold">اعتماد المسؤول المباشر</h6>
+        <div class="row mb-3">
+            <div class="col-md-4 mb-2"><strong>الاسم:</strong> {{ disbursement.supervisor_name|default:'—' }}</div>
+            <div class="col-md-4 mb-2"><strong>التوقيع:</strong> {{ disbursement.supervisor_signed_name|default:'—' }}</div>
+            <div class="col-md-4 mb-2"><strong>التاريخ:</strong> {{ disbursement.supervisor_signature_date|date:'Y-m-d'|default:'—' }}</div>
+        </div>
+        <h6 class="text-muted fw-bold">تنفيذ الصرف</h6>
+        <div class="row">
+            <div class="col-md-4 mb-2"><strong>تم الصرف بتاريخ:</strong> {{ disbursement.disbursed_date|date:'Y-m-d'|default:'—' }}</div>
+            <div class="col-md-4 mb-2"><strong>اسم المسؤول:</strong> {{ disbursement.disbursed_by_name|default:'—' }}</div>
+            <div class="col-md-4 mb-2"><strong>التوقيع:</strong> {{ disbursement.disbursed_signed_name|default:'—' }}</div>
+        </div>
+    </div>
+</div>
+
+{% if disbursement.notes %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-sticky"></i> ملاحظات</div>
+    <div class="card-body">{{ disbursement.notes|linebreaksbr }}</div>
+</div>
+{% endif %}
+
+<div class="text-muted small">
+    أنشئ بواسطة: {{ disbursement.created_by.get_full_name|default:'-' }} | آخر تعديل: {{ disbursement.last_person.get_full_name|default:'-' }} ({{ disbursement.last_update|date:'Y-m-d H:i' }})
+</div>
+{% endblock %}
