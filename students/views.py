@@ -73,6 +73,14 @@ class StudentDetailView(BranchPermissionMixin, DetailView):
             context['branches'] = Branch.objects.all().order_by('code', 'name')
         else:
             context['branches'] = Branch.objects.filter(pk__in=allowed_ids).order_by('code', 'name')
+        from activities.models import ActivityEnrollment
+        enrollments = ActivityEnrollment.objects.filter(
+            student=self.object
+        ).select_related('activity', 'activity__branch', 'created_by')
+        if not self.request.user.is_executive():
+            activity_branch_ids = [b.pk for b in self.request.user.get_branches_for_perm('view_activity')]
+            enrollments = enrollments.filter(activity__branch__pk__in=activity_branch_ids)
+        context['activity_enrollments'] = enrollments
         return context
 
 

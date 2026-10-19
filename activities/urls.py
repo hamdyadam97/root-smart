@@ -9,6 +9,8 @@ urlpatterns = [
     path('activities/<int:pk>/update/', views.ActivityUpdateView.as_view(), name='activity-update'),
     path('activities/<int:pk>/delete/', views.ActivityDeleteView.as_view(), name='activity-delete'),
     path('activities/<int:pk>/transition/<str:action>/', views.activity_transition, name='activity-transition'),
+    path('activities/<int:pk>/enroll/', views.enrollment_add, name='activity-enroll'),
+    path('activities/<int:pk>/enroll/<int:enrollment_pk>/remove/', views.enrollment_remove, name='activity-unenroll'),
     path('activities/<int:pk>/pdf/', views.activity_pdf, name='activity-pdf'),
 
     path('activities/<int:activity_pk>/financial/create/', views.FinancialCreateView.as_view(), name='financial-create'),

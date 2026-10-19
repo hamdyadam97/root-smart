@@ -273,6 +273,68 @@
     </div>
 </div>
 
+<!-- المشتركون في النشاط -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-people"></i> المشتركون في النشاط <span class="badge bg-primary">{{ enrollments|length }}</span></div>
+    <div class="card-body">
+        {% if can_edit_activity %}
+        <form method="post" action="{% url 'activity-enroll' activity.pk %}" class="row g-2 mb-3">
+            {% csrf_token %}
+            <div class="col-md-8">
+                <select name="student" class="form-select" required>
+                    <option value="">اختر طالباً لإضافته للنشاط...</option>
+                    {% for s in branch_students %}
+                    <option value="{{ s.pk }}">{{ s.get_full_name }} — {{ s.contact.mobile|default:'-' }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-person-plus"></i> إضافة للنشاط</button>
+            </div>
+            {% if not branch_students %}
+            <div class="col-12"><small class="text-muted">كل طلاب هذا الفرع مشتركون بالفعل (أو لا يوجد طلاب مسجلون في الفرع).</small></div>
+            {% endif %}
+        </form>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>الطالب</th>
+                        <th>الجوال</th>
+                        <th>أضافه</th>
+                        <th>تاريخ الإضافة</th>
+                        {% if can_edit_activity %}<th class="text-start">إجراءات</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in enrollments %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="fw-semibold">{{ enrollment.student.get_full_name }}</td>
+                        <td>{{ enrollment.student.contact.mobile|default:'-' }}</td>
+                        <td>{{ enrollment.created_by.get_full_name|default:'-' }}</td>
+                        <td>{{ enrollment.created_at|date:'Y-m-d H:i' }}</td>
+                        {% if can_edit_activity %}
+                        <td class="text-start">
+                            <form method="post" action="{% url 'activity-unenroll' activity.pk enrollment.pk %}" class="d-inline" onsubmit="return confirm('إزالة {{ enrollment.student.get_full_name|escapejs }} من النشاط؟');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-person-dash"></i> إزالة</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">لا يوجد مشتركون في هذا النشاط بعد</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- سجل العمليات -->
 <div class="card mb-4">
     <div class="card-header"><i class="bi bi-clock-history"></i> سجل العمليات</div>

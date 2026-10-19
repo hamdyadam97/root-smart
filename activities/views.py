@@ -15,6 +15,7 @@ from .forms import (
 )
 from .models import (
     Activity, FinancialAnalysis, ActivityCoordination, FinalFinancialAnalysis, ActivityLog, StageStatus,
+    ActivityEnrollment,
 )
 from .pdf_utils import (
     build_activity_pdf, build_financial_pdf, build_coordination_pdf, build_final_pdf,
@@ -176,6 +177,12 @@ class ActivityDetailView(BranchPermissionMixin, DetailView):
         context['stage_statuses'] = StageStatus
         context['can_edit_activity'] = activity.can_user_edit(user)
         context['can_approve_activity'] = activity.can_user_approve(user)
+        context['enrollments'] = activity.enrollments.select_related('student', 'student__contact', 'created_by')
+        from students.models import Student
+        enrolled_ids = activity.enrollments.values_list('student_id', flat=True)
+        context['branch_students'] = Student.objects.filter(
+            branch=activity.branch
+        ).exclude(pk__in=enrolled_ids).select_related('contact').order_by('contact__first_name')
         if context['financial']:
             context['can_edit_financial'] = context['financial'].can_user_edit(user)
             context['can_approve_financial'] = context['financial'].can_user_approve(user)
@@ -284,6 +291,42 @@ class ActivityDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, DeleteView
 def activity_transition(request, pk, action):
     activity = _get_activity_or_denied(request.user, pk)
     _do_transition(request, activity, 'contract', action)
+    return redirect('activity-detail', pk=activity.pk)
+
+
+@login_required
+@require_POST
+def enrollment_add(request, pk):
+    """إضافة طالب كمشترك في نشاط."""
+    activity = _get_activity_or_denied(request.user, pk)
+    if not activity.can_user_edit(request.user):
+        raise PermissionDenied('غير مسموح لك تعديل هذا النشاط.')
+    from students.models import Student
+    student = get_object_or_404(Student, pk=request.POST.get('student'))
+    enrollment, created = ActivityEnrollment.objects.get_or_create(
+        activity=activity, student=student,
+        defaults={'created_by': request.user},
+    )
+    if created:
+        _log(activity, 'contract', 'enroll', request.user, notes=student.get_full_name())
+        messages.success(request, f'تمت إضافة "{student.get_full_name()}" إلى النشاط.')
+    else:
+        messages.info(request, 'هذا الطالب مشترك في النشاط بالفعل.')
+    return redirect('activity-detail', pk=activity.pk)
+
+
+@login_required
+@require_POST
+def enrollment_remove(request, pk, enrollment_pk):
+    """إزالة طالب من مشتركي نشاط."""
+    activity = _get_activity_or_denied(request.user, pk)
+    if not activity.can_user_edit(request.user):
+        raise PermissionDenied('غير مسموح لك تعديل هذا النشاط.')
+    enrollment = get_object_or_404(ActivityEnrollment, pk=enrollment_pk, activity=activity)
+    name = enrollment.student.get_full_name()
+    enrollment.delete()
+    _log(activity, 'contract', 'unenroll', request.user, notes=name)
+    messages.success(request, f'تمت إزالة "{name}" من النشاط.')
     return redirect('activity-detail', pk=activity.pk)
 
 

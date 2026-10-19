@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load permission_tags %}
 {% block title %}لوحة التحكم - Smart Offer{% endblock %}
 {% block extra_css %}
 <style>
@@ -231,52 +232,59 @@
 <!-- Stats Cards -->
 <div class="row g-3 mb-4">
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-primary h-100">
+        <div class="stat-card bg-gradient-primary h-100 position-relative">
             <div class="icon-box"><i class="bi bi-people"></i></div>
             <div class="stat-value">{{ students_count }}</div>
             <div class="stat-label">الطلاب</div>
+            {% if user|has_perm:'view_student' %}<a href="{% url 'student-list' %}" class="stretched-link" title="الذهاب إلى الطلاب"></a>{% endif %}
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-success h-100">
+        <div class="stat-card bg-gradient-success h-100 position-relative">
             <div class="icon-box"><i class="bi bi-book"></i></div>
             <div class="stat-value">{{ courses_count }}</div>
             <div class="stat-label">الدورات</div>
+            {% if user|has_perm:'view_course' %}<a href="{% url 'course-list' %}" class="stretched-link" title="الذهاب إلى الدورات"></a>{% endif %}
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-info h-100">
+        <div class="stat-card bg-gradient-info h-100 position-relative">
             <div class="icon-box"><i class="bi bi-journal-check"></i></div>
             <div class="stat-value">{{ registrations_count }}</div>
             <div class="stat-label">التسجيلات</div>
+            {% if user|has_perm:'view_registration' %}<a href="{% url 'registration-list' %}" class="stretched-link" title="الذهاب إلى التسجيلات"></a>{% endif %}
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-warning h-100">
+        <div class="stat-card bg-gradient-warning h-100 position-relative">
             <div class="icon-box"><i class="bi bi-cash-stack"></i></div>
             <div class="stat-value">{{ payments_total|floatformat:0 }}</div>
             <div class="stat-label">المدفوعات</div>
+            {% if user|has_perm:'view_payment' %}<a href="{% url 'payment-list' %}" class="stretched-link" title="الذهاب إلى سندات القبض"></a>{% endif %}
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-danger h-100">
+        <div class="stat-card bg-gradient-danger h-100 position-relative">
             <div class="icon-box"><i class="bi bi-tag"></i></div>
             <div class="stat-value">{{ offers_count }}</div>
             <div class="stat-label">عروض الأسعار</div>
+            {% if user|has_perm:'view_offer_price' %}<a href="{% url 'offer-list' %}" class="stretched-link" title="الذهاب إلى عروض الأسعار"></a>{% endif %}
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-secondary h-100">
+        <div class="stat-card bg-gradient-secondary h-100 position-relative">
             <div class="icon-box"><i class="bi bi-building"></i></div>
             <div class="stat-value">{{ branches_count }}</div>
             <div class="stat-label">الفروع</div>
+            {% if user|has_perm:'view_branch' %}<a href="{% url 'branch-list' %}" class="stretched-link" title="الذهاب إلى الفروع"></a>{% endif %}
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-dark h-100">
+        <div class="stat-card bg-gradient-dark h-100 position-relative">
             <div class="icon-box"><i class="bi bi-send"></i></div>
             <div class="stat-value">{{ student_offers_count }}</div>
             <div class="stat-label">عروض الطلاب</div>
+            {% if user|has_perm:'view_studentoffer' %}<a href="{% url 'studentoffer-list' %}" class="stretched-link" title="الذهاب إلى عروض الطلاب"></a>{% endif %}
         </div>
     </div>
 </div>

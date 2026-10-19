@@ -35,8 +35,8 @@ def custom_permission_denied_view(request, exception=None):
 
 DASHBOARD_PERMS = [
     'view_student',
-    'view_account',
-    'view_offer',
+    'view_registration',
+    'view_offer_price',
     'view_call',
     'view_payment',
     'view_course',
@@ -102,13 +102,13 @@ def dashboard(request):
         Course.objects.all(), request.user, 'master__branch', 'view_course'
     )
     account_qs = filter_by_branch(
-        Account.objects.all(), request.user, 'course__master__branch', 'view_account'
+        Account.objects.all(), request.user, 'course__master__branch', 'view_registration'
     )
     payment_qs = filter_by_branch(
         Payment.objects.all(), request.user, 'account__course__master__branch', 'view_payment'
     )
     offer_qs = filter_by_branch(
-        Offer.objects.all(), request.user, 'master__branch', 'view_offer'
+        Offer.objects.all(), request.user, 'master__branch', 'view_offer_price'
     )
     studentoffer_qs = filter_by_branch(
         StudentOffer.objects.all(), request.user, 'branch', 'view_studentoffer'
@@ -146,7 +146,7 @@ def dashboard(request):
             'branch': branch,
             'registrations': filter_by_branch(
                 Account.objects.filter(course__master__branch=branch),
-                request.user, 'course__master__branch', 'view_account'
+                request.user, 'course__master__branch', 'view_registration'
             ).count(),
             'payments_total': filter_by_branch(
                 Payment.objects.filter(account__course__master__branch=branch),
@@ -154,7 +154,7 @@ def dashboard(request):
             ).aggregate(total=Sum('amount_number'))['total'] or 0,
             'offers': filter_by_branch(
                 Offer.objects.filter(master__branch=branch),
-                request.user, 'master__branch', 'view_offer'
+                request.user, 'master__branch', 'view_offer_price'
             ).count(),
             'student_offers': filter_by_branch(
                 StudentOffer.objects.filter(branch=branch),
@@ -306,7 +306,7 @@ def branch_dashboard(request, slug):
     # Stats filtered by this branch and scoped by permission
     registrations_qs = filter_by_branch(
         Account.objects.filter(course__master__branch=branch),
-        request.user, 'course__master__branch', 'view_account'
+        request.user, 'course__master__branch', 'view_registration'
     )
     payments_qs = filter_by_branch(
         Payment.objects.filter(account__course__master__branch=branch),
@@ -314,7 +314,7 @@ def branch_dashboard(request, slug):
     )
     offers_qs = filter_by_branch(
         Offer.objects.filter(master__branch=branch),
-        request.user, 'master__branch', 'view_offer'
+        request.user, 'master__branch', 'view_offer_price'
     )
     studentoffers_qs = filter_by_branch(
         StudentOffer.objects.filter(branch=branch),

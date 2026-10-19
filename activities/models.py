@@ -452,6 +452,8 @@ class ActivityLog(models.Model):
         ('approve', 'اعتماد'),
         ('reject', 'رفض'),
         ('reopen', 'إعادة فتح كمسودة'),
+        ('enroll', 'إضافة مشترك'),
+        ('unenroll', 'إزالة مشترك'),
         ('delete', 'حذف'),
     ]
 
@@ -474,3 +476,29 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f'{self.get_action_display()} - {self.get_stage_display()}'
+
+
+class ActivityEnrollment(models.Model):
+    """اشتراك طالب في نشاط — الطالب الواحد يمكن أن يشترك في أكثر من نشاط."""
+
+    activity = models.ForeignKey(
+        Activity, on_delete=models.CASCADE, related_name='enrollments', verbose_name='النشاط'
+    )
+    student = models.ForeignKey(
+        'students.Student', on_delete=models.CASCADE,
+        related_name='activity_enrollments', verbose_name='الطالب'
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='+', verbose_name='أضافه'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإضافة')
+
+    class Meta:
+        verbose_name = 'مشترك في نشاط'
+        verbose_name_plural = 'مشتركو الأنشطة'
+        ordering = ['id']
+        unique_together = ['activity', 'student']
+
+    def __str__(self):
+        return f'{self.student} - {self.activity.name}'
