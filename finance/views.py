@@ -743,6 +743,17 @@ class DisbursementCreateView(BranchPermissionMixin, CreateView):
     required_perm = 'add_disbursementrequest'
     branch_field = 'last_person__branch'
 
+    def get_initial(self):
+        initial = super().get_initial()
+        user = self.request.user
+        full_name = ' '.join(user.get_full_name().split())
+        initial['requester_name'] = full_name
+        initial['requester_signed_name'] = full_name
+        role = user.employee_roles.select_related('role').first()
+        if role:
+            initial['requester_job_title'] = role.role.name
+        return initial
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
@@ -764,6 +775,10 @@ class DisbursementCreateView(BranchPermissionMixin, CreateView):
         self.object = form.save(commit=False)
         self.object.created_by = self.request.user
         self.object.last_person = self.request.user
+        if not (self.request.user.is_executive() or self.request.user.has_perm_on_any_branch(DisbursementRequest.approve_perm)):
+            self.object.supervisor_name = ''
+            self.object.supervisor_signed_name = ''
+            self.object.supervisor_signature_date = None
         self.object.save()
         details.instance = self.object
         details.save()
@@ -806,6 +821,10 @@ class DisbursementUpdateView(BranchPermissionMixin, UpdateView):
         if not details.is_valid():
             return self.render_to_response(context)
         self.object = form.save(commit=False)
+        if not self.object.can_user_approve(self.request.user):
+            original = DisbursementRequest.objects.get(pk=self.object.pk)
+            for f in DisbursementRequestForm.SUPERVISOR_FIELDS:
+                setattr(self.object, f, getattr(original, f))
         self.object.last_person = self.request.user
         self.object.save()
         details.instance = self.object
@@ -860,6 +879,10 @@ def disbursement_transition(request, pk, action):
         disbursement.status = DisbursementStatus.APPROVED
         disbursement.approved_by = request.user
         disbursement.approved_at = timezone.now()
+        approver_name = ' '.join(request.user.get_full_name().split()) or request.user.email
+        disbursement.supervisor_name = approver_name
+        disbursement.supervisor_signed_name = approver_name
+        disbursement.supervisor_signature_date = timezone.now().date()
         disbursement.save()
         messages.success(request, 'تم اعتماد إذن الصرف بنجاح.')
     elif action == 'reject':

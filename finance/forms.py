@@ -222,8 +222,19 @@ class CallForm(forms.ModelForm):
 
 
 class DisbursementRequestForm(forms.ModelForm):
+    SUPERVISOR_FIELDS = ('supervisor_name', 'supervisor_signed_name', 'supervisor_signature_date')
+
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        can_approve = False
+        if user is not None and user.is_authenticated:
+            if self.instance.pk:
+                can_approve = self.instance.can_user_approve(user)
+            else:
+                can_approve = user.is_executive() or user.has_perm_on_any_branch(self.instance.approve_perm)
+        if not can_approve:
+            for name in self.SUPERVISOR_FIELDS:
+                self.fields[name].widget.attrs['readonly'] = 'readonly'
 
     class Meta:
         model = DisbursementRequest
