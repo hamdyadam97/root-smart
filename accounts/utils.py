@@ -31,6 +31,8 @@ MODEL_NAMES_AR = {
     'billbuy': 'فواتير الشراء',
     'offer': 'العروض',
     'call': 'المكالمات',
+    'disbursementrequest': 'إذن الصرف',
+    'expense': 'المصروفات',
     'studentoffer': 'عروض الطلاب',
     'offerrecipient': 'مستلمي العروض',
     'prospect': 'المستفسرون',
