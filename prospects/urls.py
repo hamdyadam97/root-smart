@@ -4,6 +4,8 @@ from . import views
 
 urlpatterns = [
     path('prospects/', views.ProspectListView.as_view(), name='prospect-list'),
+    path('prospects/export/pdf/', views.export_prospects_pdf, name='prospects-export-pdf'),
+    path('prospects/export/excel/', views.export_prospects_excel, name='prospects-export-excel'),
     path('prospects/create/', views.ProspectCreateView.as_view(), name='prospect-create'),
     path('prospects/ajax/create/', views.prospect_create_ajax, name='prospect-create-ajax'),
     path('prospects/<str:slug>/', views.ProspectDetailView.as_view(), name='prospect-detail'),

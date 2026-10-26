@@ -1,11 +1,12 @@
 from django.db.models import Q
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin, filter_by_branch
@@ -16,6 +17,22 @@ from accounts.models import Person
 from .models import Prospect, ProspectOffer
 from .forms import ProspectForm, ProspectOfferForm
 from .utils import get_user_root_branch_ids, is_root_branch, do_convert_prospect_to_student
+
+
+def _apply_prospect_filters(queryset, params):
+    """Apply shared filter logic for Prospect list and export."""
+    search = params.get('search')
+    if search:
+        queryset = queryset.filter(
+            Q(name__icontains=search) |
+            Q(mobile__icontains=search) |
+            Q(workplace__icontains=search) |
+            Q(slug__icontains=search)
+        )
+    status = params.get('status')
+    if status:
+        queryset = queryset.filter(status=status)
+    return queryset.distinct()
 
 
 class ProspectListView(BranchPermissionMixin, ListView):
@@ -32,21 +49,7 @@ class ProspectListView(BranchPermissionMixin, ListView):
         # مقتصر على فروع شركة الجذور الرقمية
         allowed_ids = get_user_root_branch_ids(self.request.user, self.required_perm)
         queryset = queryset.filter(branch__in=allowed_ids)
-
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(
-                Q(name__icontains=search) |
-                Q(mobile__icontains=search) |
-                Q(workplace__icontains=search) |
-                Q(slug__icontains=search)
-            )
-
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-
-        return queryset.distinct()
+        return _apply_prospect_filters(queryset, self.request.GET)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -379,3 +382,166 @@ def convert_prospect_to_student(request, slug):
 
     messages.success(request, f'تم تحويل {prospect.name} إلى طالب والتسجيل في الدورة "{course}" بنجاح.')
     return redirect('student-detail', slug=student.slug)
+
+
+# ============================================================
+# Bulk Export (filtered list)
+# ============================================================
+
+def _export_queryset(request):
+    """الاستعلام المشترك للتصدير: نفس قواعد الفرع والفلاتر المستخدمة في القائمة."""
+    allowed_ids = get_user_root_branch_ids(request.user, 'view_prospect')
+    qs = Prospect.objects.filter(branch__in=allowed_ids).select_related(
+        'branch', 'master', 'contacted_by'
+    )
+    qs = filter_by_branch(qs, request.user, 'branch', perm='view_prospect')
+    return _apply_prospect_filters(qs, request.GET).order_by('-created_at')
+
+
+EXPORT_COLUMNS = [
+    ('الاسم', 0.16),
+    ('الجوال', 0.11),
+    ('التخصص', 0.14),
+    ('جهة العمل', 0.14),
+    ('وسيلة التواصل', 0.09),
+    ('حالة التواصل', 0.09),
+    ('تاريخ التواصل', 0.09),
+    ('الموظف', 0.09),
+    ('الفرع', 0.09),
+]
+
+
+def _export_row(prospect):
+    return [
+        prospect.name,
+        prospect.mobile or '-',
+        str(prospect.master) if prospect.master else '-',
+        prospect.workplace or '-',
+        prospect.get_communication_method_display(),
+        prospect.get_status_display(),
+        prospect.contact_date.strftime('%Y-%m-%d') if prospect.contact_date else '-',
+        str(prospect.contacted_by) if prospect.contacted_by else '-',
+        str(prospect.branch) if prospect.branch else '-',
+    ]
+
+
+@login_required
+def export_prospects_excel(request):
+    """Export filtered prospects list as Excel."""
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.cell.cell import MergedCell
+
+    qs = _export_queryset(request)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'المستفسرون'
+
+    header_fill = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF', size=11)
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+
+    for col, h in enumerate([c[0] for c in EXPORT_COLUMNS], 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = thin_border
+    ws.row_dimensions[1].height = 25
+
+    for row_num, prospect in enumerate(qs, 2):
+        for col, val in enumerate(_export_row(prospect), 1):
+            cell = ws.cell(row=row_num, column=col, value=val)
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    for col_cells in ws.columns:
+        if isinstance(col_cells[0], MergedCell):
+            continue
+        max_len = 0
+        for cell in col_cells:
+            try:
+                if len(str(cell.value)) > max_len:
+                    max_len = len(str(cell.value))
+            except Exception:
+                pass
+        ws.column_dimensions[col_cells[0].column_letter].width = min(max_len + 4, 40)
+
+    now = timezone.localtime().strftime('%Y%m-%d_%H%M')
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="prospects_report_{now}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+def export_prospects_pdf(request):
+    """Export filtered prospects list as a PDF report table."""
+    from io import BytesIO
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.lib.enums import TA_RIGHT
+    from offers.views import ARABIC_FONT, _prepare_arabic
+
+    qs = _export_queryset(request)
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=1*cm, leftMargin=1*cm,
+                            topMargin=1*cm, bottomMargin=1*cm)
+    elements = []
+
+    font_name = ARABIC_FONT
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleAr', parent=styles['Normal'], fontName=font_name, fontSize=16, alignment=TA_RIGHT, spaceAfter=12, leading=22)
+    header_style = ParagraphStyle('HeaderAr', parent=styles['Normal'], fontName=font_name, fontSize=9, alignment=TA_RIGHT,
+                                  textColor=colors.white, leading=14)
+    cell_style = ParagraphStyle('CellAr', parent=styles['Normal'], fontName=font_name, fontSize=8, alignment=TA_RIGHT, leading=12)
+
+    elements.append(Paragraph(_prepare_arabic('تقرير المستفسرين'), title_style))
+    elements.append(Spacer(1, 0.3*cm))
+
+    table_data = [[Paragraph(_prepare_arabic(h), header_style) for h, _ in EXPORT_COLUMNS]]
+
+    for prospect in qs:
+        table_data.append([
+            Paragraph(_prepare_arabic(str(val)), cell_style) for val in _export_row(prospect)
+        ])
+
+    page_w = landscape(A4)[0] - 2*cm
+    col_widths = [page_w * ratio for _, ratio in EXPORT_COLUMNS]
+
+    table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563EB')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, -1), font_name),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F1F5F9')]),
+        ('BOX', (0, 0), (-1, -1), 0.75, colors.HexColor('#2563EB')),
+        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.HexColor('#CBD5E1')),
+    ]))
+
+    elements.append(table)
+    elements.append(Spacer(1, 0.5*cm))
+    count_style = ParagraphStyle('CountAr', parent=styles['Normal'], fontName=font_name, fontSize=10, alignment=TA_RIGHT)
+    elements.append(Paragraph(_prepare_arabic(f'إجمالي النتائج: {qs.count()}'), count_style))
+
+    doc.build(elements)
+
+    now = timezone.localtime().strftime('%Y%m-%d_%H%M')
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="prospects_report_{now}.pdf"'
+    return response
