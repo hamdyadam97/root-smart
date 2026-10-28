@@ -71,6 +71,12 @@
                     {% endif %}
                     {% endif %}
                     {% endif %}
+                    {% if disbursement.status == 'approved' %}
+                    {% has_perm_on_branch user 'approve_disbursementrequest' disbursement.branch as can_approve_d %}
+                    {% if can_approve_d or user.is_executive %}
+                    <a href="{% url 'disbursement-update' disbursement.pk %}" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                    {% endif %}
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

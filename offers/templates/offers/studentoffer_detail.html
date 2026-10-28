@@ -104,7 +104,7 @@
                                     {{ recipient.student }}
                                 {% elif recipient.prospect %}
                                     <a href="{% url 'prospect-detail' recipient.prospect.slug %}">{{ recipient.prospect.name }}</a>
-                                    {% if recipient.prospect.mobile %}<small class="text-muted">({{ recipient.prospect.mobile }})</small>{% endif %}
+                                    {% if recipient.prospect.mobile %}<small class="text-muted">(<span dir="ltr">{{ recipient.prospect.mobile }}</span>)</small>{% endif %}
                                 {% else %}
                                     {{ recipient.contact_name|default:"مستلم سريع" }}
                                     {% if recipient.contact_phone %}<small class="text-muted">({{ recipient.contact_phone }})</small>{% endif %}
@@ -167,7 +167,7 @@
                                 <select name="prospect" id="ar_prospect" class="form-select">
                                     <option value="">اختر المستفسر...</option>
                                     {% for p in all_prospects %}
-                                    <option value="{{ p.id }}">{{ p.name }}{% if p.mobile %} ({{ p.mobile }}){% endif %}</option>
+                                    <option value="{{ p.id }}">{{ p.name }}{% if p.mobile %} (&#x2066;{{ p.mobile }}&#x2069;){% endif %}</option>
                                     {% empty %}
                                     <option value="" disabled>لا يوجد مستفسرون مسجلون</option>
                                     {% endfor %}

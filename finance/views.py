@@ -733,6 +733,7 @@ class DisbursementDetailView(BranchPermissionMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['can_edit'] = self.object.can_user_edit(self.request.user)
         context['can_approve'] = self.object.can_user_approve(self.request.user)
+        context['can_update'] = self.object.can_user_update(self.request.user)
         return context
 
 
@@ -795,9 +796,9 @@ class DisbursementUpdateView(BranchPermissionMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
-        if not obj.can_user_edit(request.user):
+        if not (obj.can_user_edit(request.user) or obj.can_user_approve(request.user)):
             raise PermissionDenied('غير مسموح لك تعديل إذن الصرف هذا.')
-        if not obj.is_editable():
+        if not obj.can_user_update(request.user):
             messages.error(request, 'لا يمكن تعديل إذن صرف في حالته الحالية.')
             return redirect('disbursement-detail', pk=obj.pk)
         return super().dispatch(request, *args, **kwargs)

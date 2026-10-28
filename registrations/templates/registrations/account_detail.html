@@ -18,7 +18,7 @@
             <div class="card-header bg-primary text-white"><i class="bi bi-person"></i> بيانات الطالب</div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item"><strong>الطالب:</strong> {{ account.student.get_full_name }}</li>
-                <li class="list-group-item"><strong>المحمول:</strong> {{ account.student.contact.mobile|default:'-' }}</li>
+                <li class="list-group-item"><strong>المحمول:</strong> <span dir="ltr">{{ account.student.contact.mobile|default:'-' }}</span></li>
                 <li class="list-group-item"><strong>تاريخ التسجيل:</strong> {{ account.register_date }}</li>
             </ul>
         </div>

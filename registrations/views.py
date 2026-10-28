@@ -202,6 +202,7 @@ def export_registrations_excel(request):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = 'التسجيلات'
+    ws.sheet_view.rightToLeft = True
 
     header_fill = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
     header_font = Font(bold=True, color='FFFFFF', size=11)
@@ -221,7 +222,7 @@ def export_registrations_excel(request):
 
     for row_num, account in enumerate(qs, 2):
         values = [
-            account.get_key_rtl(),
+            account.get_key(),
             account.student.get_full_name(),
             f'{account.course.master.name} - {account.course.code}',
             account.course_payment_type,
@@ -296,7 +297,7 @@ def export_registrations_pdf(request):
 
     for account in qs:
         row = [
-            Paragraph(_prepare_arabic(account.get_key_rtl()), cell_style),
+            Paragraph(_prepare_arabic(account.get_key()), cell_style),
             Paragraph(_prepare_arabic(account.student.get_full_name()), cell_style),
             Paragraph(_prepare_arabic(f'{account.course.master.name} - {account.course.code}'), cell_style),
             Paragraph(_prepare_arabic(account.course_payment_type), cell_style),

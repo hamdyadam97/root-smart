@@ -62,7 +62,7 @@
                     <a href="{% url 'student-detail' prospect.student.slug %}" class="badge bg-success text-decoration-none" title="محول إلى طالب"><i class="bi bi-mortarboard"></i></a>
                     {% endif %}
                 </td>
-                <td>{{ prospect.mobile|default:'-' }}</td>
+                <td><span dir="ltr">{{ prospect.mobile|default:'-' }}</span></td>
                 <td>{{ prospect.master|default:'-' }}</td>
                 <td><span class="badge {{ prospect.get_status_display_class }}">{{ prospect.get_status_display }}</span></td>
                 <td>{{ prospect.contact_date|default:'-' }}</td>

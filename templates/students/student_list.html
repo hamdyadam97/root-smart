@@ -64,7 +64,7 @@
             <tr>
                 <td>{{ forloop.counter }}</td>
                 <td>{{ student.get_full_name }}</td>
-                <td>{{ student.get_mobile|default:'-' }}</td>
+                <td><span dir="ltr">{{ student.get_mobile|default:'-' }}</span></td>
                 <td><span class="badge bg-secondary">{{ student.level }}</span></td>
                 <td>{{ student.get_preferred_contact_display }}</td>
                 <td><code>{{ student.slug }}</code></td>

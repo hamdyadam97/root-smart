@@ -32,8 +32,8 @@
             <div class="card-header bg-primary text-white"><i class="bi bi-telephone"></i> بيانات التواصل</div>
             <div class="card-body">
                 <table class="table table-borderless mb-0">
-                    <tr><td class="fw-bold">المحمول</td><td>{{ person.mobile|default:"-" }}</td></tr>
-                    <tr><td class="fw-bold">التليفون</td><td>{{ person.phone|default:"-" }}</td></tr>
+                    <tr><td class="fw-bold">المحمول</td><td><span dir="ltr">{{ person.mobile|default:"-" }}</span></td></tr>
+                    <tr><td class="fw-bold">التليفون</td><td><span dir="ltr">{{ person.phone|default:"-" }}</span></td></tr>
                     <tr><td class="fw-bold">العنوان</td><td>{{ person.address|default:"-" }}</td></tr>
                     <tr><td class="fw-bold">الفرع</td><td>{{ person.branch|default:"-" }}</td></tr>
                     <tr><td class="fw-bold">الفريق</td><td>{{ person.team|default:"-" }}</td></tr>

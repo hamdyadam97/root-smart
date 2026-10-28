@@ -57,7 +57,7 @@
                 {% for prospect in pending_registered_prospects %}
                 <tr>
                     <td><a href="{% url 'prospect-detail' prospect.slug %}">{{ prospect.name }}</a></td>
-                    <td>{{ prospect.mobile|default:'-' }}</td>
+                    <td><span dir="ltr">{{ prospect.mobile|default:'-' }}</span></td>
                     <td>{{ prospect.master|default:'-' }}</td>
                     <td>{{ prospect.branch }}</td>
                     <td class="text-start">

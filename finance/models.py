@@ -436,6 +436,14 @@ class DisbursementRequest(models.Model):
             return True
         return user.has_perm(self.approve_perm, branch=self.branch)
 
+    def can_user_update(self, user):
+        """Editable statuses for editors; approved requests stay editable for approvers (managers)."""
+        if self.is_editable():
+            return self.can_user_edit(user)
+        if self.status == DisbursementStatus.APPROVED:
+            return self.can_user_approve(user)
+        return False
+
     def details_total(self):
         total = self.details.aggregate(models.Sum('amount'))['amount__sum']
         return total or 0

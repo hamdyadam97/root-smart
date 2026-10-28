@@ -29,7 +29,7 @@
             <div class="card-header bg-primary text-white"><i class="bi bi-person-vcard"></i> بيانات المستفسر</div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item"><strong>الاسم:</strong> {{ prospect.name }}</li>
-                <li class="list-group-item"><strong>رقم الجوال:</strong> {{ prospect.mobile|default:'-' }}</li>
+                <li class="list-group-item"><strong>رقم الجوال:</strong> <span dir="ltr">{{ prospect.mobile|default:'-' }}</span></li>
                 <li class="list-group-item"><strong>التخصص:</strong> {{ prospect.master|default:'-' }}</li>
                 <li class="list-group-item"><strong>جهة العمل:</strong> {{ prospect.workplace|default:'-' }}</li>
                 <li class="list-group-item"><strong>الوزارة / المؤسسة:</strong> {{ prospect.ministry|default:'-' }}</li>
@@ -289,7 +289,7 @@
                                         <select name="prospect" id="rootOfferProspect" class="form-select">
                                             <option value="">اختر المستفسر...</option>
                                             {% for p in all_prospects %}
-                                            <option value="{{ p.id }}" data-name="{{ p.name|escapejs }}" data-mobile="{{ p.mobile|escapejs }}" data-workplace="{{ p.workplace|escapejs }}" data-ministry="{{ p.ministry|escapejs }}" data-governorate="{{ p.governorate|escapejs }}" data-notes="{{ p.notes|escapejs }}" {% if p.id == prospect.id %}selected{% endif %}>{{ p.name }}{% if p.mobile %} ({{ p.mobile }}){% endif %}</option>
+                                            <option value="{{ p.id }}" data-name="{{ p.name|escapejs }}" data-mobile="{{ p.mobile|escapejs }}" data-workplace="{{ p.workplace|escapejs }}" data-ministry="{{ p.ministry|escapejs }}" data-governorate="{{ p.governorate|escapejs }}" data-notes="{{ p.notes|escapejs }}" {% if p.id == prospect.id %}selected{% endif %}>{{ p.name }}{% if p.mobile %} (&#x2066;{{ p.mobile }}&#x2069;){% endif %}</option>
                                             {% empty %}
                                             <option value="" disabled>لا يوجد مستفسرون مسجلون</option>
                                             {% endfor %}

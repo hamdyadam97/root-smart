@@ -284,7 +284,7 @@
                 <select name="student" class="form-select" required>
                     <option value="">اختر طالباً لإضافته للنشاط...</option>
                     {% for s in branch_students %}
-                    <option value="{{ s.pk }}">{{ s.get_full_name }} — {{ s.contact.mobile|default:'-' }}</option>
+                    <option value="{{ s.pk }}">{{ s.get_full_name }} — &#x2066;{{ s.contact.mobile|default:'-' }}&#x2069;</option>
                     {% endfor %}
                 </select>
             </div>
@@ -314,7 +314,7 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td class="fw-semibold">{{ enrollment.student.get_full_name }}</td>
-                        <td>{{ enrollment.student.contact.mobile|default:'-' }}</td>
+                        <td><span dir="ltr">{{ enrollment.student.contact.mobile|default:'-' }}</span></td>
                         <td>{{ enrollment.created_by.get_full_name|default:'-' }}</td>
                         <td>{{ enrollment.created_at|date:'Y-m-d H:i' }}</td>
                         {% if can_edit_activity %}

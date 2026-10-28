@@ -29,7 +29,7 @@
                                 <select name="prospect" id="r_prospect" class="form-select">
                                     <option value="">اختر المستفسر...</option>
                                     {% for prospect in prospects %}
-                                    <option value="{{ prospect.id }}">{{ prospect.name }}{% if prospect.mobile %} ({{ prospect.mobile }}){% endif %}</option>
+                                    <option value="{{ prospect.id }}">{{ prospect.name }}{% if prospect.mobile %} (&#x2066;{{ prospect.mobile }}&#x2069;){% endif %}</option>
                                     {% endfor %}
                                 </select>
                             </div>

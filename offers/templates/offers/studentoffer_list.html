@@ -217,7 +217,7 @@
                                         <select name="prospect" id="rootOfferProspect" class="form-select">
                                             <option value="">اختر المستفسر...</option>
                                             {% for p in all_prospects %}
-                                            <option value="{{ p.id }}" data-name="{{ p.name|escapejs }}" data-mobile="{{ p.mobile|escapejs }}" data-workplace="{{ p.workplace|escapejs }}" data-ministry="{{ p.ministry|escapejs }}" data-governorate="{{ p.governorate|escapejs }}" data-notes="{{ p.notes|escapejs }}">{{ p.name }}{% if p.mobile %} ({{ p.mobile }}){% endif %}</option>
+                                            <option value="{{ p.id }}" data-name="{{ p.name|escapejs }}" data-mobile="{{ p.mobile|escapejs }}" data-workplace="{{ p.workplace|escapejs }}" data-ministry="{{ p.ministry|escapejs }}" data-governorate="{{ p.governorate|escapejs }}" data-notes="{{ p.notes|escapejs }}">{{ p.name }}{% if p.mobile %} (&#x2066;{{ p.mobile }}&#x2069;){% endif %}</option>
                                             {% empty %}
                                             <option value="" disabled>لا يوجد مستفسرون مسجلون</option>
                                             {% endfor %}

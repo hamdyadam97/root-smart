@@ -18,8 +18,8 @@
             <div class="card-header bg-primary text-white"><i class="bi bi-person-vcard"></i> المعلومات الشخصية</div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item"><strong>الاسم الكامل:</strong> {{ student.contact.get_full_name }}</li>
-                <li class="list-group-item"><strong>رقم الجوال:</strong> {{ student.contact.mobile|default:'-' }}</li>
-                <li class="list-group-item"><strong>رقم الهاتف:</strong> {{ student.contact.phone|default:'-' }}</li>
+                <li class="list-group-item"><strong>رقم الجوال:</strong> <span dir="ltr">{{ student.contact.mobile|default:'-' }}</span></li>
+                <li class="list-group-item"><strong>رقم الهاتف:</strong> <span dir="ltr">{{ student.contact.phone|default:'-' }}</span></li>
                 <li class="list-group-item"><strong>العنوان:</strong> {{ student.contact.address|default:'-' }}</li>
                 <li class="list-group-item"><strong>الجنسية:</strong> {{ student.contact.nationality|default:'-' }}</li>
                 <li class="list-group-item"><strong>رقم الهوية:</strong> {{ student.contact.identity_number|default:'-' }}</li>
