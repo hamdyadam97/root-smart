@@ -1,0 +1,41 @@
+{# مودالا إلغاء/إعادة تفعيل خصم — الأزرار تمرر data-action (رابط الخصم) و data-name #}
+<div class="modal fade" id="waiveModal" tabindex="-1" aria-hidden="true" data-fill>
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-cash-stack"></i> إلغاء خصم</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">إلغاء الخصم: <strong class="js-name"></strong></p>
+                <label class="form-label">سبب الإلغاء</label>
+                <textarea name="reason" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-danger">إلغاء الخصم</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-hidden="true" data-fill>
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            <input type="hidden" name="restore" value="1">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-arrow-counterclockwise"></i> إعادة تفعيل خصم</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">إعادة تفعيل الخصم: <strong class="js-name"></strong>؟</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-primary">إعادة تفعيل</button>
+            </div>
+        </form>
+    </div></div>
+</div>

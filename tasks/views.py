@@ -6,8 +6,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -32,6 +33,10 @@ def _get_task_or_denied(user, pk):
 
 def _branch_ids(user, perm):
     return [b.pk for b in user.get_branches_for_perm(perm)]
+
+
+def _is_ajax(request):
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
 
 def _can_manage_deductions(user, branch=None):
@@ -118,6 +123,18 @@ class _TaskFormMixin:
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_template_names(self):
+        # داخل المودال يُرجع النموذج فقط بدون الصفحة الكاملة
+        if _is_ajax(self.request):
+            return ['tasks/_task_form.html']
+        return super().get_template_names()
+
+    def _done(self, task):
+        url = reverse('task-detail', args=[task.pk])
+        if _is_ajax(self.request):
+            return JsonResponse({'redirect': url})
+        return redirect(url)
+
     def _sync_assignees(self, task, persons):
         current = {a.person_id: a for a in task.assignments.all()}
         wanted = {p.pk: p for p in persons}
@@ -144,7 +161,7 @@ class TaskCreateView(LoginRequiredMixin, _TaskFormMixin, CreateView):
         added = self._sync_assignees(task, form.cleaned_data['assignees'])
         services.on_assigned(task, added, self.request.user)
         messages.success(self.request, 'تم إنشاء المهمة وإشعار الموظفين المكلفين.')
-        return redirect('task-detail', pk=task.pk)
+        return self._done(task)
 
 
 class TaskUpdateView(LoginRequiredMixin, _TaskFormMixin, UpdateView):
@@ -161,7 +178,7 @@ class TaskUpdateView(LoginRequiredMixin, _TaskFormMixin, UpdateView):
         services.on_assigned(task, added, self.request.user)
         task.refresh_status()
         messages.success(self.request, 'تم تحديث المهمة.')
-        return redirect('task-detail', pk=task.pk)
+        return self._done(task)
 
 
 class TaskDeleteView(LoginRequiredMixin, ProtectedDeleteMixin, DeleteView):
@@ -219,6 +236,8 @@ def task_detail(request, pk):
         'can_edit': task.can_user_edit(user),
         'can_delete': task.can_user_delete(user),
         'can_approve': can_approve,
+        'can_comment': task.status != TaskStatus.CANCELLED and bool(
+            my_assignment or can_approve or task.created_by_id == user.pk),
         'can_manage_deductions': _can_manage_deductions(user, task.branch),
         'commented_today': commented_today,
         'deductions': deductions,

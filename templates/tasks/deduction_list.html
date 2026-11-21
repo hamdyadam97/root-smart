@@ -6,10 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2><i class="bi bi-cash-stack"></i> خصومات المهام</h2>
     {% if can_manage %}
-    <form method="post" action="{% url 'deductions-process' %}">
-        {% csrf_token %}
-        <button class="btn btn-outline-primary" title="يعمل تلقائيًا كل يوم — هذا للتحديث الفوري"><i class="bi bi-arrow-repeat"></i> احتساب الخصومات الآن</button>
-    </form>
+    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#processModal"><i class="bi bi-arrow-repeat"></i> احتساب الخصومات الآن</button>
     {% endif %}
 </div>
 
@@ -95,17 +92,13 @@
                         </td>
                         {% if can_manage %}
                         <td>
-                            <form method="post" action="{% url 'deduction-waive' d.pk %}" class="d-flex gap-1">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                {% if d.status == 'active' %}
-                                <input type="text" name="reason" class="form-control form-control-sm" placeholder="سبب الإلغاء">
-                                <button class="btn btn-sm btn-outline-danger text-nowrap">إلغاء</button>
-                                {% else %}
-                                <input type="hidden" name="restore" value="1">
-                                <button class="btn btn-sm btn-outline-secondary text-nowrap">إعادة تفعيل</button>
-                                {% endif %}
-                            </form>
+                            {% if d.status == 'active' %}
+                            <button type="button" class="btn btn-sm btn-outline-danger text-nowrap" data-bs-toggle="modal" data-bs-target="#waiveModal"
+                                    data-action="{% url 'deduction-waive' d.pk %}" data-name="{{ d.person.get_short_name }} — {{ d.get_reason_display }} ({{ d.amount }})">إلغاء</button>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" data-bs-toggle="modal" data-bs-target="#restoreModal"
+                                    data-action="{% url 'deduction-waive' d.pk %}" data-name="{{ d.person.get_short_name }} — {{ d.get_reason_display }} ({{ d.amount }})">إعادة تفعيل</button>
+                            {% endif %}
                         </td>
                         {% endif %}
                     </tr>
@@ -117,4 +110,25 @@
         </div>
     </div>
 </div>
+
+{% if can_manage %}
+<div class="modal fade" id="processModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'deductions-process' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-arrow-repeat"></i> احتساب الخصومات</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">احتساب خصومات التأخير والتعليقات الناقصة حتى أمس؟ الاحتساب يعمل تلقائيًا كل يوم، وهذا للتحديث الفوري فقط ولن يكرر خصمًا موجودًا.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-primary">احتساب الآن</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+{% include 'tasks/_waive_modals.html' with next_url=request.get_full_path %}
+{% include 'tasks/_modal_fill.html' %}
+{% endif %}
 {% endblock %}

@@ -16,18 +16,14 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
         {% if can_edit %}
-        <a href="{% url 'task-update' task.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        <a href="{% url 'task-update' task.pk %}" data-task-form-url="{% url 'task-update' task.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
         {% if task.status == 'open' %}
-        <form method="post" action="{% url 'task-transition' task.pk 'cancel' %}" onsubmit="return confirm('إلغاء المهمة؟ لن تُحتسب خصومات بعد الإلغاء.');">
-            {% csrf_token %}<button class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> إلغاء المهمة</button>
-        </form>
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#cancelModal"><i class="bi bi-x-circle"></i> إلغاء المهمة</button>
         {% else %}
-        <form method="post" action="{% url 'task-transition' task.pk 'reopen' %}">
-            {% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-arrow-counterclockwise"></i> إعادة فتح</button>
-        </form>
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reopenModal"><i class="bi bi-arrow-counterclockwise"></i> إعادة فتح</button>
         {% endif %}
         {% endif %}
-        {% if can_delete %}<a href="{% url 'task-delete' task.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i></a>{% endif %}
+        {% if can_delete %}<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" title="حذف"><i class="bi bi-trash"></i></button>{% endif %}
         <a href="{% url 'task-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
     </div>
 </div>
@@ -57,7 +53,12 @@
         </div>
 
         <div class="card mb-4" id="comments">
-            <div class="card-header"><i class="bi bi-chat-dots"></i> التعليقات والتحديثات ({{ comments|length }})</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-chat-dots"></i> التعليقات والتحديثات ({{ comments|length }})</span>
+                {% if can_comment %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#commentModal"><i class="bi bi-plus-lg"></i> إضافة تعليق</button>
+                {% endif %}
+            </div>
             <div class="card-body">
                 {% for c in comments %}
                 <div class="border-bottom pb-2 mb-2">
@@ -72,17 +73,6 @@
                 <p class="text-muted">لا توجد تعليقات بعد.</p>
                 {% endfor %}
 
-                {% if task.status != 'cancelled' and my_assignment or task.status != 'cancelled' and can_approve %}
-                <form method="post" enctype="multipart/form-data" class="mt-3">
-                    {% csrf_token %}
-                    {{ form.body }}
-                    {% if form.body.errors %}<div class="text-danger small">{{ form.body.errors }}</div>{% endif %}
-                    <div class="d-flex gap-2 mt-2 align-items-center">
-                        <div class="flex-grow-1">{{ form.attachment }}</div>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> إضافة تعليق</button>
-                    </div>
-                </form>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -103,12 +93,7 @@
                 </p>
                 {% endif %}
                 {% if task.status == 'open' and my_assignment.status == 'open' %}
-                <form method="post" action="{% url 'task-transition' task.pk 'request_close' %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="assignment" value="{{ my_assignment.pk }}">
-                    <textarea name="note" class="form-control mb-2" rows="2" placeholder="ملخص ما تم إنجازه (اختياري)"></textarea>
-                    <button class="btn btn-success w-100"><i class="bi bi-check2-circle"></i> طلب إغلاق — المهمة خلصت</button>
-                </form>
+                <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#requestCloseModal"><i class="bi bi-check2-circle"></i> طلب إغلاق — المهمة خلصت</button>
                 {% if task.is_shared %}<div class="form-text small">المهمة مشتركة: طلب الإغلاق يشمل كل المكلفين.</div>{% endif %}
                 {% endif %}
             </div>
@@ -134,23 +119,12 @@
                     {% if a.close_note %}<div class="small mt-1">«{{ a.close_note }}»</div>{% endif %}
                     {% if can_approve and not task.is_shared or can_approve and forloop.first %}
                     <div class="d-flex gap-2 mt-2">
-                        <form method="post" action="{% url 'task-transition' task.pk 'approve_close' %}">
-                            {% csrf_token %}<input type="hidden" name="assignment" value="{{ a.pk }}">
-                            <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> اعتماد الإغلاق</button>
-                        </form>
-                        <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#reject{{ a.pk }}">رفض</button>
+                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#approveCloseModal" data-assignment="{{ a.pk }}" data-name="{% if task.is_shared %}كل المكلفين{% else %}{{ a.person.get_full_name }}{% endif %}"><i class="bi bi-check-lg"></i> اعتماد الإغلاق</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectCloseModal" data-assignment="{{ a.pk }}" data-name="{% if task.is_shared %}كل المكلفين{% else %}{{ a.person.get_full_name }}{% endif %}">رفض</button>
                     </div>
-                    <form method="post" action="{% url 'task-transition' task.pk 'reject_close' %}" class="collapse mt-2" id="reject{{ a.pk }}">
-                        {% csrf_token %}<input type="hidden" name="assignment" value="{{ a.pk }}">
-                        <input type="text" name="reason" class="form-control form-control-sm mb-1" placeholder="سبب الرفض" required>
-                        <button class="btn btn-sm btn-danger">تأكيد الرفض</button>
-                    </form>
                     {% endif %}
                     {% elif a.status == 'open' and can_approve and task.status == 'open' %}
-                    <form method="post" action="{% url 'task-transition' task.pk 'approve_close' %}" class="mt-1" onsubmit="return confirm('إغلاق المهمة لهذا الموظف مباشرة؟');">
-                        {% csrf_token %}<input type="hidden" name="assignment" value="{{ a.pk }}">
-                        <button class="btn btn-sm btn-link p-0">إغلاق مباشر</button>
-                    </form>
+                    <button type="button" class="btn btn-sm btn-link p-0 mt-1" data-bs-toggle="modal" data-bs-target="#approveCloseModal" data-assignment="{{ a.pk }}" data-name="{% if task.is_shared %}كل المكلفين{% else %}{{ a.person.get_full_name }}{% endif %}">إغلاق مباشر</button>
                     {% elif a.status == 'closed' %}
                     <div class="small text-muted">أغلقها {{ a.closed_by.get_short_name|default:'-' }} — {{ a.closed_at|date:'Y-m-d' }}</div>
                     {% endif %}
@@ -170,14 +144,11 @@
                     </div>
                     <div class="text-muted">{{ d.period_start|date:'Y-m-d' }}{% if d.missing_count > 1 %} ({{ d.missing_count }} تعليق ناقص){% endif %}{% if d.status == 'waived' %} — ملغى{% endif %}</div>
                     {% if can_manage_deductions %}
-                    <form method="post" action="{% url 'deduction-waive' d.pk %}" class="mt-1">
-                        {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
-                        {% if d.status == 'active' %}
-                        <button class="btn btn-sm btn-link p-0 text-danger">إلغاء الخصم</button>
-                        {% else %}
-                        <input type="hidden" name="restore" value="1"><button class="btn btn-sm btn-link p-0">إعادة تفعيل</button>
-                        {% endif %}
-                    </form>
+                    {% if d.status == 'active' %}
+                    <button type="button" class="btn btn-sm btn-link p-0 mt-1 text-danger" data-bs-toggle="modal" data-bs-target="#waiveModal" data-action="{% url 'deduction-waive' d.pk %}" data-name="{{ d.person.get_short_name }} — {{ d.get_reason_display }} ({{ d.amount }})">إلغاء الخصم</button>
+                    {% else %}
+                    <button type="button" class="btn btn-sm btn-link p-0 mt-1" data-bs-toggle="modal" data-bs-target="#restoreModal" data-action="{% url 'deduction-waive' d.pk %}" data-name="{{ d.person.get_short_name }} — {{ d.get_reason_display }} ({{ d.amount }})">إعادة تفعيل</button>
+                    {% endif %}
                     {% endif %}
                 </li>
                 {% empty %}
@@ -187,4 +158,6 @@
         </div>
     </div>
 </div>
+
+{% include 'tasks/_detail_modals.html' %}
 {% endblock %}

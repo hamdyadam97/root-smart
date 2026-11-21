@@ -1,0 +1,19 @@
+{# عند فتح مودال من زر: data-action يضبط action النموذج، data-assignment / data-name يملآن الحقول #}
+<script>
+document.querySelectorAll('.modal[data-fill]').forEach(function (modalEl) {
+    modalEl.addEventListener('show.bs.modal', function (e) {
+        var btn = e.relatedTarget;
+        if (!btn) return;
+        var form = modalEl.querySelector('form');
+        if (btn.dataset.action) form.action = btn.dataset.action;
+        var a = form.querySelector('[name=assignment]');
+        if (a && btn.dataset.assignment) a.value = btn.dataset.assignment;
+        modalEl.querySelectorAll('.js-name').forEach(function (el) { el.textContent = btn.dataset.name || ''; });
+        form.querySelectorAll('textarea, input[type=text]').forEach(function (el) { el.value = ''; });
+    });
+    modalEl.addEventListener('shown.bs.modal', function () {
+        var first = modalEl.querySelector('textarea, input[type=text]');
+        if (first) first.focus();
+    });
+});
+</script>

@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-list-check"></i> المهام</h2>
     {% if can_add %}
-    <a href="{% url 'task-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> مهمة جديدة</a>
+    <a href="{% url 'task-create' %}" data-task-form-url="{% url 'task-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> مهمة جديدة</a>
     {% endif %}
 </div>
 
@@ -125,4 +125,6 @@
 </div>
 
 {% include "includes/pagination.html" %}
+
+{% if can_add %}{% include 'tasks/_ajax_modal.html' %}{% endif %}
 {% endblock %}

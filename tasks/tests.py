@@ -253,6 +253,36 @@ class TaskViewTests(TaskTestBase):
         self.assertEqual(manager.get(reverse('deduction-list')).status_code, 200)
         self.assertEqual(manager.post(reverse('deductions-process')).status_code, 302)
 
+    def test_task_form_in_modal_via_ajax(self):
+        manager = self.client_for(self.manager)
+        ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        resp = manager.get(reverse('task-create'), **ajax)
+        self.assertContains(resp, 'class="task-form"')
+        self.assertNotContains(resp, '<html')
+        data = {
+            'title': 'مهمة مودال', 'branch': self.branch.pk, 'priority': 'normal', 'mode': 'shared',
+            'frequency': 'once', 'start_date': '2026-11-21', 'weekly_comment_count': 1,
+            'late_penalty_amount': '0', 'missed_comment_penalty_amount': '0', 'assignees': [self.emp1.pk],
+        }
+        # خطأ تحقق: يرجع النموذج بالأخطاء داخل المودال
+        resp = manager.post(reverse('task-create'), data, **ajax)
+        self.assertContains(resp, 'class="task-form"')
+        self.assertFalse(Task.objects.exists())
+        resp = manager.post(reverse('task-create'), {**data, 'due_date': '2026-11-30'}, **ajax)
+        task = Task.objects.get(title='مهمة مودال')
+        self.assertEqual(resp.json(), {'redirect': reverse('task-detail', args=[task.pk])})
+
+    def test_detail_page_has_action_modals(self):
+        task = self.make_task([self.emp1], due_date=date(2026, 12, 1))
+        url = reverse('task-detail', args=[task.pk])
+        page = self.client_for(self.manager).get(url)
+        for modal_id in ('commentModal', 'cancelModal', 'deleteModal', 'approveCloseModal', 'taskFormModal'):
+            self.assertContains(page, f'id="{modal_id}"')
+        self.assertContains(self.client_for(self.emp1).get(url), 'id="requestCloseModal"')
+        # تعليق فارغ يعيد الصفحة ويفتح مودال التعليق تلقائيًا
+        resp = self.client_for(self.emp1).post(url, {'body': ''})
+        self.assertContains(resp, "getElementById('commentModal')).show()")
+
     def test_my_notifications_page_needs_no_permission(self):
         AppNotification.objects.create(user=self.emp1, title='t', body='b', notification_type='تنبيه')
         resp = self.client_for(self.emp1).get(reverse('my-notifications'))

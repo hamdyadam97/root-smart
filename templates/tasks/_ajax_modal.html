@@ -1,0 +1,75 @@
+{# مودال عام لنموذج المهمة (إنشاء/تعديل): يُحمَّل بـ AJAX من أي زر عليه data-task-form-url #}
+<div class="modal fade" id="taskFormModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content" id="taskFormModalContent">
+            <div class="modal-body text-center py-5"><div class="spinner-border text-primary"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var modalEl = document.getElementById('taskFormModal');
+    var content = document.getElementById('taskFormModalContent');
+    var modal = null;
+    var spinner = content.innerHTML;
+    var headers = {'X-Requested-With': 'XMLHttpRequest'};
+
+    function initForm() {
+        var form = content.querySelector('form.task-form');
+        if (!form) return;
+        var search = form.querySelector('.assignee-search');
+        if (search) {
+            search.addEventListener('input', function () {
+                var q = search.value.trim();
+                form.querySelectorAll('.assignee-item').forEach(function (el) {
+                    el.style.display = !q || el.textContent.indexOf(q) !== -1 ? '' : 'none';
+                });
+            });
+        }
+        var freq = form.querySelector('[name=frequency]');
+        var weekly = form.querySelector('.weekly-count-wrap');
+        if (freq && weekly) {
+            var toggle = function () { weekly.style.display = freq.value === 'weekly' ? '' : 'none'; };
+            freq.addEventListener('change', toggle);
+            toggle();
+        }
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var btn = form.querySelector('[type=submit]');
+            if (btn) btn.disabled = true;
+            fetch(form.action, {method: 'POST', body: new FormData(form), headers: headers})
+                .then(handle)
+                .catch(fail);
+        });
+    }
+
+    function handle(resp) {
+        var type = resp.headers.get('Content-Type') || '';
+        if (type.indexOf('application/json') !== -1) {
+            return resp.json().then(function (data) {
+                if (data.redirect) window.location.href = data.redirect;
+            });
+        }
+        if (!resp.ok) throw new Error(resp.status);
+        return resp.text().then(function (html) {
+            content.innerHTML = html;
+            initForm();
+        });
+    }
+
+    function fail() {
+        content.innerHTML = '<div class="modal-body"><div class="alert alert-danger mb-0">تعذر تحميل النموذج، حاول مرة أخرى.</div></div>';
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-task-form-url]');
+        if (!trigger) return;
+        e.preventDefault();
+        content.innerHTML = spinner;
+        modal = modal || new bootstrap.Modal(modalEl);
+        modal.show();
+        fetch(trigger.getAttribute('data-task-form-url'), {headers: headers}).then(handle).catch(fail);
+    });
+})();
+</script>

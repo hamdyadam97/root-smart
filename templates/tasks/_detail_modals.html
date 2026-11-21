@@ -1,0 +1,161 @@
+{# مودالات صفحة تفاصيل المهمة #}
+{% if can_comment %}
+<div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-chat-dots"></i> إضافة تعليق</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                {{ form.body }}
+                {% if form.body.errors %}<div class="text-danger small">{{ form.body.errors }}</div>{% endif %}
+                <label class="form-label mt-3 small">مرفق (اختياري)</label>
+                {{ form.attachment }}
+                {% if form.attachment.errors %}<div class="text-danger small">{{ form.attachment.errors }}</div>{% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> إرسال</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+{% endif %}
+
+{% if my_assignment and task.status == 'open' and my_assignment.status == 'open' %}
+<div class="modal fade" id="requestCloseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'task-transition' task.pk 'request_close' %}">
+            {% csrf_token %}
+            <input type="hidden" name="assignment" value="{{ my_assignment.pk }}">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-check2-circle"></i> طلب إغلاق المهمة</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">ملخص ما تم إنجازه (اختياري)</label>
+                <textarea name="note" class="form-control" rows="3"></textarea>
+                <div class="form-text small">سيصل الطلب لمنشئ المهمة لاعتماده.{% if task.is_shared %} المهمة مشتركة: الطلب يشمل كل المكلفين.{% endif %}</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-success"><i class="bi bi-send"></i> إرسال الطلب</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+{% endif %}
+
+{% if can_approve %}
+<div class="modal fade" id="approveCloseModal" tabindex="-1" aria-hidden="true" data-fill>
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'task-transition' task.pk 'approve_close' %}">
+            {% csrf_token %}
+            <input type="hidden" name="assignment" value="">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-check-lg"></i> اعتماد إغلاق المهمة</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">إغلاق المهمة «<strong>{{ task.title }}</strong>» لـ <strong class="js-name"></strong>؟</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> اعتماد</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="rejectCloseModal" tabindex="-1" aria-hidden="true" data-fill>
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'task-transition' task.pk 'reject_close' %}">
+            {% csrf_token %}
+            <input type="hidden" name="assignment" value="">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-x-circle"></i> رفض طلب الإغلاق</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">رفض طلب <strong class="js-name"></strong> وإعادة المهمة له.</p>
+                <label class="form-label">سبب الرفض <span class="text-danger">*</span></label>
+                <textarea name="reason" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-danger">تأكيد الرفض</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+{% endif %}
+
+{% if can_edit %}
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'task-transition' task.pk 'cancel' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-x-circle"></i> إلغاء المهمة</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">إلغاء المهمة «<strong>{{ task.title }}</strong>»؟ لن تُحتسب عليها خصومات بعد الإلغاء، ويمكن إعادة فتحها لاحقًا.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-warning"><i class="bi bi-x-circle"></i> إلغاء المهمة</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="reopenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'task-transition' task.pk 'reopen' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-arrow-counterclockwise"></i> إعادة فتح المهمة</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">إعادة فتح المهمة «<strong>{{ task.title }}</strong>» لكل المكلفين؟</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-primary">إعادة فتح</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+{% include 'tasks/_ajax_modal.html' %}
+{% endif %}
+
+{% if can_delete %}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="post" action="{% url 'task-delete' task.pk %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle"></i> حذف المهمة</h5>
+                <button type="button" class="btn-close ms-0 me-auto" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف المهمة «<strong>{{ task.title }}</strong>»؟ سيتم حذف تعليقاتها وخصوماتها أيضًا.
+                <div class="form-text">لإيقاف المهمة مع الاحتفاظ بسجلها استخدم «إلغاء المهمة» بدلًا من الحذف.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">رجوع</button>
+                <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> حذف نهائي</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+{% endif %}
+
+{% if can_manage_deductions %}
+{% include 'tasks/_waive_modals.html' with next_url=request.path %}
+{% endif %}
+
+{% include 'tasks/_modal_fill.html' %}
+
+{% if form.errors and can_comment %}
+<script>new bootstrap.Modal(document.getElementById('commentModal')).show();</script>
+{% endif %}
