@@ -830,6 +830,7 @@
                     {% if user|has_non_root_student_perm %}<li class="nav-item"><a class="nav-link {% if '/students/' in request.path %}active{% endif %}" href="{% url 'student-list' %}"><i class="bi bi-mortarboard"></i> الطلاب</a></li>{% endif %}
                     {% if user|has_perm:'view_master' %}<li class="nav-item"><a class="nav-link {% if '/masters/' in request.path %}active{% endif %}" href="{% url 'master-list' %}"><i class="bi bi-journal-bookmark"></i> التخصصات</a></li>{% endif %}
                     {% if user|has_perm:'view_course' %}<li class="nav-item"><a class="nav-link {% if '/courses/' in request.path %}active{% endif %}" href="{% url 'course-list' %}"><i class="bi bi-book"></i> الدورات</a></li>{% endif %}
+                    {% if user|has_perm:'view_disbursementrequest' %}<li class="nav-item"><a class="nav-link {% if '/disbursements/' in request.path %}active{% endif %}" href="{% url 'disbursement-list' %}"><i class="bi bi-cash-coin"></i> إذن الصرف</a></li>{% endif %}
                     {% if user|has_perm:'view_reportsnapshot' %}<li class="nav-item"><a class="nav-link {% if '/reports/' in request.path %}active{% endif %}" href="{% url 'reportsnapshot-list' %}"><i class="bi bi-graph-up"></i> التقارير</a></li>{% endif %}
                     <li class="nav-item"><a class="nav-link {% if '/project-assistant/' in request.path %}active{% endif %}" href="{% url 'project_assistant:chat_page' %}"><i class="bi bi-robot"></i> مساعد المشروع</a></li>
                 </ul>

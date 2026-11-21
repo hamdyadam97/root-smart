@@ -30,6 +30,7 @@ urlpatterns = [
     path('', include('project_assistant.urls')),
     path('', include('activities.urls')),
     path('', include('tasks.urls')),
+    path('', include('finance.urls')),
 ]
 
 if settings.DEBUG:

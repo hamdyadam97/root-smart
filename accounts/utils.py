@@ -30,6 +30,8 @@ MODEL_NAMES_AR = {
     'internalmessage': 'الرسائل الداخلية',
     'reportsnapshot': 'لقطات التقارير',
     'appnotification': 'الإشعارات',
+    'disbursementrequest': 'إذن الصرف',
+    'disbursementdetail': 'تفصيلات إذن الصرف',
     'permission': 'الصلاحيات',
     'activity': 'نشاط',
     'financialanalysis': 'التحليل المالي',
@@ -85,6 +87,7 @@ APP_LABELS_AR = {
     'messaging': 'المراسلات',
     'reports': 'التقارير',
     'notifications': 'الإشعارات',
+    'finance': 'إذن الصرف',
     'activities': 'الأنشطة',
 }
 
