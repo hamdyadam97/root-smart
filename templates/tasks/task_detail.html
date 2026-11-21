@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ task.title }} | المهام{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h2><i class="bi bi-list-check"></i> {{ task.title }}</h2>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <span class="badge {{ task.status_badge_class }} fs-6">{{ task.get_status_display }}</span>
+            <span class="badge {{ task.priority_badge_class }}">{{ task.get_priority_display }}</span>
+            <span class="badge bg-light text-dark border">{% if task.is_shared %}مشتركة{% else %}فردية{% endif %}</span>
+            <span class="badge bg-light text-dark border">{{ task.get_frequency_display }}</span>
+            {% if task.is_overdue %}<span class="badge bg-danger">متأخرة</span>{% endif %}
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        {% if can_edit %}
+        <a href="{% url 'task-update' task.pk %}" class="btn btn-warning"><i class="bi bi-pencil"></i> تعديل</a>
+        {% if task.status == 'open' %}
+        <form method="post" action="{% url 'task-transition' task.pk 'cancel' %}" onsubmit="return confirm('إلغاء المهمة؟ لن تُحتسب خصومات بعد الإلغاء.');">
+            {% csrf_token %}<button class="btn btn-outline-secondary"><i class="bi bi-x-circle"></i> إلغاء المهمة</button>
+        </form>
+        {% else %}
+        <form method="post" action="{% url 'task-transition' task.pk 'reopen' %}">
+            {% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-arrow-counterclockwise"></i> إعادة فتح</button>
+        </form>
+        {% endif %}
+        {% endif %}
+        {% if can_delete %}<a href="{% url 'task-delete' task.pk %}" class="btn btn-danger"><i class="bi bi-trash"></i></a>{% endif %}
+        <a href="{% url 'task-list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+{% if my_assignment and my_assignment.status == 'open' and my_assignment.rejection_reason %}
+<div class="alert alert-danger"><strong><i class="bi bi-x-circle"></i> تم رفض طلب الإغلاق:</strong> {{ my_assignment.rejection_reason }}</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-info-circle"></i> التفاصيل</div>
+            <div class="card-body">
+                {% if task.description %}<p style="white-space: pre-line;">{{ task.description }}</p>{% else %}<p class="text-muted">لا توجد تفاصيل.</p>{% endif %}
+                <div class="row small g-2">
+                    <div class="col-sm-6"><strong>الفرع:</strong> {{ task.branch }}</div>
+                    <div class="col-sm-6"><strong>المنشئ:</strong> {{ task.created_by.get_full_name|default:'-' }}</div>
+                    <div class="col-sm-6"><strong>تاريخ البدء:</strong> {{ task.start_date|date:'Y-m-d' }}</div>
+                    <div class="col-sm-6"><strong>تاريخ التسليم:</strong> {{ task.due_date|date:'Y-m-d'|default:'مستمرة' }}</div>
+                    <div class="col-sm-6"><strong>التعليق المطلوب:</strong> {{ task.comment_rule_display }}</div>
+                    <div class="col-sm-6"><strong>الخصومات:</strong>
+                        تأخير {{ task.late_penalty_amount }} / يوم،
+                        تعليق ناقص {{ task.missed_comment_penalty_amount }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4" id="comments">
+            <div class="card-header"><i class="bi bi-chat-dots"></i> التعليقات والتحديثات ({{ comments|length }})</div>
+            <div class="card-body">
+                {% for c in comments %}
+                <div class="border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between small">
+                        <strong>{{ c.author.get_full_name|default:'-' }}{% if c.author_id == task.created_by_id %} <span class="badge bg-light text-dark border">المنشئ</span>{% endif %}</strong>
+                        <span class="text-muted">{{ c.created_at|date:'Y-m-d H:i' }}</span>
+                    </div>
+                    <div style="white-space: pre-line;">{{ c.body }}</div>
+                    {% if c.attachment %}<a href="{{ c.attachment.url }}" target="_blank" class="small"><i class="bi bi-paperclip"></i> مرفق</a>{% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted">لا توجد تعليقات بعد.</p>
+                {% endfor %}
+
+                {% if task.status != 'cancelled' and my_assignment or task.status != 'cancelled' and can_approve %}
+                <form method="post" enctype="multipart/form-data" class="mt-3">
+                    {% csrf_token %}
+                    {{ form.body }}
+                    {% if form.body.errors %}<div class="text-danger small">{{ form.body.errors }}</div>{% endif %}
+                    <div class="d-flex gap-2 mt-2 align-items-center">
+                        <div class="flex-grow-1">{{ form.attachment }}</div>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> إضافة تعليق</button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {% if my_assignment %}
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white"><i class="bi bi-person-check"></i> مهمتي</div>
+            <div class="card-body">
+                <p class="mb-2">الحالة: <span class="badge {{ my_assignment.status_badge_class }}">{{ my_assignment.get_status_display }}</span></p>
+                {% if task.frequency != 'once' and my_assignment.status == 'open' %}
+                <p class="small mb-2">
+                    {% if my_assignment.person_id in commented_today %}
+                    <i class="bi bi-check-circle-fill text-success"></i> علّقت اليوم
+                    {% else %}
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i> لم تعلّق اليوم بعد
+                    {% endif %}
+                </p>
+                {% endif %}
+                {% if task.status == 'open' and my_assignment.status == 'open' %}
+                <form method="post" action="{% url 'task-transition' task.pk 'request_close' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="assignment" value="{{ my_assignment.pk }}">
+                    <textarea name="note" class="form-control mb-2" rows="2" placeholder="ملخص ما تم إنجازه (اختياري)"></textarea>
+                    <button class="btn btn-success w-100"><i class="bi bi-check2-circle"></i> طلب إغلاق — المهمة خلصت</button>
+                </form>
+                {% if task.is_shared %}<div class="form-text small">المهمة مشتركة: طلب الإغلاق يشمل كل المكلفين.</div>{% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-people"></i> المكلفون</div>
+            <ul class="list-group list-group-flush">
+                {% for a in assignments %}
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>{{ a.person.get_full_name }}</span>
+                        <span class="badge {{ a.status_badge_class }}">{{ a.get_status_display }}</span>
+                    </div>
+                    {% if task.frequency != 'once' and a.status == 'open' %}
+                    <div class="small {% if a.person_id in commented_today %}text-success{% else %}text-muted{% endif %}">
+                        {% if a.person_id in commented_today %}علّق اليوم{% else %}لم يعلّق اليوم{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if a.status == 'close_requested' %}
+                    <div class="small text-muted mt-1">طلب الإغلاق: {{ a.close_requested_at|date:'Y-m-d H:i' }}</div>
+                    {% if a.close_note %}<div class="small mt-1">«{{ a.close_note }}»</div>{% endif %}
+                    {% if can_approve and not task.is_shared or can_approve and forloop.first %}
+                    <div class="d-flex gap-2 mt-2">
+                        <form method="post" action="{% url 'task-transition' task.pk 'approve_close' %}">
+                            {% csrf_token %}<input type="hidden" name="assignment" value="{{ a.pk }}">
+                            <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> اعتماد الإغلاق</button>
+                        </form>
+                        <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#reject{{ a.pk }}">رفض</button>
+                    </div>
+                    <form method="post" action="{% url 'task-transition' task.pk 'reject_close' %}" class="collapse mt-2" id="reject{{ a.pk }}">
+                        {% csrf_token %}<input type="hidden" name="assignment" value="{{ a.pk }}">
+                        <input type="text" name="reason" class="form-control form-control-sm mb-1" placeholder="سبب الرفض" required>
+                        <button class="btn btn-sm btn-danger">تأكيد الرفض</button>
+                    </form>
+                    {% endif %}
+                    {% elif a.status == 'open' and can_approve and task.status == 'open' %}
+                    <form method="post" action="{% url 'task-transition' task.pk 'approve_close' %}" class="mt-1" onsubmit="return confirm('إغلاق المهمة لهذا الموظف مباشرة؟');">
+                        {% csrf_token %}<input type="hidden" name="assignment" value="{{ a.pk }}">
+                        <button class="btn btn-sm btn-link p-0">إغلاق مباشر</button>
+                    </form>
+                    {% elif a.status == 'closed' %}
+                    <div class="small text-muted">أغلقها {{ a.closed_by.get_short_name|default:'-' }} — {{ a.closed_at|date:'Y-m-d' }}</div>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-cash-stack"></i> الخصومات على المهمة</div>
+            <ul class="list-group list-group-flush">
+                {% for d in deductions %}
+                <li class="list-group-item small">
+                    <div class="d-flex justify-content-between">
+                        <span>{{ d.person.get_short_name }} — {{ d.get_reason_display }}</span>
+                        <span class="badge {{ d.status_badge_class }}">{{ d.amount }}</span>
+                    </div>
+                    <div class="text-muted">{{ d.period_start|date:'Y-m-d' }}{% if d.missing_count > 1 %} ({{ d.missing_count }} تعليق ناقص){% endif %}{% if d.status == 'waived' %} — ملغى{% endif %}</div>
+                    {% if can_manage_deductions %}
+                    <form method="post" action="{% url 'deduction-waive' d.pk %}" class="mt-1">
+                        {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+                        {% if d.status == 'active' %}
+                        <button class="btn btn-sm btn-link p-0 text-danger">إلغاء الخصم</button>
+                        {% else %}
+                        <input type="hidden" name="restore" value="1"><button class="btn btn-sm btn-link p-0">إعادة تفعيل</button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="list-group-item small text-muted">لا توجد خصومات.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

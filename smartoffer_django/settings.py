@@ -40,7 +40,6 @@ LOCAL_APPS = [
     'students',
     'courses',
     'registrations',
-    'finance',
     'offers',
     'messaging',
     'reports',
@@ -50,6 +49,7 @@ LOCAL_APPS = [
     'project_assistant',
     'prospects',
     'activities',
+    'tasks',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -79,6 +79,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_permissions',
+                'notifications.context_processors.unread_notifications',
             ],
         },
     },

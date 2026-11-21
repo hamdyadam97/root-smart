@@ -738,7 +738,7 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'course-list' %}">الدورات</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'registration-list' %}">التسجيلات</a></li>
                     {% if user|has_perm:'view_activity' %}<li class="nav-item"><a class="nav-link" href="{% url 'activity-list' %}">نشاط</a></li>{% endif %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'payment-list' %}">المدفوعات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'task-list' %}">المهام</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'studentoffer-list' %}">عروض الأسعار</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'person-list' %}">الموظفين</a></li>
                     {% endif %}
@@ -754,6 +754,21 @@
                         <button id="themeToggle" class="btn btn-sm btn-outline-light border-0" title="تبديل الوضع" style="padding: 6px 10px;">
                             <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
                         </button>
+                    </li>
+                    <li class="nav-item dropdown me-2">
+                        <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" title="الإشعارات">
+                            <i class="bi bi-bell-fill"></i>
+                            {% if unread_notifications_count %}<span class="position-absolute top-0 start-0 badge rounded-pill bg-danger" style="font-size: .65rem;">{{ unread_notifications_count }}</span>{% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" style="min-width: 320px;">
+                            {% for n in latest_notifications %}
+                            <li><a class="dropdown-item text-wrap small" href="{% url 'notification-open' n.pk %}"><strong>{{ n.title }}</strong><br><span class="text-muted">{{ n.body|truncatechars:90 }}</span></a></li>
+                            {% empty %}
+                            <li><span class="dropdown-item-text text-muted small">لا توجد إشعارات جديدة</span></li>
+                            {% endfor %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-center small" href="{% url 'my-notifications' %}">عرض كل الإشعارات</a></li>
+                        </ul>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -791,11 +806,10 @@
                             <span><i class="bi bi-shield-gear"></i> الإدارة</span>
                             <i class="bi bi-chevron-down small chevron-icon"></i>
                         </a>
-                        <div class="collapse {% if '/companies/' in request.path or '/branches/' in request.path or '/banks/' in request.path or '/master-categories/' in request.path or '/persons/' in request.path or '/teams/' in request.path or '/roles/' in request.path or '/employee' in request.path %}show{% endif %}" id="adminCollapse">
+                        <div class="collapse {% if '/companies/' in request.path or '/branches/' in request.path or '/master-categories/' in request.path or '/persons/' in request.path or '/teams/' in request.path or '/roles/' in request.path or '/employee' in request.path %}show{% endif %}" id="adminCollapse">
                             <ul class="nav flex-column sidebar-submenu">
                                 {% if user|has_perm:'view_company' %}<li class="nav-item"><a class="nav-link {% if '/companies/' in request.path %}active{% endif %}" href="{% url 'company-list' %}"><i class="bi bi-building"></i> الشركات</a></li>{% endif %}
                                 {% if user|has_perm:'view_branch' %}<li class="nav-item"><a class="nav-link {% if '/branches/' in request.path and '/branches/create/' not in request.path %}active{% endif %}" href="{% url 'branch-list' %}"><i class="bi bi-diagram-3"></i> الفروع</a></li>{% endif %}
-                                {% if user|has_perm:'view_bank' %}<li class="nav-item"><a class="nav-link {% if '/banks/' in request.path %}active{% endif %}" href="{% url 'bank-list' %}"><i class="bi bi-bank"></i> البنوك</a></li>{% endif %}
                                 {% if user|has_perm:'view_mastercategory' %}<li class="nav-item"><a class="nav-link {% if '/master-categories/' in request.path %}active{% endif %}" href="{% url 'mastercategory-list' %}"><i class="bi bi-tags"></i> تصنيفات التخصصات</a></li>{% endif %}
                                 {% if user|has_perm:'view_person' %}<li class="nav-item"><a class="nav-link {% if '/persons/' in request.path %}active{% endif %}" href="{% url 'person-list' %}"><i class="bi bi-person-badge"></i> الموظفين</a></li>{% endif %}
                                 {% if user|has_perm:'view_team' %}<li class="nav-item"><a class="nav-link {% if '/teams/' in request.path %}active{% endif %}" href="{% url 'team-list' %}"><i class="bi bi-people-fill"></i> الفرق</a></li>{% endif %}
@@ -811,12 +825,11 @@
                     {% if user|has_perm:'view_studentoffer' %}<li class="nav-item"><a class="nav-link {% if '/student-offers/' in request.path %}active{% endif %}" href="{% url 'studentoffer-list' %}"><i class="bi bi-tag"></i> عروض الأسعار</a></li>{% endif %}
                     {% if user|has_perm:'view_registration' %}<li class="nav-item"><a class="nav-link {% if '/registrations/' in request.path %}active{% endif %}" href="{% url 'registration-list' %}"><i class="bi bi-journal-check"></i> التسجيلات</a></li>{% endif %}
                     {% if user|has_perm:'view_activity' %}<li class="nav-item"><a class="nav-link {% if '/activities/' in request.path %}active{% endif %}" href="{% url 'activity-list' %}"><i class="bi bi-calendar2-event"></i> نشاط</a></li>{% endif %}
+                    <li class="nav-item"><a class="nav-link {% if '/tasks/' in request.path and '/tasks/deductions/' not in request.path %}active{% endif %}" href="{% url 'task-list' %}"><i class="bi bi-list-check"></i> المهام</a></li>
+                    <li class="nav-item"><a class="nav-link {% if '/tasks/deductions/' in request.path %}active{% endif %}" href="{% url 'deduction-list' %}"><i class="bi bi-cash-stack"></i> خصومات المهام</a></li>
                     {% if user|has_non_root_student_perm %}<li class="nav-item"><a class="nav-link {% if '/students/' in request.path %}active{% endif %}" href="{% url 'student-list' %}"><i class="bi bi-mortarboard"></i> الطلاب</a></li>{% endif %}
                     {% if user|has_perm:'view_master' %}<li class="nav-item"><a class="nav-link {% if '/masters/' in request.path %}active{% endif %}" href="{% url 'master-list' %}"><i class="bi bi-journal-bookmark"></i> التخصصات</a></li>{% endif %}
                     {% if user|has_perm:'view_course' %}<li class="nav-item"><a class="nav-link {% if '/courses/' in request.path %}active{% endif %}" href="{% url 'course-list' %}"><i class="bi bi-book"></i> الدورات</a></li>{% endif %}
-                    {% if user|has_perm:'view_payment' %}<li class="nav-item"><a class="nav-link {% if '/payments/' in request.path %}active{% endif %}" href="{% url 'payment-list' %}"><i class="bi bi-cash-stack"></i> المدفوعات</a></li>{% endif %}
-                    {% if user|has_perm:'view_disbursementrequest' %}<li class="nav-item"><a class="nav-link {% if '/disbursements/' in request.path %}active{% endif %}" href="{% url 'disbursement-list' %}"><i class="bi bi-cash-coin"></i> إذن الصرف</a></li>{% endif %}
-                    {% if user|has_perm:'view_call' %}<li class="nav-item"><a class="nav-link {% if '/calls/' in request.path %}active{% endif %}" href="{% url 'call-list' %}"><i class="bi bi-telephone"></i> المكالمات</a></li>{% endif %}
                     {% if user|has_perm:'view_reportsnapshot' %}<li class="nav-item"><a class="nav-link {% if '/reports/' in request.path %}active{% endif %}" href="{% url 'reportsnapshot-list' %}"><i class="bi bi-graph-up"></i> التقارير</a></li>{% endif %}
                     <li class="nav-item"><a class="nav-link {% if '/project-assistant/' in request.path %}active{% endif %}" href="{% url 'project_assistant:chat_page' %}"><i class="bi bi-robot"></i> مساعد المشروع</a></li>
                 </ul>

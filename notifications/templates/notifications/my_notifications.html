@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}إشعاراتي | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2><i class="bi bi-bell"></i> إشعاراتي</h2>
+    <div class="d-flex gap-2">
+        {% if request.GET.unread == '1' %}
+        <a href="{% url 'my-notifications' %}" class="btn btn-outline-secondary">عرض الكل</a>
+        {% else %}
+        <a href="?unread=1" class="btn btn-outline-secondary">غير المقروءة فقط</a>
+        {% endif %}
+        <form method="post" action="{% url 'notifications-read-all' %}">
+            {% csrf_token %}<button class="btn btn-outline-primary"><i class="bi bi-check2-all"></i> تعليم الكل كمقروء</button>
+        </form>
+    </div>
+</div>
+
+<div class="list-group">
+    {% for n in notifications %}
+    <a href="{% url 'notification-open' n.pk %}" class="list-group-item list-group-item-action {% if not n.is_read %}list-group-item-primary{% endif %}">
+        <div class="d-flex justify-content-between">
+            <strong>{{ n.title }}</strong>
+            <small class="text-muted">{{ n.created_at|date:'Y-m-d H:i' }}</small>
+        </div>
+        <div class="small">{{ n.body }}</div>
+    </a>
+    {% empty %}
+    <div class="list-group-item text-muted">لا توجد إشعارات.</div>
+    {% endfor %}
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

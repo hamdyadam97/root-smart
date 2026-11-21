@@ -19,18 +19,14 @@ class AccountNoteInline(admin.TabularInline):
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ['get_key', 'student', 'course', 'course_payment_type', 'course_price', 'get_remain_price', 'register_date']
+    list_display = ['get_key', 'student', 'course', 'course_payment_type', 'course_price', 'register_date']
     list_filter = ['course_payment_type', 'course__master__branch', 'register_date']
     search_fields = ['code', 'student__contact__first_name', 'student__contact__forth_name', 'student__contact__mobile']
     inlines = [AccountAttachInline, AccountConditionInline, AccountNoteInline]
-    
+
     def get_key(self, obj):
         return obj.get_key()
     get_key.short_description = 'الكود'
-    
-    def get_remain_price(self, obj):
-        return obj.get_remain_price()
-    get_remain_price.short_description = 'المتبقي'
 
 
 @admin.register(AttachType)

@@ -27,7 +27,7 @@ class ActivityStageBase(models.Model):
     """حقول سير العمل المشتركة بين نماذج النشاط الثلاثة."""
 
     change_perm = None   # يحدد في النماذج الفرعية، مثال: 'change_activity'
-    approve_perm = None  # صلاحية الاعتماد — للمدير، مثال: 'approve_activity'
+    approve_perm = None  # صلاحية الاعتماد: العقد والنهائي للمدير، التحليل المالي والتنسيق للمحاسب
 
     status = models.CharField(
         max_length=20, choices=StageStatus.choices, default=StageStatus.DRAFT,
@@ -80,7 +80,7 @@ class ActivityStageBase(models.Model):
         return user.has_perm(self.change_perm, branch=self.branch)
 
     def can_user_approve(self, user):
-        """الاعتماد والرفض بصلاحية «اعتماد» خاصة بالمدير على الفرع."""
+        """الاعتماد والرفض بصلاحية «اعتماد» الخاصة بالمرحلة على الفرع."""
         if not user.is_authenticated:
             return False
         if user.is_executive():

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Company, Branch, Bank, MasterCategory
+from .models import Company, Branch, MasterCategory
 
 
 class CompanyForm(forms.ModelForm):
@@ -54,32 +54,6 @@ class BranchForm(forms.ModelForm):
             'tax_code': forms.TextInput(attrs={'class': 'form-control'}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'signature': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        }
-
-
-class BankForm(forms.ModelForm):
-    def __init__(self, *args, user=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        from core.models import Branch
-        if user is not None:
-            if user.is_executive():
-                self.fields['branch'].queryset = Branch.objects.all().order_by('code', 'name')
-            else:
-                perm = 'add_bank' if not self.instance.pk else 'change_bank'
-                allowed = user.get_branches_for_perm(perm)
-                self.fields['branch'].queryset = Branch.objects.filter(pk__in=[b.pk for b in allowed]).order_by('code', 'name')
-        else:
-            self.fields['branch'].queryset = Branch.objects.all().order_by('code', 'name')
-
-    class Meta:
-        model = Bank
-        fields = ['branch', 'name', 'account_number', 'iban', 'swift']
-        widgets = {
-            'branch': forms.Select(attrs={'class': 'form-select'}),
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'account_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'iban': forms.TextInput(attrs={'class': 'form-control'}),
-            'swift': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 

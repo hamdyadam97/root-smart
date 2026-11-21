@@ -211,7 +211,7 @@ def export_registrations_excel(request):
         top=Side(style='thin'), bottom=Side(style='thin')
     )
 
-    headers = ['المفتاح', 'الطالب', 'الدورة', 'نوع الدفع', 'السعر', 'المطلوب', 'المدفوع', 'المتبقي']
+    headers = ['المفتاح', 'الطالب', 'الدورة', 'نوع الدفع', 'السعر', 'المطلوب']
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=h)
         cell.font = header_font
@@ -228,8 +228,6 @@ def export_registrations_excel(request):
             account.course_payment_type,
             float(account.course_price),
             float(account.get_required_price()),
-            float(account.get_paid_price()),
-            float(account.get_remain_price()),
         ]
         for col, val in enumerate(values, 1):
             cell = ws.cell(row=row_num, column=col, value=val)
@@ -292,7 +290,7 @@ def export_registrations_pdf(request):
     elements.append(Paragraph(_prepare_arabic('تقرير التسجيلات'), title_style))
     elements.append(Spacer(1, 0.3*cm))
 
-    headers = ['المفتاح', 'الطالب', 'الدورة', 'نوع الدفع', 'السعر', 'المطلوب', 'المدفوع', 'المتبقي']
+    headers = ['المفتاح', 'الطالب', 'الدورة', 'نوع الدفع', 'السعر', 'المطلوب']
     table_data = [[Paragraph(_prepare_arabic(h), header_style) for h in headers]]
 
     for account in qs:
@@ -303,8 +301,6 @@ def export_registrations_pdf(request):
             Paragraph(_prepare_arabic(account.course_payment_type), cell_style),
             Paragraph(_prepare_arabic(f'{account.course_price}'), cell_style),
             Paragraph(_prepare_arabic(f'{account.get_required_price()}'), cell_style),
-            Paragraph(_prepare_arabic(f'{account.get_paid_price()}'), cell_style),
-            Paragraph(_prepare_arabic(f'{account.get_remain_price()}'), cell_style),
         ]
         table_data.append(row)
 

@@ -47,43 +47,13 @@
     </div>
     <div class="col-md-3 mb-3">
         <div class="card card-stats p-3 text-center">
-            <div class="text-muted small mb-1"><i class="bi bi-cash-stack"></i> المدفوعات</div>
-            <div class="fw-bold fs-3 text-info">{{ dashboard.payments_total }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card card-stats p-3 text-center">
-            <div class="text-muted small mb-1"><i class="bi bi-currency-dollar"></i> الإجمالي</div>
-            <div class="fw-bold fs-3 text-warning">{{ dashboard.payments_amount|floatformat:2 }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card card-stats p-3 text-center">
-            <div class="text-muted small mb-1"><i class="bi bi-tag"></i> العروض</div>
-            <div class="fw-bold fs-3 text-secondary">{{ dashboard.offers_total }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card card-stats p-3 text-center">
-            <div class="text-muted small mb-1"><i class="bi bi-check-circle"></i> مسجلة</div>
-            <div class="fw-bold fs-3 text-success">{{ dashboard.offers_registered }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card card-stats p-3 text-center">
-            <div class="text-muted small mb-1"><i class="bi bi-telephone"></i> المكالمات</div>
-            <div class="fw-bold fs-3 text-primary">{{ dashboard.calls_total }}</div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card card-stats p-3 text-center">
             <div class="text-muted small mb-1"><i class="bi bi-person-badge"></i> الموظفين</div>
             <div class="fw-bold fs-3 text-dark">{{ dashboard.employees_total }}</div>
         </div>
     </div>
 </div>
 
-<!-- Charts Row 1 -->
+<!-- Charts Row -->
 <div class="row mb-4">
     <div class="col-md-6 mb-3">
         <div class="card">
@@ -98,26 +68,6 @@
             <div class="card-header bg-light"><i class="bi bi-pie-chart"></i> التسجيلات حسب نوع الدفع</div>
             <div class="card-body">
                 <canvas id="registrationsChart" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Charts Row 2 -->
-<div class="row mb-4">
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-header bg-light"><i class="bi bi-bar-chart"></i> المكالمات (صادرة vs واردة)</div>
-            <div class="card-body">
-                <canvas id="callsChart" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-3">
-        <div class="card">
-            <div class="card-header bg-light"><i class="bi bi-bar-chart"></i> المدفوعات حسب الطريقة</div>
-            <div class="card-body">
-                <canvas id="paymentsChart" height="200"></canvas>
             </div>
         </div>
     </div>
@@ -166,34 +116,6 @@
         options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     });
 
-    // Calls by Type (Bar)
-    new Chart(document.getElementById('callsChart'), {
-        type: 'bar',
-        data: {
-            labels: data.calls_by_type.map(i => i.call_type === 'OUTGOING' ? 'صادرة' : 'واردة'),
-            datasets: [{
-                label: 'المكالمات',
-                data: data.calls_by_type.map(i => i.count),
-                backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)']
-            }]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
-
-    // Payments by Method (Bar)
-    new Chart(document.getElementById('paymentsChart'), {
-        type: 'bar',
-        data: {
-            labels: data.payments_by_method.map(i => i.payment_method),
-            datasets: [{
-                label: 'المبلغ',
-                data: data.payments_by_method.map(i => i.total),
-                backgroundColor: 'rgba(245,158,11,0.7)'
-            }]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
-
     // Branches Comparison (Bar)
     new Chart(document.getElementById('branchesChart'), {
         type: 'bar',
@@ -201,8 +123,7 @@
             labels: data.branches_comparison.map(i => i.name),
             datasets: [
                 { label: 'الطلاب', data: data.branches_comparison.map(i => i.students), backgroundColor: 'rgba(59,130,246,0.7)' },
-                { label: 'التسجيلات', data: data.branches_comparison.map(i => i.registrations), backgroundColor: 'rgba(16,185,129,0.7)' },
-                { label: 'العروض', data: data.branches_comparison.map(i => i.offers), backgroundColor: 'rgba(245,158,11,0.7)' }
+                { label: 'التسجيلات', data: data.branches_comparison.map(i => i.registrations), backgroundColor: 'rgba(16,185,129,0.7)' }
             ]
         },
         options: { responsive: true, scales: { y: { beginAtZero: true } } }

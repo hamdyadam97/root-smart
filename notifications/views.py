@@ -1,4 +1,9 @@
 from accounts.mixins import BranchPermissionMixin, ProtectedDeleteMixin
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Q
 from django.urls import reverse_lazy
@@ -68,3 +73,36 @@ class AppNotificationDeleteView(ProtectedDeleteMixin, BranchPermissionMixin, Suc
     success_url = reverse_lazy('appnotification-list')
     success_message = 'تم حذف الإشعار بنجاح.'
     required_perm = 'delete_appnotification'
+
+
+@login_required
+def my_notifications(request):
+    """إشعارات المستخدم الحالي — متاحة لكل مستخدم بدون صلاحية خاصة."""
+    notifications = AppNotification.objects.filter(user=request.user)
+    if request.GET.get('unread') == '1':
+        notifications = notifications.filter(is_read=False)
+    page = Paginator(notifications, 30).get_page(request.GET.get('page'))
+    return render(request, 'notifications/my_notifications.html', {
+        'page_obj': page,
+        'notifications': page.object_list,
+        'is_paginated': page.has_other_pages(),
+    })
+
+
+@login_required
+def notification_open(request, pk):
+    """تعليم الإشعار كمقروء ثم الانتقال لرابطه."""
+    notification = get_object_or_404(AppNotification, pk=pk, user=request.user)
+    if not notification.is_read:
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+    if notification.action_url and url_has_allowed_host_and_scheme(notification.action_url, allowed_hosts={request.get_host()}):
+        return redirect(notification.action_url)
+    return redirect('my-notifications')
+
+
+@login_required
+@require_POST
+def notifications_mark_all_read(request):
+    AppNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return redirect('my-notifications')

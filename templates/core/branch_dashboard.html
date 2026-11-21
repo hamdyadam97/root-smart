@@ -106,20 +106,6 @@
         </div>
     </div>
     <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-warning h-100">
-            <div class="icon-box"><i class="bi bi-cash-stack"></i></div>
-            <div class="stat-value">{{ payments_total|floatformat:0 }}</div>
-            <div class="stat-label">المدفوعات</div>
-        </div>
-    </div>
-    <div class="col-xl col-lg-3 col-md-4 col-6">
-        <div class="stat-card bg-gradient-danger h-100">
-            <div class="icon-box"><i class="bi bi-tag"></i></div>
-            <div class="stat-value">{{ offers_count }}</div>
-            <div class="stat-label">عروض الأسعار</div>
-        </div>
-    </div>
-    <div class="col-xl col-lg-3 col-md-4 col-6">
         <div class="stat-card bg-gradient-secondary h-100">
             <div class="icon-box"><i class="bi bi-send"></i></div>
             <div class="stat-value">{{ student_offers_count }}</div>
@@ -128,36 +114,8 @@
     </div>
 </div>
 
-<!-- Charts Row 1 -->
+<!-- Activity + Recent Offers Row -->
 <div class="row g-4 mb-4">
-    <div class="col-lg-8">
-        <div class="card chart-card h-100">
-            <div class="card-header"><i class="bi bi-graph-up text-primary me-2"></i> المدفوعات الشهرية (آخر 6 أشهر)</div>
-            <div class="card-body">
-                <canvas id="paymentsChart" height="100"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-4">
-        <div class="card chart-card h-100">
-            <div class="card-header"><i class="bi bi-pie-chart text-success me-2"></i> طرق الدفع</div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <canvas id="paymentMethodsChart" style="max-height:220px;"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Charts Row 2 -->
-<div class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="card chart-card h-100">
-            <div class="card-header"><i class="bi bi-pie-chart-fill text-warning me-2"></i> أنواع دفع العروض</div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <canvas id="offerStatusChart" style="max-height:220px;"></canvas>
-            </div>
-        </div>
-    </div>
     <div class="col-lg-6">
         <div class="card chart-card h-100">
             <div class="card-header"><i class="bi bi-activity text-danger me-2"></i> آخر النشاطات</div>
@@ -209,7 +167,7 @@
 <!-- Recent Offers Row -->
 <div class="row g-4 mb-4">
     <!-- Recent Student Offers -->
-    <div class="col-lg-7">
+    <div class="col-12">
         <div class="card chart-card h-100">
             <div class="card-header"><i class="bi bi-send-check text-success me-2"></i> آخر عروض الطلاب</div>
             <div class="card-body p-0">
@@ -250,98 +208,10 @@
             </div>
         </div>
     </div>
-
-    <!-- Recent Price Offers -->
-    <div class="col-lg-5">
-        <div class="card chart-card h-100">
-            <div class="card-header"><i class="bi bi-tags text-warning me-2"></i> آخر عروض الأسعار</div>
-            <div class="card-body">
-                {% for o in recent_offers %}
-                <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
-                    <div>
-                        <h6 class="mb-1 fw-bold">{{ o.customer_name }}</h6>
-                        <small class="text-muted">{{ o.master.name }}</small>
-                    </div>
-                    <span class="badge {% if o.master_payment_type == 'نقدي' %}bg-success{% elif o.master_payment_type == 'تقسيط' %}bg-info{% else %}bg-warning text-dark{% endif %}">
-                        {{ o.master_payment_type }}
-                    </span>
-                </div>
-                {% empty %}
-                <div class="text-muted text-center py-4">لا يوجد عروض أسعار</div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
 </div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-Chart.defaults.font.family = "'Cairo', 'Segoe UI', sans-serif";
-Chart.defaults.color = '#94a3b8';
-
-new Chart(document.getElementById('paymentsChart'), {
-    type: 'line',
-    data: {
-        labels: {{ months_labels|safe }},
-        datasets: [{
-            label: 'المدفوعات',
-            data: {{ months_data|safe }},
-            borderColor: '#0d6efd',
-            backgroundColor: 'rgba(13, 110, 253, 0.1)',
-            borderWidth: 3,
-            pointBackgroundColor: '#0d6efd',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointRadius: 5,
-            fill: true,
-            tension: 0.4
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: { beginAtZero: true, grid: { color: '#334155' } },
-            x: { grid: { display: false } }
-        }
-    }
-});
-
-new Chart(document.getElementById('paymentMethodsChart'), {
-    type: 'doughnut',
-    data: {
-        labels: {{ payment_method_labels|safe }},
-        datasets: [{
-            data: {{ payment_method_data|safe }},
-            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        responsive: true,
-        cutout: '65%',
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
-    }
-});
-
-new Chart(document.getElementById('offerStatusChart'), {
-    type: 'pie',
-    data: {
-        labels: {{ offer_status_labels|safe }},
-        datasets: [{
-            data: {{ offer_status_data|safe }},
-            backgroundColor: ['#198754', '#0dcaf0', '#ffc107'],
-            borderWidth: 2,
-            borderColor: '#fff'
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
-    }
-});
-</script>
 {% endblock %}

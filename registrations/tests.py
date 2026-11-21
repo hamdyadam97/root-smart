@@ -9,7 +9,6 @@ from django.utils import timezone
 from core.models import Company, Branch
 from courses.models import Master, Course
 from students.models import Contact, Student
-from finance.models import Payment
 
 from .models import Account, AttachType, Attach, AccountAttach, AccountCondition, AccountNote
 from .forms import (
@@ -84,40 +83,6 @@ class AccountModelTests(BaseTestCase):
         self.account.save()
         expected = Decimal('1000.00') + (Decimal('1000.00') * Decimal('5.00') / Decimal('100'))
         self.assertEqual(self.account.get_required_price(), expected)
-
-    def test_get_paid_price(self):
-        Payment.objects.create(
-            account=self.account,
-            code=1,
-            amount_number=Decimal('200.00'),
-            type='ايرادات اساسية',
-        )
-        Payment.objects.create(
-            account=self.account,
-            code=2,
-            amount_number=Decimal('100.00'),
-            type='ايرادات اساسية',
-        )
-        Payment.objects.create(
-            account=self.account,
-            code=3,
-            amount_number=Decimal('50.00'),
-            type='ايرادات اخرى',
-        )
-        self.assertEqual(self.account.get_paid_price(), Decimal('300.00'))
-
-    def test_get_remain_price(self):
-        self.account.course_payment_type = Account.PAYMENT_TYPE_CASH
-        self.account.save()
-        Payment.objects.create(
-            account=self.account,
-            code=1,
-            amount_number=Decimal('200.00'),
-            type='ايرادات اساسية',
-        )
-        required = self.account.get_required_price()
-        remain = required - Decimal('200.00')
-        self.assertEqual(self.account.get_remain_price(), remain)
 
     def test_unique_together_course_code(self):
         with self.assertRaises(Exception):

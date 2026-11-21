@@ -6,7 +6,6 @@ class ReportSnapshot(models.Model):
     """لقطة تقرير"""
     REPORT_TYPE_CHOICES = [
         ('summary', 'ملخص عام'),
-        ('offers', 'تقرير العروض'),
         ('branches', 'تقرير الفروع'),
         ('employees', 'تقرير الموظفين'),
         ('students', 'تقرير الطلاب'),

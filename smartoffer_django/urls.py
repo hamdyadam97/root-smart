@@ -22,7 +22,6 @@ urlpatterns = [
     path('', include('students.urls')),
     path('', include('courses.urls')),
     path('', include('registrations.urls')),
-    path('', include('finance.urls')),
     path('', include('offers.urls')),
     path('', include('prospects.urls')),
     path('', include('messaging.urls')),
@@ -30,6 +29,7 @@ urlpatterns = [
     path('', include('reports.urls')),
     path('', include('project_assistant.urls')),
     path('', include('activities.urls')),
+    path('', include('tasks.urls')),
 ]
 
 if settings.DEBUG:

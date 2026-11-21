@@ -44,11 +44,6 @@ PERMISSIONS_DATA = [
     ('change_branch', 'تعديل فرع', 'core', 'branch', 'change'),
     ('delete_branch', 'حذف فرع', 'core', 'branch', 'delete'),
 
-    ('view_bank', 'عرض البنوك', 'core', 'bank', 'view'),
-    ('add_bank', 'إضافة بنك', 'core', 'bank', 'add'),
-    ('change_bank', 'تعديل بنك', 'core', 'bank', 'change'),
-    ('delete_bank', 'حذف بنك', 'core', 'bank', 'delete'),
-
     ('view_mastercategory', 'عرض تصنيفات التخصصات', 'core', 'mastercategory', 'view'),
     ('add_mastercategory', 'إضافة تصنيف تخصص', 'core', 'mastercategory', 'add'),
     ('change_mastercategory', 'تعديل تصنيف تخصص', 'core', 'mastercategory', 'change'),
@@ -75,53 +70,6 @@ PERMISSIONS_DATA = [
     ('add_course', 'إضافة دورة', 'courses', 'course', 'add'),
     ('change_course', 'تعديل دورة', 'courses', 'course', 'change'),
     ('delete_course', 'حذف دورة', 'courses', 'course', 'delete'),
-
-    # --- finance ---
-    ('view_payment', 'عرض سندات القبض', 'finance', 'payment', 'view'),
-    ('add_payment', 'إضافة سند قبض', 'finance', 'payment', 'add'),
-    ('change_payment', 'تعديل سند قبض', 'finance', 'payment', 'change'),
-    ('delete_payment', 'حذف سند قبض', 'finance', 'payment', 'delete'),
-
-    ('view_paymentout', 'عرض سندات الصرف', 'finance', 'paymentout', 'view'),
-    ('add_paymentout', 'إضافة سند صرف', 'finance', 'paymentout', 'add'),
-    ('change_paymentout', 'تعديل سند صرف', 'finance', 'paymentout', 'change'),
-    ('delete_paymentout', 'حذف سند صرف', 'finance', 'paymentout', 'delete'),
-
-    ('view_deposit', 'عرض الإيداعات', 'finance', 'deposit', 'view'),
-    ('add_deposit', 'إضافة إيداع', 'finance', 'deposit', 'add'),
-    ('change_deposit', 'تعديل إيداع', 'finance', 'deposit', 'change'),
-    ('delete_deposit', 'حذف إيداع', 'finance', 'deposit', 'delete'),
-
-    ('view_withdraw', 'عرض السحوبات', 'finance', 'withdraw', 'view'),
-    ('add_withdraw', 'إضافة سحب', 'finance', 'withdraw', 'add'),
-    ('change_withdraw', 'تعديل سحب', 'finance', 'withdraw', 'change'),
-    ('delete_withdraw', 'حذف سحب', 'finance', 'withdraw', 'delete'),
-
-    ('view_billbuytype', 'عرض أنواع فواتير الشراء', 'finance', 'billbuytype', 'view'),
-    ('add_billbuytype', 'إضافة نوع فاتورة شراء', 'finance', 'billbuytype', 'add'),
-    ('change_billbuytype', 'تعديل نوع فاتورة شراء', 'finance', 'billbuytype', 'change'),
-    ('delete_billbuytype', 'حذف نوع فاتورة شراء', 'finance', 'billbuytype', 'delete'),
-
-    ('view_billbuy', 'عرض فواتير الشراء', 'finance', 'billbuy', 'view'),
-    ('add_billbuy', 'إضافة فاتورة شراء', 'finance', 'billbuy', 'add'),
-    ('change_billbuy', 'تعديل فاتورة شراء', 'finance', 'billbuy', 'change'),
-    ('delete_billbuy', 'حذف فاتورة شراء', 'finance', 'billbuy', 'delete'),
-
-    ('view_offer_price', 'عرض عروض الأسعار', 'finance', 'offer', 'view'),
-    ('add_offer_price', 'إضافة عرض سعر', 'finance', 'offer', 'add'),
-    ('change_offer_price', 'تعديل عرض سعر', 'finance', 'offer', 'change'),
-    ('delete_offer_price', 'حذف عرض سعر', 'finance', 'offer', 'delete'),
-
-    ('view_call', 'عرض المكالمات', 'finance', 'call', 'view'),
-    ('add_call', 'إضافة مكالمة', 'finance', 'call', 'add'),
-    ('change_call', 'تعديل مكالمة', 'finance', 'call', 'change'),
-    ('delete_call', 'حذف مكالمة', 'finance', 'call', 'delete'),
-
-    ('view_disbursementrequest', 'عرض أذونات الصرف', 'finance', 'disbursementrequest', 'view'),
-    ('add_disbursementrequest', 'إضافة إذن صرف', 'finance', 'disbursementrequest', 'add'),
-    ('change_disbursementrequest', 'تعديل إذن صرف', 'finance', 'disbursementrequest', 'change'),
-    ('delete_disbursementrequest', 'حذف إذن صرف', 'finance', 'disbursementrequest', 'delete'),
-    ('approve_disbursementrequest', 'اعتماد إذن صرف', 'finance', 'disbursementrequest', 'approve'),
 
     # --- registrations ---
     ('view_registration', 'عرض التسجيلات', 'registrations', 'account', 'view'),
@@ -209,11 +157,18 @@ PERMISSIONS_DATA = [
     ('change_finalfinancialanalysis', 'تعديل تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'change'),
     ('delete_finalfinancialanalysis', 'حذف تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'delete'),
 
-    # --- اعتماد مراحل الأنشطة (للمدير) ---
+    # --- اعتماد مراحل الأنشطة: العقد والنهائي للمدير، التحليل المالي والتنسيق للمحاسب ---
     ('approve_activity', 'اعتماد نشاط', 'activities', 'activity', 'approve'),
     ('approve_financialanalysis', 'اعتماد تحليل مالي', 'activities', 'financialanalysis', 'approve'),
     ('approve_activitycoordination', 'اعتماد تنسيق وجاهزية', 'activities', 'activitycoordination', 'approve'),
     ('approve_finalfinancialanalysis', 'اعتماد تحليل مالي نهائي', 'activities', 'finalfinancialanalysis', 'approve'),
+
+    # --- المهام ---
+    ('view_task', 'عرض مهام الفرع', 'tasks', 'task', 'view'),
+    ('add_task', 'إنشاء مهمة', 'tasks', 'task', 'add'),
+    ('change_task', 'تعديل مهمة', 'tasks', 'task', 'change'),
+    ('delete_task', 'حذف مهمة', 'tasks', 'task', 'delete'),
+    ('approve_task', 'اعتماد إغلاق المهام وإدارة الخصومات', 'tasks', 'task', 'approve'),
 ]
 
 

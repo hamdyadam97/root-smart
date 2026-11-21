@@ -7,8 +7,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         models = [
             ('offers', 'StudentOffer'),
-            ('finance', 'Payment'),
-            ('finance', 'Call'),
             ('registrations', 'Account'),
             ('reports', 'ReportSnapshot'),
             ('students', 'Student'),

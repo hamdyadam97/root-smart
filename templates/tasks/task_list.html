@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}المهام | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-list-check"></i> المهام</h2>
+    {% if can_add %}
+    <a href="{% url 'task-create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> مهمة جديدة</a>
+    {% endif %}
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">مهامي المفتوحة</div>
+            <div class="fs-3 fw-bold">{{ my_open_count }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">متأخرة</div>
+            <div class="fs-3 fw-bold {% if my_overdue_count %}text-danger{% endif %}">{{ my_overdue_count }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">طلبات إغلاق بانتظارك</div>
+            <div class="fs-3 fw-bold {% if pending_close_count %}text-warning{% endif %}">{{ pending_close_count }}</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{% url 'deduction-list' %}" class="text-decoration-none text-reset">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">خصوماتي هذا الشهر</div>
+            <div class="fs-3 fw-bold {% if my_deductions_month %}text-danger{% endif %}">{{ my_deductions_month }} <small class="fs-6 text-muted">دينار</small></div>
+        </div></div>
+        </a>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link {% if scope == 'mine' %}active{% endif %}" href="?scope=mine">المسندة إليّ</a></li>
+    <li class="nav-item"><a class="nav-link {% if scope == 'created' %}active{% endif %}" href="?scope=created">أنشأتها</a></li>
+    {% if can_view_all %}<li class="nav-item"><a class="nav-link {% if scope == 'all' %}active{% endif %}" href="?scope=all">كل مهام الفرع</a></li>{% endif %}
+</ul>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <input type="hidden" name="scope" value="{{ scope }}">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="بحث بالعنوان أو التفاصيل..." value="{{ request.GET.search|default:'' }}">
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">كل الحالات...</option>
+                    {% for value, label in status_choices %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="frequency" class="form-select">
+                    <option value="">كل أنواع التكرار...</option>
+                    {% for value, label in frequency_choices %}<option value="{{ value }}" {% if request.GET.frequency == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="priority" class="form-select">
+                    <option value="">كل الأولويات...</option>
+                    {% for value, label in priority_choices %}<option value="{{ value }}" {% if request.GET.priority == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="overdue" value="1" id="overdue" {% if request.GET.overdue == '1' %}checked{% endif %}>
+                    <label class="form-check-label" for="overdue">متأخرة</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>المهمة</th>
+                <th>الأولوية</th>
+                <th>النوع</th>
+                <th>التكرار</th>
+                <th>تاريخ التسليم</th>
+                <th>الإنجاز</th>
+                <th>المنشئ</th>
+                <th>الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>
+                    <a href="{% url 'task-detail' task.pk %}" class="text-decoration-none fw-semibold">{{ task.title }}</a>
+                    <div class="small text-muted">{{ task.branch }}</div>
+                </td>
+                <td><span class="badge {{ task.priority_badge_class }}">{{ task.get_priority_display }}</span></td>
+                <td>{% if task.is_shared %}<i class="bi bi-people-fill" title="مشتركة"></i> مشتركة{% else %}<i class="bi bi-person" title="فردية"></i> فردية{% endif %}</td>
+                <td>{{ task.get_frequency_display }}</td>
+                <td>
+                    {% if task.due_date %}
+                    <span class="{% if task.is_overdue %}text-danger fw-bold{% endif %}">{{ task.due_date|date:'Y-m-d' }}</span>
+                    {% if task.is_overdue %}<div class="small text-danger">متأخرة</div>{% endif %}
+                    {% else %}<span class="text-muted">مستمرة</span>{% endif %}
+                </td>
+                <td>{{ task.closed_count }} / {{ task.assignee_count }}</td>
+                <td>{{ task.created_by.get_short_name|default:'-' }}</td>
+                <td><span class="badge {{ task.status_badge_class }}">{{ task.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted">لا توجد مهام</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% include "includes/pagination.html" %}
+{% endblock %}

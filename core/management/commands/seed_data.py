@@ -8,9 +8,8 @@ from django.utils import timezone
 from django.utils.timezone import make_aware
 
 from accounts.models import Team, Person, BranchAccess, Role, EmployeeRole, EmployeePerformance
-from core.models import Company, Branch, Bank, MasterCategory
+from core.models import Company, Branch, MasterCategory
 from courses.models import Master, Course
-from finance.models import Payment, PaymentOut, Deposit, Withdraw, BillBuyType, BillBuy, Offer as FinanceOffer, Call
 from messaging.models import InternalMessage
 from notifications.models import AppNotification
 from offers.models import StudentOffer, OfferRecipient, OfferNote
@@ -87,9 +86,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE('Creating registrations data...'))
         self.create_registrations()
 
-        self.stdout.write(self.style.NOTICE('Creating finance data...'))
-        self.create_finance()
-
         self.stdout.write(self.style.NOTICE('Creating messaging & notifications...'))
         self.create_messaging_notifications()
 
@@ -104,14 +100,6 @@ class Command(BaseCommand):
         EmployeePerformance.objects.all().delete()
         AppNotification.objects.all().delete()
         InternalMessage.objects.all().delete()
-        Call.objects.all().delete()
-        FinanceOffer.objects.all().delete()
-        BillBuy.objects.all().delete()
-        BillBuyType.objects.all().delete()
-        Withdraw.objects.all().delete()
-        Deposit.objects.all().delete()
-        PaymentOut.objects.all().delete()
-        Payment.objects.all().delete()
         AccountNote.objects.all().delete()
         AccountCondition.objects.all().delete()
         AccountAttach.objects.all().delete()
@@ -130,7 +118,6 @@ class Command(BaseCommand):
         Role.objects.all().delete()
         Person.objects.filter(is_superuser=False).delete()  # keep superuser if exists
         Team.objects.all().delete()
-        Bank.objects.all().delete()
         Branch.objects.all().delete()
         Company.objects.all().delete()
         MasterCategory.objects.all().delete()
@@ -203,17 +190,6 @@ class Command(BaseCommand):
 
         # default company for relations
         self.company = self.companies[0]
-
-        self.banks = []
-        for i, bname in enumerate(['البنك الأهلي', 'بنك الرياض'], start=1):
-            bank = Bank.objects.create(
-                branch=self.branches[i % len(self.branches)],
-                name=bname,
-                account_number='SA' + ''.join(random.choices(string.digits, k=20)),
-                iban='SA' + ''.join(random.choices(string.digits, k=22)),
-                swift='SARISARI'
-            )
-            self.banks.append(bank)
 
         self.master_categories = []
         cat_names = ['تقنية المعلومات', 'إدارة الأعمال', 'اللغات', 'التسويق', 'المحاسبة']
@@ -446,109 +422,6 @@ class Command(BaseCommand):
                 content='ملاحظة: ' + random_string(30)
             )
 
-    def create_finance(self):
-        # Payments
-        for i in range(30):
-            Payment.objects.create(
-                account=random.choice(self.accounts),
-                code=i + 1000,
-                date=rand_datetime(2024, 2025),
-                amount_number=Decimal(random.randint(200, 2000)),
-                amount_string='مبلغ بالحروف',
-                type=random.choice(['ايرادات اساسية', 'ايرادات اخرى']),
-                payment_method=random.choice(['CASH', 'BANK', 'CHEQUE', 'CARD', 'ONLINE']),
-                note='دفعة مالية',
-                last_person=random.choice(self.persons)
-            )
-
-        # PaymentOut
-        for i in range(5):
-            PaymentOut.objects.create(
-                code=i + 2000,
-                date=rand_datetime(2024, 2025),
-                amount_number=Decimal(random.randint(500, 3000)),
-                receiver_name=random_name()[0] + ' ' + random_name()[3],
-                reason='صرف لـ ' + random_string(5),
-                payment_method=random.choice(['CASH', 'BANK', 'CHEQUE', 'CARD', 'ONLINE']),
-                last_person=random.choice(self.persons)
-            )
-
-        # Deposits
-        for i in range(5):
-            Deposit.objects.create(
-                code=i + 3000,
-                date=rand_datetime(2024, 2025),
-                amount=Decimal(random.randint(1000, 10000)),
-                bank=random.choice(self.banks),
-                note='إيداع بنكي',
-                last_person=random.choice(self.persons)
-            )
-
-        # Withdraws
-        for i in range(5):
-            Withdraw.objects.create(
-                code=i + 4000,
-                date=rand_datetime(2024, 2025),
-                amount=Decimal(random.randint(1000, 5000)),
-                bank=random.choice(self.banks),
-                note='سحب بنكي',
-                last_person=random.choice(self.persons)
-            )
-
-        # BillBuyTypes
-        bbt_names = ['معدات', 'برامج', 'خدمات']
-        self.bill_buy_types = []
-        for b in bbt_names:
-            self.bill_buy_types.append(BillBuyType.objects.create(name=b, code=b, description=b))
-
-        # BillBuys
-        for i in range(10):
-            BillBuy.objects.create(
-                code=i + 5000,
-                date=rand_datetime(2024, 2025),
-                bill_buy_type=random.choice(self.bill_buy_types),
-                supplier='مورد ' + random_string(4),
-                amount=Decimal(random.randint(500, 5000)),
-                tax=Decimal(random.randint(50, 500)),
-                discount=Decimal(random.choice([0, 50, 100])),
-                note='فاتورة شراء',
-                last_person=random.choice(self.persons)
-            )
-
-        # Finance Offers
-        self.finance_offers = []
-        for i in range(20):
-            fo = FinanceOffer.objects.create(
-                master=random.choice(self.masters),
-                code=i + 1,
-                customer_name=random_name()[0] + ' ' + random_name()[3],
-                customer_identity_number=str(random.randint(1000000000, 9999999999)),
-                customer_mobile=random_phone(),
-                customer_email=random_email('customer'),
-                note='عرض سعر',
-                message_body='نص رسالة العرض...',
-                master_payment_type=random.choice(['نقدي', 'تقسيط', 'آجل']),
-                master_price=Decimal(random.randint(2000, 8000)),
-                master_discount_amount=Decimal(random.choice([0, 5, 10, 15])),
-                master_profit_amount=Decimal(random.choice([0, 5, 10])),
-                master_credit_amount=Decimal(random.randint(0, 1000)),
-                send_email=True,
-                send_sms=True,
-                registered=random.choice([True, False]),
-                last_person=random.choice(self.persons)
-            )
-            self.finance_offers.append(fo)
-
-        # Calls
-        for i in range(10):
-            Call.objects.create(
-                offer=random.choice(self.finance_offers),
-                person=random.choice(self.persons),
-                call_type=random.choice(['INCOMING', 'OUTGOING']),
-                duration=random.randint(60, 600),
-                notes='ملاحظات المكالمة'
-            )
-
     def create_messaging_notifications(self):
         # InternalMessages
         for i in range(10):
@@ -593,7 +466,7 @@ class Command(BaseCommand):
         # ReportSnapshots
         for i in range(5):
             ReportSnapshot.objects.create(
-                report_type=random.choice(['summary', 'offers', 'branches', 'employees', 'students']),
+                report_type=random.choice(['summary', 'branches', 'employees', 'students']),
                 branch=random.choice(self.branches),
                 period=f'{random.randint(1,12)}/2025',
                 generated_by=random.choice(self.persons),

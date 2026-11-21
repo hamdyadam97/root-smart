@@ -3,7 +3,6 @@ from django.urls import path
 from .views import (
     CompanyListView, CompanyDetailView, CompanyCreateView, CompanyUpdateView, CompanyDeleteView,
     BranchListView, BranchDetailView, BranchCreateView, BranchUpdateView, BranchDeleteView,
-    BankListView, BankDetailView, BankCreateView, BankUpdateView, BankDeleteView,
     MasterCategoryListView, MasterCategoryDetailView, MasterCategoryCreateView, MasterCategoryUpdateView, MasterCategoryDeleteView,
     branch_dashboard,
     branch_create_ajax, branch_update_ajax, companies_list_ajax, company_create_ajax, company_update_ajax, mastercategory_create_ajax, mastercategory_update_ajax,
@@ -23,13 +22,6 @@ urlpatterns = [
     path('branches/create/', BranchCreateView.as_view(), name='branch-create'),
     path('branches/<str:slug>/update/', BranchUpdateView.as_view(), name='branch-update'),
     path('branches/<str:slug>/delete/', BranchDeleteView.as_view(), name='branch-delete'),
-
-    # Bank URLs
-    path('banks/', BankListView.as_view(), name='bank-list'),
-    path('banks/<int:pk>/', BankDetailView.as_view(), name='bank-detail'),
-    path('banks/create/', BankCreateView.as_view(), name='bank-create'),
-    path('banks/<int:pk>/update/', BankUpdateView.as_view(), name='bank-update'),
-    path('banks/<int:pk>/delete/', BankDeleteView.as_view(), name='bank-delete'),
 
     # AJAX URLs
     path('ajax/companies/', companies_list_ajax, name='companies-list-ajax'),

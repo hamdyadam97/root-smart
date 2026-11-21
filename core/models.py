@@ -98,25 +98,6 @@ class Branch(models.Model):
         return f"{self.code} - {self.name}"
 
 
-class Bank(models.Model):
-    """البنك"""
-    branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name='banks', verbose_name='الفرع')
-    name = models.CharField(max_length=255, verbose_name='اسم البنك')
-    account_number = models.CharField(max_length=100, verbose_name='رقم الحساب')
-    iban = models.CharField(max_length=100, blank=True, verbose_name='IBAN')
-    swift = models.CharField(max_length=50, blank=True, verbose_name='SWIFT')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'بنك'
-        verbose_name_plural = 'البنوك'
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
-
-
 class MasterCategory(models.Model):
     """تصنيف التخصص"""
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True, verbose_name='الرابط المختصر')

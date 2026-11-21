@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}حذف مهمة | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="card border-danger">
+    <div class="card-body">
+        <h4 class="text-danger"><i class="bi bi-exclamation-triangle"></i> حذف المهمة</h4>
+        <p>هل أنت متأكد من حذف المهمة «<strong>{{ task.title }}</strong>»؟ سيتم حذف تعليقاتها وخصوماتها أيضًا. لإيقاف المهمة مع الاحتفاظ بسجلها استخدم «إلغاء المهمة» بدلًا من الحذف.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> حذف نهائي</button>
+            <a href="{% url 'task-detail' task.pk %}" class="btn btn-secondary">رجوع</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

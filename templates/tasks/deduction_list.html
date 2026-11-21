@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}خصومات المهام | Smart Offer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2><i class="bi bi-cash-stack"></i> خصومات المهام</h2>
+    {% if can_manage %}
+    <form method="post" action="{% url 'deductions-process' %}">
+        {% csrf_token %}
+        <button class="btn btn-outline-primary" title="يعمل تلقائيًا كل يوم — هذا للتحديث الفوري"><i class="bi bi-arrow-repeat"></i> احتساب الخصومات الآن</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="month" name="month" class="form-control" value="{{ month }}">
+            </div>
+            {% if can_manage %}
+            <div class="col-md-3">
+                <select name="person" class="form-select">
+                    <option value="">كل الموظفين...</option>
+                    {% for p in persons %}<option value="{{ p.pk }}" {% if request.GET.person == p.pk|stringformat:'s' %}selected{% endif %}>{{ p.get_full_name }}</option>{% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="col-md-2">
+                <select name="reason" class="form-select">
+                    <option value="">كل الأسباب...</option>
+                    {% for value, label in reason_choices %}<option value="{{ value }}" {% if request.GET.reason == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="" {% if not status %}selected{% endif %}>الكل</option>
+                    {% for value, label in status_choices %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-search"></i> عرض</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% if can_manage %}
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-person-lines-fill"></i> الإجمالي لكل موظف</div>
+            <ul class="list-group list-group-flush">
+                {% for row in summary %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>{{ row.person__first_name }} {{ row.person__second_name }} {{ row.person__forth_name }} <small class="text-muted">({{ row.count }})</small></span>
+                    <strong>{{ row.total }}</strong>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">لا توجد خصومات.</li>
+                {% endfor %}
+                <li class="list-group-item d-flex justify-content-between bg-light"><strong>الإجمالي</strong><strong>{{ total }} دينار</strong></li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="{% if can_manage %}col-lg-8{% else %}col-12{% endif %}">
+        {% if not can_manage %}<div class="alert alert-light border">إجمالي خصوماتك في الفترة المختارة: <strong>{{ total }} دينار</strong></div>{% endif %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>الموظف</th>
+                        <th>المهمة</th>
+                        <th>السبب</th>
+                        <th>اليوم / الأسبوع</th>
+                        <th>المبلغ</th>
+                        <th>الحالة</th>
+                        {% if can_manage %}<th></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in deductions %}
+                    <tr>
+                        <td>{{ d.person.get_short_name }}</td>
+                        <td><a href="{% url 'task-detail' d.task_id %}" class="text-decoration-none">{{ d.task.title }}</a></td>
+                        <td>{{ d.get_reason_display }}{% if d.missing_count > 1 %} <small class="text-muted">({{ d.missing_count }})</small>{% endif %}</td>
+                        <td>{{ d.period_start|date:'Y-m-d' }}</td>
+                        <td>{{ d.amount }}</td>
+                        <td>
+                            <span class="badge {{ d.status_badge_class }}">{{ d.get_status_display }}</span>
+                            {% if d.status == 'waived' and d.waive_reason %}<div class="small text-muted">{{ d.waive_reason }}</div>{% endif %}
+                        </td>
+                        {% if can_manage %}
+                        <td>
+                            <form method="post" action="{% url 'deduction-waive' d.pk %}" class="d-flex gap-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                {% if d.status == 'active' %}
+                                <input type="text" name="reason" class="form-control form-control-sm" placeholder="سبب الإلغاء">
+                                <button class="btn btn-sm btn-outline-danger text-nowrap">إلغاء</button>
+                                {% else %}
+                                <input type="hidden" name="restore" value="1">
+                                <button class="btn btn-sm btn-outline-secondary text-nowrap">إعادة تفعيل</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center text-muted">لا توجد خصومات في هذه الفترة.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

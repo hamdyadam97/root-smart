@@ -87,8 +87,6 @@
                 <th>نوع الدفع</th>
                 <th>السعر</th>
                 <th>المطلوب</th>
-                <th>المدفوع</th>
-                <th>المتبقي</th>
                 <th class="text-start">إجراءات</th>
             </tr>
         </thead>
@@ -101,8 +99,6 @@
                 <td>{{ account.course_payment_type }}</td>
                 <td>{{ account.course_price }}</td>
                 <td>{{ account.get_required_price }}</td>
-                <td>{{ account.get_paid_price }}</td>
-                <td>{{ account.get_remain_price }}</td>
                 <td class="text-start">
                     <a href="{% url 'registration-detail' account.slug %}" class="btn btn-sm btn-info"><i class="bi bi-eye"></i></a>
                     {% has_perm_on_branch user 'change_registration' account.course.master.branch as can_change_registration %}
@@ -117,7 +113,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" class="text-center text-muted">لا يوجد تسجيلات</td>
+                <td colspan="7" class="text-center text-muted">لا يوجد تسجيلات</td>
             </tr>
             {% endfor %}
         </tbody>

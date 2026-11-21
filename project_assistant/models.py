@@ -14,7 +14,6 @@ class KnowledgeSnippet(models.Model):
         ('students', 'الطلاب'),
         ('courses', 'الدورات'),
         ('registrations', 'التسجيلات'),
-        ('finance', 'المالية'),
         ('offers', 'العروض'),
         ('messaging', 'المراسلة'),
         ('notifications', 'الإشعارات'),
